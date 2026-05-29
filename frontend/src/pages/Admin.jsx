@@ -1630,7 +1630,7 @@ const Admin = () => {
                           </td>
                           <td style={{ padding: '12px' }}>
                             <a 
-                              href={app.resumePath ? `http://localhost:5000${app.resumePath}` : '#'} 
+                              href={app.resumePath ? `${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : 'http://localhost:5000'}${app.resumePath}` : '#'} 
                               target="_blank" 
                               rel="noreferrer"
                               style={{ color: '#2563EB', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}

@@ -168,7 +168,13 @@ Make sure you have the following installed on your operating system:
    ```bash
    npm install
    ```
-3. Run the Vite development server:
+3. Set up your environment variables:
+   * Copy the template `.env.example` into a new `.env` file:
+     ```bash
+     cp .env.example .env
+     ```
+   * Open `.env` and verify the `VITE_API_URL` variable, which specifies the destination API of your backend Server (defaults to `http://localhost:5000/api`).
+4. Run the Vite development server:
    ```bash
    npm run dev
    ```
