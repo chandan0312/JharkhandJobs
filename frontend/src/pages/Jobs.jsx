@@ -124,10 +124,11 @@ const Jobs = () => {
       <header 
         style={{
           position: 'relative',
-          padding: '120px 0 80px',
-          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4)), url(/assets/images/hero-all-jobs.png)`,
+          padding: '160px 0 120px',
+          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.35)), url(/assets/images/hero-all-jobs.png)`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
           color: 'white',
           overflow: 'hidden'
         }}

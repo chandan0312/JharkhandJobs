@@ -55,10 +55,11 @@ const Blog = () => {
       <header 
         style={{
           position: 'relative',
-          padding: '120px 0 80px',
-          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4)), url(/assets/images/hero-blog.png)`,
+          padding: '160px 0 120px',
+          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.35)), url(/assets/images/hero-blog.png)`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           color: 'white',
           overflow: 'hidden'
         }}

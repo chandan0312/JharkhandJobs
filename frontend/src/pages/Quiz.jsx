@@ -366,8 +366,11 @@ const Quiz = () => {
           <header 
             style={{
               position: 'relative',
-              padding: '60px 0',
-              background: 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
+              padding: '90px 0 70px',
+              backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.35)), url(/assets/images/hero-quiz.png)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               color: 'white',
               overflow: 'hidden',
               borderBottom: '1px solid #1E293B',
