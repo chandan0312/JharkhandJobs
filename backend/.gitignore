@@ -1,0 +1,28 @@
+# ==============================================================================
+# JharkhandJobs - Backend Specific Gitignore Configuration
+# ==============================================================================
+
+# Dependencies
+node_modules/
+
+# Secrets and configuration environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads directory - ignore uploaded resume files but preserve directories
+uploads/*
+!uploads/resumes/
+!uploads/.gitkeep
+uploads/resumes/*
+!uploads/resumes/.gitkeep
+
+# Temporary files
+tmp/
+temp/
