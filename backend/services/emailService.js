@@ -30,7 +30,7 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.EMAIL_USER !
 export const sendEmail = async (to, subject, text, html) => {
   try {
     const info = await transporter.sendMail({
-      from: `"Jharkhand Jobs Support" <${process.env.EMAIL_USER || 'no-reply@jharkhandjobs.com'}>`,
+      from: `"Jharkhand Jobs Support" <${process.env.EMAIL_USER || 'jharkhandjobs03@gmail.com'}>`,
       to,
       subject,
       text,
