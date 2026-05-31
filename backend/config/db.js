@@ -1,23 +1,30 @@
 import mongoose from 'mongoose';
 import { initMockDb } from './mockDb.js';
+import { initPgDb } from './pgDb.js';
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/jharkhand_jobs', {
-      serverSelectionTimeoutMS: 2000, // Timeout after 2 seconds instead of hanging
-    });
-    console.log(`🚀 MongoDB Connected: ${conn.connection.host}`);
-    global.useMockDb = false;
+    // Attempt connecting to PostgreSQL first
+    const pgSuccess = await initPgDb();
+    
+    if (pgSuccess) {
+      console.log('✨ Jharkhand Jobs Server is running on PostgreSQL Database!');
+      global.useMockDb = false;
+      global.usePgDb = true;
+    } else {
+      throw new Error('PostgreSQL connection attempt failed.');
+    }
   } catch (error) {
     console.log('\n=============================================================');
-    console.log('⚠️  COULD NOT CONNECT TO MONGODB LOCAL INSTANCE');
     console.log('💡 Jharkhand Jobs Server is falling back to In-Memory DB Mode.');
     console.log('✨ All website functionalities (Auth, Search, Admin Dashboard) will work seamlessly!');
     console.log('=============================================================\n');
     
     await initMockDb();
     global.useMockDb = true;
+    global.usePgDb = false;
   }
 };
 
 export default connectDB;
+

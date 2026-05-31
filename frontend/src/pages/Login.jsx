@@ -115,17 +115,38 @@ const Login = () => {
   ];
 
   return (
-    <div className="page-content" style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', padding: '40px 16px', position: 'relative' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', position: 'relative', minHeight: '80vh' }}>
       
-      <div className="card animate-scale-in" style={{ maxWidth: '450px', width: '100%', padding: '36px', backgroundColor: 'white', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+      <div className="animate-scale-in" style={{
+        maxWidth: '450px',
+        width: '100%',
+        padding: '40px 36px',
+        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        backdropFilter: 'blur(24px)',
+        border: '1.5px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '24px',
+        boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)'
+      }}>
         
         {/* Tab Selection */}
-        <div style={{ display: 'flex', borderBottom: '2px solid #E5E7EB', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
           <button 
             type="button"
             onClick={() => { setActiveTab('login'); setError(null); }}
             className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
-            style={{ flex: 1, textAlign: 'center', padding: '12px 0', border: 'none', background: 'none', borderBottom: activeTab === 'login' ? '2.5px solid #1B8C0A' : 'none', color: activeTab === 'login' ? '#1B8C0A' : '#6B7280', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+            style={{ 
+              flex: 1, 
+              textAlign: 'center', 
+              padding: '12px 0', 
+              border: 'none', 
+              background: 'none', 
+              borderBottom: activeTab === 'login' ? '2.5px solid #1B8C0A' : 'none', 
+              color: activeTab === 'login' ? '#86EFAC' : '#94A3B8', 
+              fontWeight: '700', 
+              fontSize: '14px', 
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
           >
             {t('login.login')}
           </button>
@@ -133,38 +154,61 @@ const Login = () => {
             type="button"
             onClick={() => { setActiveTab('register'); setError(null); }}
             className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-            style={{ flex: 1, textAlign: 'center', padding: '12px 0', border: 'none', background: 'none', borderBottom: activeTab === 'register' ? '2.5px solid #1B8C0A' : 'none', color: activeTab === 'register' ? '#1B8C0A' : '#6B7280', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+            style={{ 
+              flex: 1, 
+              textAlign: 'center', 
+              padding: '12px 0', 
+              border: 'none', 
+              background: 'none', 
+              borderBottom: activeTab === 'register' ? '2.5px solid #1B8C0A' : 'none', 
+              color: activeTab === 'register' ? '#86EFAC' : '#94A3B8', 
+              fontWeight: '700', 
+              fontSize: '14px', 
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
           >
             {t('login.register')}
           </button>
         </div>
 
         {/* Header Branding */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1A2E' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px' }}>
             {activeTab === 'login' ? t('login.welcomeBack') : t('login.createAccount')}
           </h2>
-          <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
+          <p style={{ fontSize: '12.5px', color: '#94A3B8', marginTop: '6px' }}>
             {activeTab === 'login' ? t('login.signInSubtitle') : t('login.registerSubtitle')}
           </p>
         </div>
 
         {/* Displays alert messages */}
         {(error || authError) && (
-          <div style={{ backgroundColor: '#FEF2F2', borderLeft: '4px solid #DC2626', color: '#DC2626', padding: '12px', fontSize: '13px', borderRadius: '4px', marginBottom: '20px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <AlertCircle size={16} />
+          <div style={{ 
+            backgroundColor: 'rgba(239, 68, 68, 0.15)', 
+            borderLeft: '4px solid #EF4444', 
+            color: '#FCA5A5', 
+            padding: '12px', 
+            fontSize: '13px', 
+            borderRadius: '8px', 
+            marginBottom: '20px', 
+            display: 'flex', 
+            gap: '8px', 
+            alignItems: 'center' 
+          }}>
+            <AlertCircle size={16} style={{ color: '#EF4444' }} />
             <span>{error || authError}</span>
           </div>
         )}
 
         {/* Input Forms */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
           {activeTab === 'register' && (
             <>
               {/* Full Name */}
               <div style={{ position: 'relative' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4B5563', display: 'block', marginBottom: '6px' }}>{t('login.fullName')}</label>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.fullName')}</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <User size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
                   <input
@@ -174,14 +218,27 @@ const Login = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="form-input"
-                    style={{ paddingLeft: '40px', width: '100%', height: '42px', borderRadius: '8px', border: '1.5px solid #D1D5DB', outline: 'none', fontSize: '13.5px' }}
+                    style={{ 
+                      paddingLeft: '40px', 
+                      width: '100%', 
+                      height: '44px', 
+                      borderRadius: '10px', 
+                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+                      backgroundColor: '#0F172A', 
+                      color: 'white', 
+                      outline: 'none', 
+                      fontSize: '13.5px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
                   />
                 </div>
               </div>
 
               {/* Phone */}
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4B5563', display: 'block', marginBottom: '6px' }}>{t('login.phone')}</label>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.phone')}</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <Phone size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
                   <input
@@ -191,7 +248,20 @@ const Login = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="form-input"
-                    style={{ paddingLeft: '40px', width: '100%', height: '42px', borderRadius: '8px', border: '1.5px solid #D1D5DB', outline: 'none', fontSize: '13.5px' }}
+                    style={{ 
+                      paddingLeft: '40px', 
+                      width: '100%', 
+                      height: '44px', 
+                      borderRadius: '10px', 
+                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+                      backgroundColor: '#0F172A', 
+                      color: 'white', 
+                      outline: 'none', 
+                      fontSize: '13.5px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
                   />
                 </div>
               </div>
@@ -200,7 +270,7 @@ const Login = () => {
 
           {/* Email */}
           <div>
-            <label style={{ fontSize: '12px', fontWeight: '600', color: '#4B5563', display: 'block', marginBottom: '6px' }}>{t('login.email')}</label>
+            <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.email')}</label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <Mail size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
               <input
@@ -210,14 +280,27 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="form-input"
-                style={{ paddingLeft: '40px', width: '100%', height: '42px', borderRadius: '8px', border: '1.5px solid #D1D5DB', outline: 'none', fontSize: '13.5px' }}
+                style={{ 
+                  paddingLeft: '40px', 
+                  width: '100%', 
+                  height: '44px', 
+                  borderRadius: '10px', 
+                  border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+                  backgroundColor: '#0F172A', 
+                  color: 'white', 
+                  outline: 'none', 
+                  fontSize: '13.5px',
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
+                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
               />
             </div>
           </div>
 
           {/* Password */}
           <div>
-            <label style={{ fontSize: '12px', fontWeight: '600', color: '#4B5563', display: 'block', marginBottom: '6px' }}>{t('login.password')}</label>
+            <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.password')}</label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <Lock size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
               <input
@@ -227,7 +310,20 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="form-input"
-                style={{ paddingLeft: '40px', width: '100%', height: '42px', borderRadius: '8px', border: '1.5px solid #D1D5DB', outline: 'none', fontSize: '13.5px' }}
+                style={{ 
+                  paddingLeft: '40px', 
+                  width: '100%', 
+                  height: '44px', 
+                  borderRadius: '10px', 
+                  border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+                  backgroundColor: '#0F172A', 
+                  color: 'white', 
+                  outline: 'none', 
+                  fontSize: '13.5px',
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
+                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
               />
             </div>
           </div>
@@ -242,9 +338,9 @@ const Login = () => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   style={{ width: '15px', height: '15px', accentColor: '#1B8C0A' }}
                 />
-                <span style={{ fontSize: '13px', color: '#4B5563' }}>{t('login.rememberMe')}</span>
+                <span style={{ fontSize: '13px', color: '#E2E8F0' }}>{t('login.rememberMe')}</span>
               </label>
-              <a href="#forgot" style={{ fontSize: '13px', color: '#1B8C0A', fontWeight: '600', textDecoration: 'none' }}>{t('login.forgotPassword')}</a>
+              <a href="#forgot" style={{ fontSize: '13px', color: '#86EFAC', fontWeight: '600', textDecoration: 'none' }}>{t('login.forgotPassword')}</a>
             </div>
           )}
 
@@ -253,16 +349,31 @@ const Login = () => {
             type="submit" 
             disabled={submitting}
             className="btn btn-primary" 
-            style={{ width: '100%', padding: '12px 0', fontSize: '15px', marginTop: '8px', cursor: 'pointer', backgroundColor: '#1B8C0A', border: 'none', color: 'white', fontWeight: '700', borderRadius: '8px', transition: 'background-color 0.2s' }}
+            style={{ 
+              width: '100%', 
+              padding: '12px 0', 
+              fontSize: '15px', 
+              marginTop: '8px', 
+              cursor: 'pointer', 
+              backgroundColor: '#1B8C0A', 
+              border: 'none', 
+              color: 'white', 
+              fontWeight: '700', 
+              borderRadius: '10px', 
+              transition: 'background-color 0.2s',
+              boxShadow: '0 4px 12px rgba(27, 140, 10, 0.25)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#157008'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1B8C0A'}
           >
             {submitting ? t('login.authenticating') : activeTab === 'login' ? t('login.signInBtn') : t('login.createAccountBtn')}
           </button>
 
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '12px 0' }}>
-            <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
-            <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '600', textTransform: 'uppercase' }}>{t('login.or')}</span>
-            <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+            <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase' }}>{t('login.or')}</span>
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
           </div>
 
           {/* Social Google Login button */}
@@ -270,7 +381,30 @@ const Login = () => {
             type="button"
             onClick={() => setGoogleModalOpen(true)}
             className="btn btn-ghost" 
-            style={{ width: '100%', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', border: '1.5px solid #D1D5DB', backgroundColor: 'white', borderRadius: '8px', cursor: 'pointer', color: '#374151', fontWeight: '600' }}
+            style={{ 
+              width: '100%', 
+              padding: '10px 0', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '8px', 
+              fontSize: '14px', 
+              border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+              backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+              borderRadius: '10px', 
+              cursor: 'pointer', 
+              color: '#F1F5F9', 
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.07)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -293,8 +427,8 @@ const Login = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(10px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -305,14 +439,15 @@ const Login = () => {
           <div 
             className="animate-scale-in"
             style={{
-              backgroundColor: 'white',
-              borderRadius: '20px',
-              maxWidth: '400px',
+              backgroundColor: '#1E293B',
+              borderRadius: '24px',
+              maxWidth: '420px',
               width: '100%',
-              padding: '32px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              border: '1px solid #E5E7EB',
-              position: 'relative'
+              padding: '36px 32px',
+              boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.5)',
+              border: '1.5px solid rgba(255, 255, 255, 0.08)',
+              position: 'relative',
+              color: 'white'
             }}
           >
             {/* Close Button */}
@@ -332,9 +467,9 @@ const Login = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: '50%',
-                transition: 'background-color 0.2s'
+                transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <X size={18} />
@@ -349,14 +484,14 @@ const Login = () => {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
               </svg>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1F2937', letterSpacing: '-0.2px' }}>Sign in with Google</h3>
-              <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>to continue to Jharkhand Jobs</p>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.3px' }}>Sign in with Google</h3>
+              <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px' }}>to continue to Jharkhand Jobs</p>
             </div>
 
             {!showCustomGoogleForm ? (
               <>
                 {/* Account list selector */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
                   {testGoogleAccounts.map((account, index) => (
                     <div 
                       key={index}
@@ -367,21 +502,21 @@ const Login = () => {
                         justifyContent: 'space-between',
                         padding: '14px 18px',
                         borderRadius: '12px',
-                        border: '1.5px solid #F3F4F6',
-                        backgroundColor: '#FCFDFF',
+                        border: '1.5px solid rgba(255, 255, 255, 0.08)',
+                        backgroundColor: '#0F172A',
                         cursor: 'pointer',
                         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-2px)';
                         e.currentTarget.style.borderColor = account.bgColor;
-                        e.currentTarget.style.backgroundColor = 'white';
-                        e.currentTarget.style.boxShadow = `0 6px 15px ${account.bgColor}15`;
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                        e.currentTarget.style.boxShadow = `0 6px 18px ${account.bgColor}25`;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.borderColor = '#F3F4F6';
-                        e.currentTarget.style.backgroundColor = '#FCFDFF';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                        e.currentTarget.style.backgroundColor = '#0F172A';
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
@@ -403,12 +538,12 @@ const Login = () => {
                           {account.initials}
                         </div>
                         <div>
-                          <strong style={{ fontSize: '13.5px', color: '#1F2937', display: 'block' }}>{account.name}</strong>
-                          <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginTop: '1px' }}>{account.email}</span>
+                          <strong style={{ fontSize: '13.5px', color: 'white', display: 'block' }}>{account.name}</strong>
+                          <span style={{ fontSize: '11px', color: '#94A3B8', display: 'block', marginTop: '1px' }}>{account.email}</span>
                           <span style={{ fontSize: '9.5px', color: account.bgColor, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginTop: '2px' }}>{account.roleText}</span>
                         </div>
                       </div>
-                      <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
+                      <ChevronRight size={16} style={{ color: '#94A3B8' }} />
                     </div>
                   ))}
                 </div>
@@ -421,9 +556,9 @@ const Login = () => {
                     width: '100%',
                     padding: '12px 0',
                     borderRadius: '10px',
-                    border: '1.5px dashed #D1D5DB',
+                    border: '1.5px dashed rgba(255, 255, 255, 0.15)',
                     backgroundColor: 'transparent',
-                    color: '#4B5563',
+                    color: '#94A3B8',
                     fontSize: '13px',
                     fontWeight: '600',
                     cursor: 'pointer',
@@ -432,12 +567,12 @@ const Login = () => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#1B8C0A';
-                    e.currentTarget.style.color = '#1B8C0A';
-                    e.currentTarget.style.backgroundColor = '#F0FDF4';
+                    e.currentTarget.style.color = '#86EFAC';
+                    e.currentTarget.style.backgroundColor = 'rgba(27, 140, 10, 0.15)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#D1D5DB';
-                    e.currentTarget.style.color = '#4B5563';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                    e.currentTarget.style.color = '#94A3B8';
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
@@ -448,39 +583,89 @@ const Login = () => {
               /* Custom dynamic Google account form */
               <form onSubmit={handleCustomGoogleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Google Name</label>
+                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Google Name</label>
                   <input 
                     type="text"
                     required
                     placeholder="e.g. Priyesh Oraon"
                     value={customGoogleName}
                     onChange={(e) => setCustomGoogleName(e.target.value)}
-                    style={{ width: '100%', height: '40px', borderRadius: '8px', border: '1.5px solid #D1D5DB', padding: '0 12px', outline: 'none', fontSize: '13.5px' }}
+                    style={{ 
+                      width: '100%', 
+                      height: '42px', 
+                      borderRadius: '10px', 
+                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+                      backgroundColor: '#0F172A', 
+                      color: 'white', 
+                      padding: '0 14px', 
+                      outline: 'none', 
+                      fontSize: '13.5px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Google Email Address</label>
+                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Google Email Address</label>
                   <input 
                     type="email"
                     required
                     placeholder="priyesh.google@gmail.com"
                     value={customGoogleEmail}
                     onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    style={{ width: '100%', height: '40px', borderRadius: '8px', border: '1.5px solid #D1D5DB', padding: '0 12px', outline: 'none', fontSize: '13.5px' }}
+                    style={{ 
+                      width: '100%', 
+                      height: '42px', 
+                      borderRadius: '10px', 
+                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
+                      backgroundColor: '#0F172A', 
+                      color: 'white', 
+                      padding: '0 14px', 
+                      outline: 'none', 
+                      fontSize: '13.5px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                   <button
                     type="button"
                     onClick={() => setShowCustomGoogleForm(false)}
-                    style={{ flex: 1, height: '42px', borderRadius: '8px', border: '1.5px solid #D1D5DB', backgroundColor: 'white', color: '#4B5563', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer' }}
+                    style={{ 
+                      flex: 1, 
+                      height: '42px', 
+                      borderRadius: '10px', 
+                      border: '1.5px solid rgba(255, 255, 255, 0.15)', 
+                      backgroundColor: 'transparent', 
+                      color: '#E2E8F0', 
+                      fontWeight: '700', 
+                      fontSize: '13.5px', 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s' 
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    style={{ flex: 1, height: '42px', borderRadius: '8px', border: 'none', backgroundColor: '#4285F4', color: 'white', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(66, 133, 244, 0.3)' }}
+                    style={{ 
+                      flex: 1, 
+                      height: '42px', 
+                      borderRadius: '10px', 
+                      border: 'none', 
+                      backgroundColor: '#4285F4', 
+                      color: 'white', 
+                      fontWeight: '700', 
+                      fontSize: '13.5px', 
+                      cursor: 'pointer', 
+                      boxShadow: '0 4px 10px rgba(66, 133, 244, 0.3)' 
+                    }}
                   >
                     Sign In
                   </button>
@@ -489,8 +674,8 @@ const Login = () => {
             )}
 
             {/* Google Footer */}
-            <div style={{ textAlign: 'center', marginTop: '28px', borderTop: '1px solid #F3F4F6', paddingTop: '16px' }}>
-              <p style={{ fontSize: '11px', color: '#9CA3AF', lineHeight: '1.4' }}>
+            <div style={{ textAlign: 'center', marginTop: '28px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '16px' }}>
+              <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.4' }}>
                 To continue, Google will share your name, email address, language preference, and profile picture with Jharkhand Jobs.
               </p>
             </div>

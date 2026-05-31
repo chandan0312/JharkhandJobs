@@ -293,7 +293,7 @@ const Quiz = () => {
   const currentQuiz = getActiveQuiz();
 
   return (
-    <div className="page-content animate-fade-in" style={{ backgroundColor: '#F3F4F6', minHeight: '100vh', paddingBottom: '80px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '80px' }}>
       <style>{`
         @keyframes flamePulse {
           0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.5)); }
@@ -366,18 +366,18 @@ const Quiz = () => {
           <header 
             style={{
               position: 'relative',
-              padding: '90px 0 70px',
-              backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.35)), url(/assets/images/hero-quiz.png)`,
+              padding: '40px 32px',
+              backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.45)), url(/assets/images/hero-quiz.png)`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
               color: 'white',
+              borderRadius: '16px',
               overflow: 'hidden',
-              borderBottom: '1px solid #1E293B',
               boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
             }}
           >
-            <div className="container">
+            <div style={{ width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px', flexWrap: 'wrap' }}>
                 
                 {/* Left side text and stats */}
@@ -654,7 +654,7 @@ const Quiz = () => {
             </div>
           </header>
 
-          <div className="container" style={{ marginTop: '40px' }}>
+          <div style={{ marginTop: '0px' }}>
             
             {/* Subject Selector Mockup Layout */}
             <div style={{ 
@@ -829,7 +829,7 @@ const Quiz = () => {
 
       {/* ==================== SCREEN 2: QUIZ IN PROGRESS ==================== */}
       {quizState === 'active' && currentQuiz && (
-        <div className="container" style={{ marginTop: '40px' }}>
+        <div style={{ width: '100%' }}>
           
           <div style={{ 
             backgroundColor: '#1E1B4B', // Mockup matching theme
@@ -1152,7 +1152,7 @@ const Quiz = () => {
 
       {/* ==================== SCREEN 3: QUIZ RESULT ==================== */}
       {quizState === 'results' && currentQuiz && (
-        <div className="container" style={{ marginTop: '40px' }}>
+        <div style={{ width: '100%' }}>
           
           <div style={{ 
             backgroundColor: '#1E1B4B', // Mockup matching theme
@@ -1491,7 +1491,7 @@ const Quiz = () => {
 
       {/* ==================== SCREEN 4: LEADERBOARD ==================== */}
       {quizState === 'leaderboard' && (
-        <div className="container" style={{ marginTop: '40px' }}>
+        <div style={{ width: '100%' }}>
           
           <div style={{ 
             backgroundColor: '#1E1B4B', // Mockup matching theme

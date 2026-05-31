@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { Search, Calendar, ChevronRight, BookOpen, Shield, HelpCircle, Award, CreditCard, Clock, FileText, Bookmark } from 'lucide-react';
+import { Search, Calendar, FileText, Award, CheckCircle } from 'lucide-react';
 
 const Exams = () => {
-  const { t } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,10 +39,6 @@ const Exams = () => {
     }
   };
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-  };
-
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchExams(selectedCategory, search);
@@ -51,245 +46,89 @@ const Exams = () => {
 
   const handleCategorySelect = (cat) => {
     setSelectedCategory(cat);
-    fetchExams(cat, search);
+    navigate(`/exams?category=${encodeURIComponent(cat)}`);
   };
 
-  const categories = [
-    { name: 'JSSC Exams', icon: Shield, color: '#1B8C0A' },
-    { name: 'JPSC Exams', icon: Award, color: '#2563EB' },
-    { name: 'Jharkhand Police', icon: Shield, color: '#1E3A8A' },
-    { name: 'Teaching Exams', icon: BookOpen, color: '#7C3AED' },
-    { name: 'Banking Exams', icon: CreditCard, color: '#EA580C' },
-    { name: 'Railway Exams', icon: HelpCircle, color: '#EF4444' },
-    { name: 'CTET / TET', icon: FileText, color: '#0D9488' },
-    { name: 'Other Exams', icon: Clock, color: '#4B5563' }
-  ];
-
   return (
-    <div className="page-content animate-fade-in">
-      {/* 1. Compact Hero Banner without background image */}
-      <header 
-        style={{
-          position: 'relative',
-          padding: '24px 0 36px',
-          backgroundColor: '#F8FAFC',
-          backgroundImage: 'radial-gradient(#E2E8F0 1.5px, transparent 1.5px)',
-          backgroundSize: '24px 24px',
-          borderBottom: '1px solid #E2E8F0',
-          color: '#1A1A2E',
-          overflow: 'hidden'
-        }}
-      >
-        <div className="container">
-          <div style={{ maxWidth: '750px' }}>
-            <h1 className="animate-slide-up" style={{ fontSize: '36px', fontWeight: '800', color: '#0F172A', marginBottom: '2px', letterSpacing: '-0.5px' }}>
-              {t('exams.title')}
-            </h1>
-            <p className="animate-slide-up delay-1" style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '8px' }}>
-              {t('exams.subtitle')}
-            </p>
-            <p className="animate-slide-up delay-2" style={{ fontSize: '14.5px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-              {t('exams.desc')}
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <div className="container" style={{ paddingTop: '40px' }}>
-        
-        {/* Header Section */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }} className="animate-fade-in">
-          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1B8C0A', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('exams.portal')}</span>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1A1A2E', marginTop: '6px', marginBottom: '12px' }}>
-            {t('exams.taiyariHeader')}
-          </h1>
-          <p style={{ color: '#6B7280', fontSize: '15px', maxWidth: '600px', margin: '0 auto 24px' }}>
-            {t('exams.taiyariDesc')}
-          </p>
-
-          {/* Exam Search Bar */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', maxWidth: '500px', margin: '0 auto', border: '1.5px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'white' }}>
-            <div style={{ display: 'flex', alignItems: 'center', flex: 1, padding: '0 16px' }}>
-              <Search size={18} style={{ color: '#9CA3AF' }} />
-              <input
-                type="text"
-                placeholder={t('exams.searchPlaceholder')}
-                value={search}
-                onChange={handleSearchChange}
-                style={{ border: 'none', outline: 'none', padding: '12px', width: '100%', fontSize: '14px' }}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, padding: '0 24px' }}>
-              {t('exams.searchBtn')}
-            </button>
-          </form>
+    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+      
+      {/* Title */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>Exam Alerts & Notices</h2>
+          <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '500' }}>Official competitive exams releases across Jharkhand</span>
         </div>
 
-        {/* Categories Grid (8 Cards) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '56px' }}>
-          {categories.map((cat, index) => {
-            const Icon = cat.icon;
-            return (
-              <div 
-                key={index} 
-                onClick={() => fetchExams('All', cat.name)}
-                className="card card-sm animate-scale-in" 
-                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', backgroundColor: 'white' }}
-              >
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: `${cat.color}15`, color: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#1A1A2E', marginBottom: '2px' }}>{cat.name}</h3>
-                  <span style={{ fontSize: '11px', color: '#1B8C0A', fontWeight: '600', display: 'flex', alignItems: 'center' }}>
-                    {t('exams.viewExams')} <ChevronRight size={12} />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Two Column Layout Below */}
-        <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '60px' }}>
-          
-          {/* Left Column: Exam Updates List */}
-          <main style={{ flex: '1 1 500px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '2px solid #E5E7EB' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1A1A2E' }}>
-                {t('exams.latestUpdates')} ({selectedCategory})
-              </h2>
-              
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {['All', 'Admit Card', 'Results', 'Answer Key', 'Syllabus'].map((catOpt) => (
-                  <button 
-                    key={catOpt} 
-                    onClick={() => handleCategorySelect(catOpt)}
-                    className="btn btn-sm" 
-                    style={{
-                      fontSize: '11px', 
-                      padding: '4px 10px', 
-                      border: selectedCategory === catOpt ? 'none' : '1px solid #D1D5DB',
-                      backgroundColor: selectedCategory === catOpt ? '#1B8C0A' : 'transparent',
-                      color: selectedCategory === catOpt ? 'white' : '#4B5563'
-                    }}
-                  >
-                    {catOpt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px 0', flexDirection: 'column' }}>
-                <div style={{ border: '4px solid #f3f4f6', borderTop: '4px solid #1B8C0A', borderRadius: '50%', width: '32px', height: '32px', animation: 'spin 1s linear infinite' }} />
-                <p style={{ marginTop: '12px', color: '#6B7280', fontSize: '14px' }}>{t('exams.syncing')}</p>
-              </div>
-            ) : exams.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {exams.map((exam) => (
-                  <Link 
-                    key={exam._id} 
-                    to={`/exams/${exam._id}`}
-                    className="card card-sm" 
-                    style={{ 
-                      backgroundColor: 'white',
-                      display: 'block',
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <span style={{
-                          fontSize: '10px', 
-                          fontWeight: '700', 
-                          backgroundColor: exam.category === 'Results' ? '#FEF2F2' : exam.category === 'Admit Card' ? '#EFF6FF' : '#F0FDF4',
-                          color: exam.category === 'Results' ? '#DC2626' : exam.category === 'Admit Card' ? '#2563EB' : '#1B8C0A',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          display: 'inline-block',
-                          marginBottom: '6px'
-                        }}>
-                          {exam.category}
-                        </span>
-                        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1A1A2E', marginBottom: '4px' }}>{exam.title}</h3>
-                        <p style={{ fontSize: '12px', color: '#6B7280' }}>{exam.description}</p>
-                      </div>
-                      
-                      <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                        <span className="badge badge-primary" style={{ backgroundColor: '#E8F5E3', color: '#1B8C0A', textTransform: 'uppercase' }}>
-                          {exam.status}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="card text-center" style={{ padding: '40px', color: '#6B7280' }}>
-                <p>{t('exams.noAnnouncements')}</p>
-              </div>
-            )}
-          </main>
-
-          {/* Right Column: Quick Links Sidebar */}
-          <aside className="card" style={{ flex: '1 1 250px', maxWidth: '320px', padding: '24px', backgroundColor: 'white' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#1A1A2E', marginBottom: '16px', borderBottom: '1px solid #E5E7EB', paddingBottom: '10px' }}>
-              {t('exams.resources')}
-            </h2>
-            <ul style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <li>
-                <button onClick={() => handleCategorySelect('Admit Card')} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <Bookmark size={16} style={{ color: '#1B8C0A' }} />
-                  <span>{t('exams.admitCardRelease')}</span>
-                </button>
-              </li>
-              <li>
-                <button onClick={() => handleCategorySelect('Results')} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <FileText size={16} style={{ color: '#1B8C0A' }} />
-                  <span>{t('exams.resultsDecl')}</span>
-                </button>
-              </li>
-              <li>
-                <button onClick={() => handleCategorySelect('Answer Key')} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <Calendar size={16} style={{ color: '#1B8C0A' }} />
-                  <span>{t('exams.answerKeys')}</span>
-                </button>
-              </li>
-              <li>
-                <button onClick={() => handleCategorySelect('Syllabus')} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <BookOpen size={16} style={{ color: '#1B8C0A' }} />
-                  <span>{t('exams.downloadSyllabus')}</span>
-                </button>
-              </li>
-              <li>
-                <button onClick={() => handleCategorySelect('Exam Calendar')} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <Calendar size={16} style={{ color: '#1B8C0A' }} />
-                  <span>{t('exams.annualCalendar')}</span>
-                </button>
-              </li>
-              <li>
-                <button onClick={() => handleCategorySelect('Previous Papers')} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <FileText size={16} style={{ color: '#1B8C0A' }} />
-                  <span>{t('exams.prevPapers')}</span>
-                </button>
-              </li>
-            </ul>
-          </aside>
-
-        </div>
-
+        {/* Search */}
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', border: '1px solid #CBD5E1', borderRadius: '6px', overflow: 'hidden', backgroundColor: 'white', maxWidth: '300px', width: '100%' }}>
+          <input 
+            type="text" 
+            placeholder="Search exam notices..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ border: 'none', outline: 'none', padding: '8px 12px', fontSize: '12px', flex: 1 }}
+          />
+          <button type="submit" style={{ padding: '8px 14px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>Search</button>
+        </form>
       </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
+        {['All', 'Upcoming Exams', 'Admit Card', 'Results', 'Answer Key'].map(t => (
+          <button 
+            key={t}
+            onClick={() => handleCategorySelect(t)}
+            style={{
+              padding: '8px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '20px', cursor: 'pointer', border: 'none',
+              backgroundColor: selectedCategory === t ? '#E8F5E3' : 'transparent',
+              color: selectedCategory === t ? '#1B8C0A' : '#64748B'
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Notices Grid */}
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>Loading alerts...</div>
+      ) : exams.length > 0 ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          {exams.map(e => (
+            <div key={e._id} style={{
+              border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', backgroundColor: 'white',
+              display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', boxShadow: '0 4px 6px rgba(0,0,0,0.01)'
+            }}>
+              {e.isNew && (
+                <span style={{ position: 'absolute', top: '16px', right: '16px', backgroundColor: '#EF4444', color: 'white', fontSize: '9px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>New</span>
+              )}
+              
+              <span style={{ fontSize: '10px', fontWeight: '700', color: '#1B8C0A', backgroundColor: '#E8F5E3', padding: '2px 8px', borderRadius: '4px', width: 'fit-content' }}>
+                {e.orgShort} — {e.category}
+              </span>
+              
+              <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', lineHeight: '1.4' }}>{e.title}</h3>
+              <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.5', flex: 1 }}>{e.description}</p>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '12px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '9px', color: '#94A3B8', textTransform: 'uppercase' }}>Last Date</span>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#EF4444' }}>{e.lastDate || 'N/A'}</span>
+                </div>
+                <button 
+                  onClick={() => alert(`Redirecting to portal for ${e.title}`)}
+                  style={{ padding: '6px 14px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  {e.status}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>No active exam notices match your filter selections.</div>
+      )}
+
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { 
   Search, 
@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 
 const Blog = () => {
+  const location = useLocation();
   // DB Blogs state
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -189,6 +190,22 @@ const Blog = () => {
     fetchBlogs();
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'discussions') {
+      setActiveTab('Discussions');
+    } else if (tabParam === 'articles') {
+      setActiveTab('Articles');
+    } else if (tabParam === 'stories') {
+      setActiveTab('Stories');
+    } else if (tabParam === 'tools') {
+      setActiveTab('Tools');
+    } else {
+      setActiveTab('Overview');
+    }
+  }, [location.search]);
+
   const fetchBlogs = async () => {
     setLoading(true);
     setError(null);
@@ -333,7 +350,7 @@ const Blog = () => {
   ];
 
   return (
-    <div className="page-content animate-fade-in" style={{ backgroundColor: '#F8FAFC', paddingBottom: '60px' }}>
+    <div className="animate-fade-in" style={{ paddingBottom: '60px' }}>
       
       {/* 1. Compact Banner Hero section without right-side illustration */}
       <section className="career-hero-wrapper" style={{ padding: '24px 0 36px' }}>
