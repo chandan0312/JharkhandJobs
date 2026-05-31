@@ -52,6 +52,17 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please specify experience requirement'],
     },
+    qualification: {
+      type: String,
+      default: 'Graduation',
+    },
+    lastDate: {
+      type: Date,
+    },
+    badgeText: {
+      type: String,
+      default: '',
+    },
     category: {
       type: String,
       required: [true, 'Please select a category'],

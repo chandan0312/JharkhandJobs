@@ -38,43 +38,31 @@ const GovtJobs = () => {
   return (
     <div className="page-content animate-fade-in">
       
-      {/* 1. Hero Banner */}
+      {/* 1. Compact Hero Banner without background image */}
       <header 
         style={{
           position: 'relative',
-          padding: '160px 0 120px',
-          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.35)), url(/assets/images/hero-govt-jobs.png)`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          color: 'white',
+          padding: '24px 0 36px',
+          backgroundColor: '#F8FAFC',
+          backgroundImage: 'radial-gradient(#E2E8F0 1.5px, transparent 1.5px)',
+          backgroundSize: '24px 24px',
+          borderBottom: '1px solid #E2E8F0',
+          color: '#1A1A2E',
           overflow: 'hidden'
         }}
       >
         <div className="container">
-          <div style={{ maxWidth: '650px', position: 'relative', zIndex: 5 }}>
-            <h1 className="animate-slide-up" style={{ fontSize: '44px', fontWeight: '800', marginBottom: '8px' }}>
+          <div style={{ maxWidth: '750px', position: 'relative', zIndex: 5 }}>
+            <h1 className="animate-slide-up" style={{ fontSize: '36px', fontWeight: '800', color: '#0F172A', marginBottom: '2px', letterSpacing: '-0.5px' }}>
               {t('govtJobs.title')}
             </h1>
-            <p className="animate-slide-up delay-1" style={{ fontSize: '20px', fontFamily: 'cursive, Georgia, serif', fontStyle: 'italic', color: '#bbf7d0', marginBottom: '16px' }}>
+            <p className="animate-slide-up delay-1" style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '8px' }}>
               {t('govtJobs.subtitle')}
             </p>
-            <p className="animate-slide-up delay-2" style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)' }}>
+            <p className="animate-slide-up delay-2" style={{ fontSize: '14.5px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
               {t('govtJobs.desc')}
             </p>
           </div>
-        </div>
-        
-        {/* Subtle decorative crest/building shape */}
-        <div style={{
-          position: 'absolute',
-          right: '10%',
-          bottom: '-20px',
-          opacity: 0.15,
-          color: 'white',
-          pointerEvents: 'none'
-        }}>
-          <Building size={280} />
         </div>
       </header>
 

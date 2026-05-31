@@ -67,28 +67,28 @@ const Exams = () => {
 
   return (
     <div className="page-content animate-fade-in">
-      {/* Hero Section */}
+      {/* 1. Compact Hero Banner without background image */}
       <header 
         style={{
           position: 'relative',
-          padding: '160px 0 120px',
-          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.35)), url(/assets/images/hero-exams.png)`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'top center',
-          backgroundRepeat: 'no-repeat',
-          color: 'white',
+          padding: '24px 0 36px',
+          backgroundColor: '#F8FAFC',
+          backgroundImage: 'radial-gradient(#E2E8F0 1.5px, transparent 1.5px)',
+          backgroundSize: '24px 24px',
+          borderBottom: '1px solid #E2E8F0',
+          color: '#1A1A2E',
           overflow: 'hidden'
         }}
       >
         <div className="container">
-          <div style={{ maxWidth: '700px' }}>
-            <h1 className="animate-slide-up" style={{ fontSize: '44px', fontWeight: '800', lineHeight: '1.2', marginBottom: '16px' }}>
+          <div style={{ maxWidth: '750px' }}>
+            <h1 className="animate-slide-up" style={{ fontSize: '36px', fontWeight: '800', color: '#0F172A', marginBottom: '2px', letterSpacing: '-0.5px' }}>
               {t('exams.title')}
             </h1>
-            <p className="animate-slide-up delay-1" style={{ fontSize: '18px', color: 'rgba(255,255,255,0.9)', marginBottom: '8px' }}>
+            <p className="animate-slide-up delay-1" style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '8px' }}>
               {t('exams.subtitle')}
             </p>
-            <p className="animate-slide-up delay-2" style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)', marginBottom: '24px' }}>
+            <p className="animate-slide-up delay-2" style={{ fontSize: '14.5px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
               {t('exams.desc')}
             </p>
           </div>
