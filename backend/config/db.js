@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import { initMockDb } from './mockDb.js';
 import { initPgDb } from './pgDb.js';
 
