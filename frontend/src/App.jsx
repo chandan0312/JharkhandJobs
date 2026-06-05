@@ -6,16 +6,19 @@ import AppLayout from './components/layout/AppLayout';
 // Page Imports
 import Home from './pages/Home';
 import Jobs from './pages/Jobs';
-import GovtJobs from './pages/GovtJobs';
 import Exams from './pages/Exams';
 import Companies from './pages/Companies';
 import JobDetails from './pages/JobDetails';
 import ExamDetails from './pages/ExamDetails';
 import Login from './pages/Login';
 import Blog from './pages/Blog';
+import Discussions from './pages/Discussions';
 import Admin from './pages/Admin';
 import Quiz from './pages/Quiz';
 import Contact from './pages/Contact';
+import AuthCallback from './pages/AuthCallback';
+import Profile from './pages/Profile';
+import SavedJobs from './pages/SavedJobs';
 
 // Route Guards
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
@@ -32,15 +35,24 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetails />} />
-              <Route path="/govt-jobs" element={<GovtJobs />} />
               <Route path="/exams" element={<Exams />} />
               <Route path="/exams/:id" element={<ExamDetails />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/discussions" element={<Discussions />} />
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              
+              {/* Protected Candidate Profile */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/saved-jobs" element={<SavedJobs />} />
+              </Route>
             </Route>
+
+
 
             {/* Protected Admin Console */}
             <Route element={<AdminRoute />}>

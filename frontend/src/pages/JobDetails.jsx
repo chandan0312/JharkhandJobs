@@ -14,14 +14,16 @@ import {
   CheckCircle, 
   AlertCircle, 
   Check, 
-  Copy 
+  Copy,
+  Download,
+  Users
 } from 'lucide-react';
 
 const JobDetails = () => {
   const { t, language } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
 
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,15 @@ const JobDetails = () => {
       setPhone(user.phone || '');
     }
   }, [user]);
+
+  // Sync isSaved status
+  useEffect(() => {
+    if (user && user.savedJobs) {
+      setIsSaved(user.savedJobs.includes(id));
+    } else {
+      setIsSaved(false);
+    }
+  }, [user, id]);
 
   // Fetch single job details
   useEffect(() => {
@@ -152,13 +163,112 @@ const JobDetails = () => {
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const handleApplyClick = () => {
+    if (job && job.applyLink) {
+      const url = job.applyLink.startsWith('http') ? job.applyLink : `https://${job.applyLink}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setModalOpen(true);
+    }
+  };
+
   // Save Job interaction
-  const handleToggleSave = () => {
-    const nextSaved = !isSaved;
-    setIsSaved(nextSaved);
-    setToastMessage(nextSaved ? t('jobDetails.savedSuccess') : t('jobDetails.removedSuccess'));
+  const handleToggleSave = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      if (!isSaved) {
+        const res = await api.post(`/auth/save-job/${id}`);
+        if (res.data.success) {
+          setUser(res.data.user);
+          setIsSaved(true);
+          setToastMessage(t('jobDetails.savedSuccess'));
+        }
+      } else {
+        const res = await api.delete(`/auth/save-job/${id}`);
+        if (res.data.success) {
+          setUser(res.data.user);
+          setIsSaved(false);
+          setToastMessage(t('jobDetails.removedSuccess'));
+        }
+      }
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error(err);
+      setToastMessage(language === 'HI' ? 'सहेजने में विफल' : 'Failed to toggle save status');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
+  // Download official recruitment notification dynamically
+  const handleDownloadNotification = () => {
+    if (job && job.pdfUrl) {
+      const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+      const url = job.pdfUrl.startsWith('http') ? job.pdfUrl : `${baseUrl}${job.pdfUrl}`;
+      window.open(url, '_blank');
+      return;
+    }
+    const fileContent = `==================================================
+GOVERNMENT OF JHARKHAND
+RECRUITMENT AND VACANCY NOTIFICATION
+==================================================
+
+Job Title: ${job.title}
+Company/Organization: ${job.company}
+Location: ${job.location}, Jharkhand
+Job Category: ${job.category}
+Job Type: ${job.type}
+Total Vacancies: ${job.vacancies || 45} Posts
+Salary Details: ₹${job.salary?.min} - ${job.salary?.max} ${job.salary?.period || 'LPA'}
+Last Date to Apply: ${job.lastDate ? new Date(job.lastDate).toLocaleDateString() : 'N/A'}
+Experience Requirement: ${job.experience || '0-2 Years'}
+
+--------------------------------------------------
+JOB DESCRIPTION & ELIGIBILITY:
+--------------------------------------------------
+${job.description}
+
+--------------------------------------------------
+KEY RESPONSIBILITIES:
+--------------------------------------------------
+${(job.responsibilities && job.responsibilities.length > 0) 
+  ? job.responsibilities.map((r, idx) => `${idx + 1}. ${r}`).join('\n')
+  : '1. Deliver assigned duties efficiently.\n2. Coordinate with team members and report daily progress.'}
+
+--------------------------------------------------
+REQUIREMENTS:
+--------------------------------------------------
+${(job.requirements && job.requirements.length > 0)
+  ? job.requirements.map((req, idx) => `${idx + 1}. ${req}`).join('\n')
+  : '1. Relevant education background.\n2. Good communication and interpersonal skills.'}
+
+==================================================
+This is an official computer-generated notification.
+Jharkhand Jobs Portal - Empowering local youth.
+==================================================`;
+
+    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const sanitizedTitle = job.title.replace(/[^a-zA-Z0-9]/g, '_');
+    const sanitizedCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
+    link.download = `${sanitizedCompany}_Recruitment_Notification_${sanitizedTitle}.txt`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setToastMessage(t('jobDetails.downloadSuccess'));
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    setTimeout(() => setShowToast(false), 3500);
   };
 
   // Helper: Calculate days ago nicely
@@ -320,6 +430,23 @@ const JobDetails = () => {
                   {job.type}
                 </span>
 
+                {/* Vacancies Blue Outline Badge */}
+                <span style={{ 
+                  fontSize: '12px', 
+                  color: '#2563EB', 
+                  backgroundColor: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: '6px',
+                  padding: '3px 8px',
+                  fontWeight: '600',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <Users size={13} />
+                  {job.vacancies || 45} {t('jobDetails.posts')}
+                </span>
+
                 {/* Salary Green Bold Text */}
                 <span style={{ 
                   fontSize: '14px', 
@@ -336,21 +463,40 @@ const JobDetails = () => {
 
               {/* CTAs Placed inside Card under details exactly like mockup */}
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={() => setModalOpen(true)}
-                  className="btn" 
-                  style={{ 
-                    padding: '12px 32px', 
-                    fontSize: '15px',
-                    fontWeight: '700',
-                    backgroundColor: '#1B8C0A',
-                    color: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 10px rgba(27, 140, 10, 0.15)'
-                  }}
-                >
-                  {t('jobDetails.applyNow')}
-                </button>
+                {job.applyLink ? (
+                  <button 
+                    onClick={handleApplyClick}
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 32px', 
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      backgroundColor: '#1B8C0A',
+                      color: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 10px rgba(27, 140, 10, 0.15)'
+                    }}
+                  >
+                    {t('jobDetails.applyNow')}
+                  </button>
+                ) : (
+                  <button 
+                    disabled
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 32px', 
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      backgroundColor: '#94A3B8',
+                      color: 'white',
+                      borderRadius: '8px',
+                      cursor: 'not-allowed'
+                    }}
+                    title="Official application details will be uploaded soon"
+                  >
+                    {language === 'HI' ? 'विवरण जल्द ही अपलोड होगा' : 'Details will be uploaded soon'}
+                  </button>
+                )}
                 <button 
                   onClick={handleToggleSave}
                   className="btn" 
@@ -370,6 +516,57 @@ const JobDetails = () => {
                   {isSaved ? <Check size={16} /> : null}
                   {isSaved ? t('jobDetails.saved') : t('jobDetails.saveJob')}
                 </button>
+                {job.pdfUrl ? (
+                  <button 
+                    onClick={handleDownloadNotification}
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 24px', 
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      backgroundColor: '#EFF6FF',
+                      color: '#2563EB',
+                      border: '1.5px solid #BFDBFE',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#DBEAFE';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#EFF6FF';
+                    }}
+                  >
+                    <Download size={16} />
+                    {t('jobDetails.downloadNotification')}
+                  </button>
+                ) : (
+                  <button 
+                    disabled
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 24px', 
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      backgroundColor: '#F1F5F9',
+                      color: '#94A3B8',
+                      border: '1.5px solid #E2E8F0',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'not-allowed'
+                    }}
+                    title="Official document will be uploaded shortly"
+                  >
+                    <Download size={16} />
+                    {language === 'HI' ? 'दस्तावेज़ जल्द ही अपलोड होगा' : 'Notification will be uploaded soon'}
+                  </button>
+                )}
               </div>
 
             </div>
@@ -625,6 +822,16 @@ const JobDetails = () => {
                   </span>
                   <strong style={{ fontSize: '15px', color: '#1B8C0A', fontWeight: '700' }}>
                     ₹{job.salary?.min} - {job.salary?.max} {job.salary?.period || 'LPA'}
+                  </strong>
+                </div>
+
+                {/* Vacancies */}
+                <div>
+                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
+                    {t('jobDetails.vacancies')}
+                  </span>
+                  <strong style={{ fontSize: '15px', color: '#2563EB', fontWeight: '700' }}>
+                    {job.vacancies || 45} {t('jobDetails.posts')}
                   </strong>
                 </div>
 

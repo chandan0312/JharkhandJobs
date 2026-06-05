@@ -25,7 +25,11 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.error('Error loading profile:', err.message);
-        localStorage.removeItem('token');
+        // Only remove the token if it's a definitive authorization error
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -101,12 +105,24 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    
+    // Disable Google auto-select to respect user sign-out intent
+    /* global google */
+    if (typeof google !== 'undefined') {
+      try {
+        google.accounts.id.disableAutoSelect();
+      } catch (err) {
+        console.error('Failed to disable Google auto-select on logout:', err);
+      }
+    }
   };
+
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         loading,
         error,
         login,

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, Briefcase, User as UserIcon } from 'lucide-react';
+import UserAvatar from '../UserAvatar';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -117,8 +118,11 @@ const Navbar = () => {
           {isOpen && (
             <li style={{ marginTop: '20px', width: '100%' }}>
               {user ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <p style={{ fontSize: '14px', color: '#374151', padding: '0 14px' }}>Hi, <strong>{user.name}</strong></p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <UserAvatar user={user} size={36} />
+                    <p style={{ fontSize: '14px', color: '#374151', margin: 0 }}>Hi, <strong>{user.name}</strong></p>
+                  </div>
                   <button onClick={handleLogout} className="btn btn-primary btn-sm" style={{ width: '100%' }}>
                     <LogOut size={16} /> {t('nav.logout')}
                   </button>
@@ -148,9 +152,9 @@ const Navbar = () => {
                 <button 
                   onClick={() => setDropdownOpen(!dropdownOpen)} 
                   className="btn btn-secondary btn-sm btn-login" 
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px' }}
                 >
-                  <UserIcon size={14} />
+                  <UserAvatar user={user} size={28} />
                   <span>{user.name.split(' ')[0]}</span>
                   <ChevronDown size={14} />
                 </button>
@@ -172,6 +176,9 @@ const Navbar = () => {
                     flexDirection: 'column',
                     padding: '6px'
                   }}>
+                    <Link to="/profile" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: '#374151', borderRadius: '4px' }}>
+                      <UserIcon size={14} /> My Profile
+                    </Link>
                     {user.role === 'admin' && (
                       <Link to="/admin" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: '#374151', borderRadius: '4px', hover: { backgroundColor: '#F3F4F6' } }}>
                         <LayoutDashboard size={14} /> Admin Dashboard

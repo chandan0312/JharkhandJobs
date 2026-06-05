@@ -6,18 +6,57 @@ import {
   LayoutDashboard, Plus, Briefcase, Calendar, FileText, Award, BookOpen, 
   Users, MessageSquare, HelpCircle, FolderOpen, Settings, TrendingUp, LogOut, 
   ChevronDown, ChevronRight, Download, X, CheckCircle, AlertCircle, Trash2, 
-  Clock, ArrowUpRight, Bookmark, SlidersHorizontal, Filter, Check, Search, Bell, Mail, Star, Send, Menu 
+  Clock, ArrowUpRight, Bookmark, SlidersHorizontal, Filter, Check, Search, Bell, Mail, Star, Send, Menu, RefreshCw 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Contact from './Contact';
 
+const getCategoryBadgeStyles = (category) => {
+  const cat = String(category).toUpperCase();
+  if (cat.includes('PRIVATE')) {
+    return { color: '#475569' };
+  }
+  if (cat === 'SSC') {
+    return { color: '#1B8C0A' };
+  }
+  if (cat === 'UPSC') {
+    return { color: '#7C3AED' };
+  }
+  if (cat === 'RAILWAY') {
+    return { color: '#D97706' };
+  }
+  if (cat === 'JHARKHAND') {
+    return { color: '#2563EB' };
+  }
+  if (cat.includes('OTHER') || cat.includes('STATE')) {
+    return { color: '#0891B2' };
+  }
+  return { color: '#4338CA' };
+};
+
 const Admin = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   // Selected sidebar option state (Matches the image exactly!)
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Admin Profile edit states
+  const [adminProfileOpen, setAdminProfileOpen] = useState(false);
+  const [adminName, setAdminName] = useState('Admin User');
+  const [adminEmail, setAdminEmail] = useState('admin@jharkhandjobs.gov.in');
+  const [adminPhone, setAdminPhone] = useState('+91 651 2400123');
+  const [adminBio, setAdminBio] = useState('Jharkhand Jobs system administrator console. Managing private listings, Sarkari alerts, admit card releases, exams boards results, and quizzes databases.');
+
+  // Pre-populate admin data from AuthContext
+  useEffect(() => {
+    if (user) {
+      setAdminName(user.name || 'Admin User');
+      setAdminEmail(user.email || 'admin@jharkhandjobs.gov.in');
+      if (user.phone) setAdminPhone(user.phone);
+    }
+  }, [user]);
 
   // Submenu expansion states for collapsible lists
   const [careerGuideExpanded, setCareerGuideExpanded] = useState(true);
@@ -46,6 +85,19 @@ const Admin = () => {
   const [applications, setApplications] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [companiesList, setCompaniesList] = useState([]);
+  
+  // New States for Plan Execution
+  const [enquiries, setEnquiries] = useState([]);
+  const [subscribers, setSubscribers] = useState([]);
+  const [scraping, setScraping] = useState(false);
+  const [scrapingLanding, setScrapingLanding] = useState(false);
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
+  const [newsletterForm, setNewsletterForm] = useState({ subject: '', content: '' });
+  const [settings, setSettings] = useState({
+    maintenanceMode: false,
+    emailNotifications: true,
+    scrapingFrequency: '12'
+  });
 
   // Form / Modal States
   const [modalOpen, setModalOpen] = useState(false);
@@ -57,24 +109,28 @@ const Admin = () => {
 
   // Search/Filters inside tabs
   const [jobsSearch, setJobsSearch] = useState('');
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [jobsCategory, setJobsCategory] = useState('All Categories');
   const [jobsLocation, setJobsLocation] = useState('All Locations');
   
   const [examsFilter, setExamsFilter] = useState('All Exams');
   const [admitFilter, setAdmitFilter] = useState('All Exams');
   const [resultsFilter, setResultsFilter] = useState('All Exams');
+  const [answerKeysFilter, setAnswerKeysFilter] = useState('All Exams');
   const [forumTab, setForumTab] = useState('Latest');
 
   // ================= DYNAMIC FORM FIELDS STATES =================
   const [jobForm, setJobForm] = useState({
     title: '', company: '', location: 'Ranchi, Jharkhand', type: 'Full Time',
     minSalary: '', maxSalary: '', experience: '0 - 2 Years', qualification: 'Graduation',
-    category: 'Private Jobs', industry: 'IT / Software', description: ''
+    category: 'Private', industry: 'IT / Software', description: '', vacancies: '45',
+    applyLink: '', pdfUrl: ''
   });
 
   const [examForm, setExamForm] = useState({
     title: '', organization: '', orgShort: 'JSSC', category: 'Upcoming Exams',
-    lastDate: '', posts: '', status: 'Apply Now', description: ''
+    lastDate: '', posts: '', status: 'Apply Now', description: '',
+    applyLink: '', pdfUrl: '', examDate: ''
   });
 
   const [blogForm, setBlogForm] = useState({
@@ -103,7 +159,17 @@ const Admin = () => {
     fetchApplications();
     fetchUsers();
     fetchCompanies();
+    fetchEnquiries();
+    fetchSubscribers();
+    fetchForums();
   }, []);
+
+  useEffect(() => {
+    if (activeMenu === 'Users') fetchUsers();
+    if (activeMenu === 'Subscribers') fetchSubscribers();
+    if (activeMenu === 'Contacts / Enquiries') fetchEnquiries();
+    if (activeMenu === 'Discussion Forum') fetchForums();
+  }, [activeMenu]);
 
   const fetchDashboardData = async () => {
     try {
@@ -166,6 +232,29 @@ const Admin = () => {
     } catch (err) { console.error(err); }
   };
 
+  const fetchEnquiries = async () => {
+    try {
+      const res = await api.get('/admin/enquiries');
+      if (res.data.success) setEnquiries(res.data.enquiries);
+    } catch (err) { console.error('Enquiries fetch error:', err.message); }
+  };
+
+  const fetchSubscribers = async () => {
+    try {
+      const res = await api.get('/admin/subscribers');
+      if (res.data.success) setSubscribers(res.data.subscribers);
+    } catch (err) { console.error('Subscribers fetch error:', err.message); }
+  };
+
+  const fetchForums = async () => {
+    try {
+      const res = await api.get('/forums');
+      if (res.data.success) {
+        setForumsData(res.data.forums);
+      }
+    } catch (err) { console.error('Forums fetch error:', err.message); }
+  };
+
   // ================= FORM HANDLERS =================
   const handleJobSubmit = async (e) => {
     e.preventDefault();
@@ -182,8 +271,11 @@ const Admin = () => {
         category: jobForm.category,
         industry: jobForm.industry,
         description: jobForm.description,
+        vacancies: Number(jobForm.vacancies) || 45,
         responsibilities: ['Execute shift operations.', 'Maintain daily logs.'],
-        requirements: ['Graduation/Bachelor degree.', 'Basic local language skill.']
+        requirements: ['Graduation/Bachelor degree.', 'Basic local language skill.'],
+        applyLink: jobForm.applyLink,
+        pdfUrl: jobForm.pdfUrl
       };
 
       let res;
@@ -200,13 +292,14 @@ const Admin = () => {
         setJobForm({
           title: '', company: '', location: 'Ranchi, Jharkhand', type: 'Full Time',
           minSalary: '', maxSalary: '', experience: '0 - 2 Years', qualification: 'Graduation',
-          category: 'Private Jobs', industry: 'IT / Software', description: ''
+          category: 'Private', industry: 'IT / Software', description: '', vacancies: '45', applyLink: '', pdfUrl: ''
         });
       }
     } catch (err) {
       alert('Error submitting job.');
     } finally { setSubmitting(false); }
   };
+
 
   const handleExamSubmit = async (e) => {
     e.preventDefault();
@@ -221,10 +314,76 @@ const Admin = () => {
       if (res.data.success) {
         setSuccess(true);
         fetchExams();
-        setExamForm({ title: '', organization: '', orgShort: 'JSSC', category: 'Upcoming Exams', lastDate: '', posts: '', status: 'Apply Now', description: '' });
+        setExamForm({ title: '', organization: '', orgShort: 'JSSC', category: 'Upcoming Exams', lastDate: '', posts: '', status: 'Apply Now', description: '', applyLink: '', pdfUrl: '', examDate: '' });
       }
     } catch (err) {
       alert('Error submitting exam.');
+    } finally { setSubmitting(false); }
+  };
+
+  const handleExamFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await api.post('/exams/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (res.data.success) {
+        setExamForm(prev => ({ ...prev, pdfUrl: res.data.fileUrl }));
+        alert('File uploaded successfully!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error uploading file.');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleQuizSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      let parsedQuestions = quizForm.questions;
+      if (typeof parsedQuestions === 'string') {
+        parsedQuestions = JSON.parse(parsedQuestions);
+      }
+      
+      const payload = {
+        title: quizForm.title,
+        description: quizForm.description,
+        duration: Number(quizForm.duration),
+        icon: quizForm.icon,
+        color: quizForm.color,
+        bgColor: quizForm.bgColor,
+        questions: parsedQuestions
+      };
+
+      let res;
+      if (isEditMode) {
+        res = await api.put(`/quizzes/${editId}`, payload);
+      } else {
+        res = await api.post('/quizzes', payload);
+      }
+      if (res.data.success) {
+        setSuccess(true);
+        fetchQuizzes();
+        setQuizForm({
+          title: '', description: '', duration: '600', icon: 'HelpCircle',
+          color: '#2563EB', bgColor: '#EFF6FF', questions: [
+            { question: '', options: ['', '', '', ''], answer: 0, explanation: '' }
+          ]
+        });
+      }
+    } catch (err) {
+      alert('Error submitting quiz: ' + err.message);
     } finally { setSubmitting(false); }
   };
 
@@ -289,6 +448,177 @@ const Admin = () => {
     if (window.confirm('Delete blog article?')) {
       await api.delete(`/blog/${id}`);
       fetchBlogs();
+    }
+  };
+
+  const handleScrapeClick = async () => {
+    setScraping(true);
+    try {
+      const res = await api.post('/admin/scrape');
+      if (res.data.success) {
+        alert(`Successfully scraped and synced data!\nAdded/Updated Jobs: ${res.data.jobsCount}\nAdded/Updated Exam Notices: ${res.data.examsCount}`);
+        fetchJobs();
+        fetchExams();
+        fetchDashboardData();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error triggering live scraper.');
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const handleScrapeLandingClick = async () => {
+    setScrapingLanding(true);
+    try {
+      const res = await api.post('/admin/scrape-landing');
+      if (res.data.success) {
+        alert(`Successfully scraped landing pages!\nAdded Jobs: ${res.data.jobsCount}\nAdded Exams: ${res.data.examsCount}`);
+        fetchJobs();
+        fetchExams();
+        fetchDashboardData();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error triggering landing scraper agent.');
+    } finally {
+      setScrapingLanding(false);
+    }
+  };
+
+  const handleJobFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await api.post('/jobs/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (res.data.success) {
+        setJobForm(prev => ({ ...prev, pdfUrl: res.data.fileUrl }));
+        alert('File uploaded successfully!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error uploading file.');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleToggleUserRole = async (userId, currentRole) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    if (window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+      try {
+        const res = await api.put(`/auth/users/${userId}/role`, { role: newRole });
+        if (res.data.success) {
+          alert('User role updated successfully!');
+          fetchUsers();
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Failed to update user role.');
+      }
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user account?')) {
+      try {
+        const res = await api.delete(`/auth/users/${userId}`);
+        if (res.data.success) {
+          alert('User account deleted successfully!');
+          fetchUsers();
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Failed to delete user account.');
+      }
+    }
+  };
+
+  const handleDeleteSubscriber = async (id) => {
+    if (window.confirm('Are you sure you want to remove this subscriber?')) {
+      try {
+        const res = await api.delete(`/admin/subscribers/${id}`);
+        if (res.data.success) {
+          alert('Subscriber removed successfully!');
+          fetchSubscribers();
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Failed to remove subscriber.');
+      }
+    }
+  };
+
+  const handleToggleEnquiryStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'resolved' ? 'pending' : 'resolved';
+    try {
+      const res = await api.put(`/admin/enquiries/${id}`, { status: newStatus });
+      if (res.data.success) {
+        fetchEnquiries();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to update status.');
+    }
+  };
+
+  const handleDeleteEnquiry = async (id) => {
+    if (window.confirm('Are you sure you want to delete this enquiry?')) {
+      try {
+        const res = await api.delete(`/admin/enquiries/${id}`);
+        if (res.data.success) {
+          fetchEnquiries();
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Failed to delete enquiry.');
+      }
+    }
+  };
+
+  const handleDeleteForum = async (id) => {
+    if (window.confirm('Delete discussion thread?')) {
+      try {
+        const res = await api.delete(`/forums/${id}`);
+        if (res.data.success) {
+          alert('Discussion thread deleted successfully!');
+          fetchForums();
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Error deleting discussion thread.');
+      }
+    }
+  };
+
+  const handleSendNewsletter = async (e) => {
+    e.preventDefault();
+    if (!newsletterForm.subject || !newsletterForm.content) {
+      alert('Please fill subject and email body content.');
+      return;
+    }
+    setSendingNewsletter(true);
+    try {
+      const res = await api.post('/admin/newsletter/send', newsletterForm);
+      if (res.data.success) {
+        alert(res.data.message || 'Newsletter blast sent successfully!');
+        setNewsletterForm({ subject: '', content: '' });
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to send newsletter blast.');
+    } finally {
+      setSendingNewsletter(false);
     }
   };
 
@@ -408,22 +738,7 @@ const Admin = () => {
           )}
         </div>
 
-        {/* User Profile Block */}
-        <div style={{ padding: sidebarCollapsed ? '16px 0' : '24px 20px', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ position: 'relative', width: '48px', height: '48px', flexShrink: 0 }}>
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop" 
-                 alt="Admin" 
-                 style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #10B981', transition: 'all 0.25s ease' }} />
-            <span style={{ position: 'absolute', bottom: '1px', right: '1px', width: '10px', height: '10px', backgroundColor: '#10B981', border: '1.5px solid #0B2017', borderRadius: '50%' }} />
-          </div>
-          {!sidebarCollapsed && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '11px', color: '#8DA297', lineHeight: '1.2' }}>Welcome,</span>
-              <span style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: '2px 0' }}>Admin User</span>
-              <span style={{ fontSize: '10px', backgroundColor: '#073622', color: '#5FE3A1', border: '1px solid rgba(95,227,161,0.2)', padding: '1px 8px', borderRadius: '12px', fontWeight: '700' }}>Administrator</span>
-            </div>
-          )}
-        </div>
+        {/* User Profile Block Removed as per instructions */}
 
         {/* Scrollable Navigation */}
         <nav style={{ flex: 1, overflowY: 'auto', padding: sidebarCollapsed ? '20px 6px' : '20px 14px' }}>
@@ -468,6 +783,25 @@ const Admin = () => {
               </button>
             </li>
 
+            {/* 2b. Exam Notices */}
+            <li>
+              <button
+                onClick={() => setActiveMenu('Exams')}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', 
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  padding: sidebarCollapsed ? '12px 0' : '11px 14px', fontSize: '13px', fontWeight: activeMenu === 'Exams' ? '700' : '600',
+                  color: activeMenu === 'Exams' ? '#FFFFFF' : '#A3B3AB',
+                  backgroundColor: activeMenu === 'Exams' ? '#085435' : 'transparent',
+                  borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease',
+                  border: 'none', textAlign: 'left'
+                }}
+              >
+                <Calendar size={17} style={{ color: activeMenu === 'Exams' ? '#FFFFFF' : '#6A8074' }} />
+                {!sidebarCollapsed && <span>Exam Notices</span>}
+              </button>
+            </li>
+
             {/* 3. Admit Cards */}
             <li>
               <button
@@ -503,6 +837,25 @@ const Admin = () => {
               >
                 <Award size={17} style={{ color: activeMenu === 'Results' ? '#FFFFFF' : '#6A8074' }} />
                 {!sidebarCollapsed && <span>Results</span>}
+              </button>
+            </li>
+
+            {/* 4b. Answer Keys */}
+            <li>
+              <button
+                onClick={() => setActiveMenu('Answer Keys')}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', 
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  padding: sidebarCollapsed ? '12px 0' : '11px 14px', fontSize: '13px', fontWeight: activeMenu === 'Answer Keys' ? '700' : '600',
+                  color: activeMenu === 'Answer Keys' ? '#FFFFFF' : '#A3B3AB',
+                  backgroundColor: activeMenu === 'Answer Keys' ? '#085435' : 'transparent',
+                  borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease',
+                  border: 'none', textAlign: 'left'
+                }}
+              >
+                <CheckCircle size={17} style={{ color: activeMenu === 'Answer Keys' ? '#FFFFFF' : '#6A8074' }} />
+                {!sidebarCollapsed && <span>Answer Keys</span>}
               </button>
             </li>
 
@@ -877,41 +1230,42 @@ const Admin = () => {
           </div>
 
           {/* Header right controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            {/* Messages */}
-            <div style={{ position: 'relative', cursor: 'pointer' }}>
-              <Mail size={18} style={{ color: '#64748B' }} />
-              <span style={{ 
-                position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#EF4444', 
-                color: 'white', fontSize: '9px', fontWeight: '700', padding: '2px 4px', borderRadius: '50%',
-                lineHeight: 1
-              }}>12</span>
-            </div>
-
-            {/* Notifications */}
-            <div style={{ position: 'relative', cursor: 'pointer' }}>
-              <Bell size={18} style={{ color: '#64748B' }} />
-              <span style={{ 
-                position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#EF4444', 
-                color: 'white', fontSize: '9px', fontWeight: '700', padding: '2px 4px', borderRadius: '50%',
-                lineHeight: 1
-              }}>6</span>
-            </div>
-
-            {/* Profile Avatar Click */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            
+            {/* Premium Profile Avatar Pill matching Aspirant View */}
             <div 
               onClick={() => setActiveMenu('Profile')}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderLeft: '1px solid #E2E8F0', paddingLeft: '20px' }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px', 
+                cursor: 'pointer', 
+                backgroundColor: '#F1F5F9',
+                border: '1px solid #E2E8F0',
+                padding: '6px 16px 6px 8px', 
+                borderRadius: '30px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#E2E8F0';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F1F5F9';
+                e.currentTarget.style.transform = 'none';
+              }}
             >
               <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop" 
                    alt="Admin" 
-                   style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} />
+                   style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #10B981' }} />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B', lineHeight: '1.2' }}>Admin User</span>
-                <span style={{ fontSize: '10px', color: '#64748B' }}>Admin Console</span>
+                <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#1E293B', lineHeight: '1.2' }}>{adminName}</span>
+                <span style={{ fontSize: '9px', color: '#10B981', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Administrator</span>
               </div>
-              <ChevronDown size={14} style={{ color: '#64748B' }} />
+              <ChevronDown size={13} style={{ color: '#64748B', marginLeft: '2px' }} />
             </div>
+
           </div>
         </header>
 
@@ -1215,6 +1569,34 @@ const Admin = () => {
                 {/* Right quick actions buttons */}
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button 
+                    onClick={handleScrapeLandingClick}
+                    disabled={scrapingLanding}
+                    style={{
+                      backgroundColor: '#085435',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '30px',
+                      padding: '10px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '700',
+                      fontSize: '12px',
+                      cursor: scrapingLanding ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 4px 12px rgba(8,84,53,0.15)',
+                      transition: 'all 0.2s ease',
+                      opacity: scrapingLanding ? 0.7 : 1
+                    }}
+                  >
+                    <RefreshCw 
+                      size={14} 
+                      style={{ 
+                        animation: scrapingLanding ? 'spin 1.5s linear infinite' : 'none' 
+                      }} 
+                    />
+                    <span>{scrapingLanding ? 'Scraping Landing...' : 'Trigger Landing Scraper'}</span>
+                  </button>
+                  <button 
                     onClick={() => { setModalType('job'); setIsEditMode(false); setModalOpen(true); }}
                     style={{
                       backgroundColor: '#FFFFFF',
@@ -1235,6 +1617,12 @@ const Admin = () => {
                     <Send size={14} style={{ color: '#10B981' }} />
                     <span>Post a Job</span>
                   </button>
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
                 </div>
               </div>
 
@@ -1601,8 +1989,12 @@ const Admin = () => {
               }}>
                 <select value={jobsCategory} onChange={(e) => setJobsCategory(e.target.value)} style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: 'white', fontWeight: '500' }}>
                   <option value="All Categories">All Categories</option>
-                  <option value="Private Jobs">Private Jobs</option>
-                  <option value="Govt Jobs">Govt Jobs</option>
+                  <option value="Private">Private</option>
+                  <option value="SSC">SSC</option>
+                  <option value="UPSC">UPSC</option>
+                  <option value="Railway">Railway</option>
+                  <option value="Jharkhand">Jharkhand</option>
+                  <option value="Other State">Other State</option>
                 </select>
                 <select style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: 'white', fontWeight: '500' }}>
                   <option>All Departments</option>
@@ -1647,7 +2039,7 @@ const Admin = () => {
                   <thead>
                     <tr style={{ borderBottom: '1px solid #E2E8F0', color: '#64748B', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase' }}>
                       <th style={{ padding: '12px' }}>Job Title</th>
-                      <th style={{ padding: '12px' }}>Department/Company</th>
+                      <th style={{ padding: '12px' }}>Category</th>
                       <th style={{ padding: '12px' }}>Location</th>
                       <th style={{ padding: '12px' }}>Last Date</th>
                       <th style={{ padding: '12px' }}>Posted On</th>
@@ -1657,7 +2049,15 @@ const Admin = () => {
                   </thead>
                   <tbody>
                     {jobs.filter(j => {
-                      if (jobsCategory !== 'All Categories' && j.category !== jobsCategory) return false;
+                      if (jobsCategory !== 'All Categories') {
+                        if (jobsCategory === 'Private') {
+                          if (!['Private Jobs', 'Private'].includes(j.category)) return false;
+                        } else if (jobsCategory === 'Other State') {
+                          if (!['Other State', 'OtherState'].some(c => String(j.category).toLowerCase().includes(c.toLowerCase()))) return false;
+                        } else {
+                          if (String(j.category).toLowerCase() !== jobsCategory.toLowerCase()) return false;
+                        }
+                      }
                       if (jobsLocation !== 'All Locations' && !j.location.toLowerCase().includes(jobsLocation.toLowerCase())) return false;
                       if (jobsSearch && !j.title.toLowerCase().includes(jobsSearch.toLowerCase()) && !j.company.toLowerCase().includes(jobsSearch.toLowerCase())) return false;
                       return true;
@@ -1665,9 +2065,16 @@ const Admin = () => {
                       <tr key={j._id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                         <td style={{ padding: '12px' }}>
                           <div style={{ fontWeight: '700', color: '#0F172A' }}>{j.title}</div>
-                          <span style={{ fontSize: '10px', color: '#EA580C', fontWeight: '600' }}>{j.category}</span>
                         </td>
-                        <td style={{ padding: '12px', color: '#475569', fontWeight: '500' }}>{j.company}</td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ 
+                            fontSize: '13px', fontWeight: '750', textTransform: 'uppercase',
+                            display: 'inline-block',
+                            ...getCategoryBadgeStyles(j.category)
+                          }}>
+                            {j.category}
+                          </span>
+                        </td>
                         <td style={{ padding: '12px', color: '#64748B' }}>{j.location}</td>
                         <td style={{ padding: '12px', color: '#EF4444', fontWeight: '600' }}>
                           {j.lastDate ? new Date(j.lastDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
@@ -1690,7 +2097,9 @@ const Admin = () => {
                               setJobForm({
                                 title: j.title, company: j.company, location: j.location, type: j.type,
                                 minSalary: j.salary?.min || '', maxSalary: j.salary?.max || '', experience: j.experience,
-                                qualification: j.qualification || 'Graduation', category: j.category, industry: j.industry, description: j.description
+                                qualification: j.qualification || 'Graduation', category: j.category, industry: j.industry, description: j.description,
+                                vacancies: j.vacancies !== undefined ? String(j.vacancies) : '45',
+                                applyLink: j.applyLink || ''
                               });
                               setModalType('job');
                               setModalOpen(true);
@@ -1746,7 +2155,7 @@ const Admin = () => {
 
               {/* Custom Tabs Categories */}
               <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'Banking'].map(t => (
+                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'UPSC', 'IAF', 'Army', 'NCL', 'DSSSB', 'CIL', 'Banking'].map(t => (
                   <button 
                     key={t}
                     onClick={() => setExamsFilter(t)}
@@ -1785,22 +2194,48 @@ const Admin = () => {
                         <span style={{ fontSize: '9px', color: '#94A3B8', textTransform: 'uppercase' }}>Last Date</span>
                         <span style={{ fontSize: '12px', fontWeight: '700', color: '#EF4444' }}>{e.lastDate || 'N/A'}</span>
                       </div>
-                      <button 
-                        onClick={() => alert(`Redirecting to JSSC portal for: ${e.title}`)}
-                        style={{ padding: '6px 14px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
-                      >
-                        {e.status}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                          onClick={() => {
+                            setIsEditMode(true);
+                            setEditId(e._id);
+                            setExamForm({
+                              title: e.title,
+                              organization: e.organization || '',
+                              orgShort: e.orgShort || 'JSSC',
+                              category: e.category || 'Upcoming Exams',
+                              lastDate: e.lastDate || '',
+                              posts: e.posts || '',
+                              status: e.status || 'Apply Now',
+                              description: e.description || '',
+                              applyLink: e.applyLink || '',
+                              pdfUrl: e.pdfUrl || '',
+                              examDate: e.examDate || ''
+                            });
+                            setModalType('exam');
+                            setModalOpen(true);
+                            setSuccess(false);
+                          }}
+                          style={{ padding: '6px', border: 'none', background: 'none', color: '#2563EB', cursor: 'pointer' }}
+                          title="Edit notice"
+                        >
+                          <Settings size={15} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteExam(e._id)}
+                          style={{ padding: '6px', border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer' }}
+                          title="Delete notice"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <button 
+                          onClick={() => alert(`Redirecting to JSSC portal for: ${e.title}`)}
+                          style={{ padding: '6px 14px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                        >
+                          {e.status}
+                        </button>
+                      </div>
                     </div>
-
-                    {/* Delete notice */}
-                    <button 
-                      onClick={() => handleDeleteExam(e._id)}
-                      style={{ position: 'absolute', top: '16px', right: '60px', border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer' }}
-                      title="Delete notice"
-                    >
-                      <Trash2 size={14} />
-                    </button>
                   </div>
                 ))}
               </div>
@@ -1817,7 +2252,7 @@ const Admin = () => {
 
               {/* Sub categories */}
               <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'Banking'].map(t => (
+                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'UPSC', 'IAF', 'Army', 'NCL', 'DSSSB', 'CIL', 'Banking'].map(t => (
                   <button 
                     key={t}
                     onClick={() => setAdmitFilter(t)}
@@ -1848,16 +2283,51 @@ const Admin = () => {
                         <span style={{ fontSize: '10px', color: '#94A3B8' }}>Released on: {e.lastDate} | {e.organization}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => alert(`Downloading Hall Ticket PDF for: ${e.title}`)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
-                        backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px',
-                        fontSize: '11px', fontWeight: '700', cursor: 'pointer'
-                      }}
-                    >
-                      <Download size={13} /> Download
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <button 
+                        onClick={() => {
+                          setIsEditMode(true);
+                          setEditId(e._id);
+                          setExamForm({
+                            title: e.title,
+                            organization: e.organization || '',
+                            orgShort: e.orgShort || 'JSSC',
+                            category: e.category || 'Upcoming Exams',
+                            lastDate: e.lastDate || '',
+                            posts: e.posts || '',
+                            status: e.status || 'Apply Now',
+                            description: e.description || '',
+                            applyLink: e.applyLink || '',
+                            pdfUrl: e.pdfUrl || '',
+                            examDate: e.examDate || ''
+                          });
+                          setModalType('exam');
+                          setModalOpen(true);
+                          setSuccess(false);
+                        }}
+                        style={{ padding: '6px', border: 'none', background: 'none', color: '#2563EB', cursor: 'pointer' }}
+                        title="Edit notice"
+                      >
+                        <Settings size={15} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteExam(e._id)}
+                        style={{ padding: '6px', border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer' }}
+                        title="Delete notice"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                      <button 
+                        onClick={() => alert(`Downloading Hall Ticket PDF for: ${e.title}`)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
+                          backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px',
+                          fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                        }}
+                      >
+                        <Download size={13} /> Download
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1874,7 +2344,7 @@ const Admin = () => {
 
               {/* Sub categories */}
               <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'Banking'].map(t => (
+                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'UPSC', 'IAF', 'Army', 'NCL', 'DSSSB', 'CIL', 'Banking'].map(t => (
                   <button 
                     key={t}
                     onClick={() => setResultsFilter(t)}
@@ -1905,15 +2375,142 @@ const Admin = () => {
                         <span style={{ fontSize: '10px', color: '#94A3B8' }}>Declared: {e.lastDate} | {e.organization}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => alert(`Scores check successfully for: ${e.title}!`)}
-                      style={{
-                        padding: '8px 16px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', 
-                        borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
-                      }}
-                    >
-                      View Result
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <button 
+                        onClick={() => {
+                          setIsEditMode(true);
+                          setEditId(e._id);
+                          setExamForm({
+                            title: e.title,
+                            organization: e.organization || '',
+                            orgShort: e.orgShort || 'JSSC',
+                            category: e.category || 'Upcoming Exams',
+                            lastDate: e.lastDate || '',
+                            posts: e.posts || '',
+                            status: e.status || 'Apply Now',
+                            description: e.description || '',
+                            applyLink: e.applyLink || '',
+                            pdfUrl: e.pdfUrl || '',
+                            examDate: e.examDate || ''
+                          });
+                          setModalType('exam');
+                          setModalOpen(true);
+                          setSuccess(false);
+                        }}
+                        style={{ padding: '6px', border: 'none', background: 'none', color: '#2563EB', cursor: 'pointer' }}
+                        title="Edit result notice"
+                      >
+                        <Settings size={15} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteExam(e._id)}
+                        style={{ padding: '6px', border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer' }}
+                        title="Delete result notice"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                      <button 
+                        onClick={() => alert(`Scores check successfully for: ${e.title}!`)}
+                        style={{
+                          padding: '8px 16px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', 
+                          borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                        }}
+                      >
+                        View Result
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================== SUBVIEW 5b: ANSWER KEYS ==================== */}
+          {activeMenu === 'Answer Keys' && (
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>Answer Keys</h2>
+                <span style={{ fontSize: '12px', color: '#64748B' }}>Manage official exam answer keys and sheet releases</span>
+              </div>
+
+              {/* Sub categories */}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
+                {['All Exams', 'JSSC', 'JPSC', 'SSC', 'Railway', 'UPSC', 'IAF', 'Army', 'NCL', 'DSSSB', 'CIL', 'Banking'].map(t => (
+                  <button 
+                    key={t}
+                    onClick={() => setAnswerKeysFilter(t)}
+                    style={{
+                      padding: '8px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '20px', cursor: 'pointer',
+                      backgroundColor: answerKeysFilter === t ? '#E8F5E3' : 'transparent',
+                      color: answerKeysFilter === t ? '#1B8C0A' : '#64748B'
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              {/* List item answer keys */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {exams.filter(e => e.category === 'Answer Key' && (answerKeysFilter === 'All Exams' || e.orgShort === answerKeysFilter)).map(e => (
+                  <div key={e._id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px',
+                    border: '1px solid #E2E8F0', borderRadius: '10px', backgroundColor: 'white'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '8px', backgroundColor: '#FEF3C7', color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CheckCircle size={20} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{e.title}</h4>
+                        <span style={{ fontSize: '10px', color: '#94A3B8' }}>Released: {e.lastDate} | {e.organization}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <button 
+                        onClick={() => {
+                          setIsEditMode(true);
+                          setEditId(e._id);
+                          setExamForm({
+                            title: e.title,
+                            organization: e.organization || '',
+                            orgShort: e.orgShort || 'JSSC',
+                            category: e.category || 'Upcoming Exams',
+                            lastDate: e.lastDate || '',
+                            posts: e.posts || '',
+                            status: e.status || 'Apply Now',
+                            description: e.description || '',
+                            applyLink: e.applyLink || '',
+                            pdfUrl: e.pdfUrl || '',
+                            examDate: e.examDate || ''
+                          });
+                          setModalType('exam');
+                          setModalOpen(true);
+                          setSuccess(false);
+                        }}
+                        style={{ padding: '6px', border: 'none', background: 'none', color: '#2563EB', cursor: 'pointer' }}
+                        title="Edit notice"
+                      >
+                        <Settings size={15} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteExam(e._id)}
+                        style={{ padding: '6px', border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer' }}
+                        title="Delete notice"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                      <button 
+                        onClick={() => alert(`Viewing Answer Key for: ${e.title}`)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
+                          backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px',
+                          fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                        }}
+                      >
+                        View / Download
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2112,32 +2709,96 @@ const Admin = () => {
               
               {/* Quizzes Grids */}
               <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-                <div style={{ marginBottom: '24px' }}>
-                  <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>Practice Quizzes</h2>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>Test your syllabus knowledge with interactive quizzes</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>Practice Quizzes</h2>
+                    <span style={{ fontSize: '12px', color: '#64748B' }}>Test your syllabus knowledge with interactive quizzes</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setQuizForm({
+                        title: '', description: '', duration: '600', icon: 'HelpCircle',
+                        color: '#2563EB', bgColor: '#EFF6FF', questions: [
+                          { question: '', options: ['', '', '', ''], answer: 0, explanation: '' }
+                        ]
+                      });
+                      setModalType('quiz');
+                      setModalOpen(true);
+                      setSuccess(false);
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', backgroundColor: '#1B8C0A', color: 'white', fontSize: '13px', fontWeight: '700', cursor: 'pointer', border: 'none' }}
+                  >
+                    <Plus size={16} /> Add Quiz
+                  </button>
                 </div>
 
-                {/* Quizzes categories grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
-                  {[
-                    { name: 'Daily Quiz', qCount: '20 Questions', color: '#EA580C', bg: '#FFF7ED' },
-                    { name: 'JSSC Quiz', qCount: '25 Questions', color: '#1B8C0A', bg: '#E8F5E3' },
-                    { name: 'JPSC Quiz', qCount: '20 Questions', color: '#2563EB', bg: '#EFF6FF' },
-                    { name: 'SSC Quiz', qCount: '25 Questions', color: '#7C3AED', bg: '#F5F3FF' }
-                  ].map((quiz, idx) => (
-                    <div key={idx} style={{
-                      backgroundColor: quiz.bg, padding: '20px', borderRadius: '12px', border: '1px solid transparent',
-                      display: 'flex', flexDirection: 'column', gap: '12px', cursor: 'pointer'
+                {/* Quizzes list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {quizzes.map((quiz) => (
+                    <div key={quiz._id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px',
+                      border: '1px solid #E2E8F0', borderRadius: '10px', backgroundColor: 'white'
                     }}>
-                      <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: 'white', color: quiz.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <HelpCircle size={18} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ 
+                          width: '42px', height: '42px', borderRadius: '8px', 
+                          backgroundColor: quiz.bgColor || '#EFF6FF', 
+                          color: quiz.color || '#2563EB', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                        }}>
+                          <HelpCircle size={20} />
+                        </div>
+                        <div>
+                          <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{quiz.title}</h4>
+                          <span style={{ fontSize: '10px', color: '#94A3B8' }}>
+                            {quiz.duration ? `${Math.floor(quiz.duration / 60)} mins` : '10 mins'} | {quiz.questions?.length || 0} Questions
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A' }}>{quiz.name}</h4>
-                        <span style={{ fontSize: '11px', color: '#64748B' }}>{quiz.qCount}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button 
+                          onClick={() => {
+                            setIsEditMode(true);
+                            setEditId(quiz._id);
+                            setQuizForm({
+                              title: quiz.title || '',
+                              description: quiz.description || '',
+                              duration: String(quiz.duration || 600),
+                              icon: quiz.icon || 'HelpCircle',
+                              color: quiz.color || '#2563EB',
+                              bgColor: quiz.bgColor || '#EFF6FF',
+                              questions: quiz.questions || [
+                                { question: '', options: ['', '', '', ''], answer: 0, explanation: '' }
+                              ]
+                            });
+                            setModalType('quiz');
+                            setModalOpen(true);
+                            setSuccess(false);
+                          }}
+                          style={{ padding: '6px', border: 'none', background: 'none', color: '#2563EB', cursor: 'pointer' }}
+                          title="Edit"
+                        >
+                          <Settings size={15} />
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (window.confirm('Delete this quiz?')) {
+                              await api.delete(`/quizzes/${quiz._id}`);
+                              fetchQuizzes();
+                            }
+                          }}
+                          style={{ padding: '6px', border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer' }}
+                          title="Delete"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
                   ))}
+                  {quizzes.length === 0 && (
+                    <p style={{ fontSize: '12.5px', color: '#94A3B8', textAlign: 'center', padding: '20px 0' }}>No quizzes available.</p>
+                  )}
                 </div>
               </div>
 
@@ -2162,65 +2823,173 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ==================== SUBVIEW 9: CANDIDATE PROFILE ==================== */}
+          {/* ==================== SUBVIEW 9: ADMIN PROFILE ==================== */}
           {activeMenu === 'Profile' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px', alignItems: 'start' }}>
               
-              {/* User Bio Card */}
-              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop" 
-                     alt="Admin" 
-                     style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #1B8C0A', margin: '0 auto 12px' }} />
-                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>Aaspirant_JH01</h3>
-                <span style={{ fontSize: '10px', backgroundColor: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>Active Member</span>
-                <span style={{ fontSize: '11px', color: '#94A3B8', display: 'block', marginTop: '12px' }}>Member since 12 Jan 2024</span>
+              {/* Left Column: Admin Profile card */}
+              <div style={{ 
+                backgroundColor: 'white', 
+                padding: '32px 24px', 
+                borderRadius: '16px', 
+                border: '1px solid #E2E8F0', 
+                textAlign: 'center',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
+              }}>
+                {/* Circular Avatar */}
+                <div style={{ position: 'relative', width: '96px', height: '96px', margin: '0 auto 16px' }}>
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop" 
+                       alt="Admin" 
+                       style={{ width: '96px', height: '96px', borderRadius: '50%', objectFit: 'cover', border: '3.5px solid #10B981' }} />
+                  <span style={{ position: 'absolute', bottom: '2px', right: '2px', width: '16px', height: '16px', backgroundColor: '#10B981', border: '3px solid white', borderRadius: '50%' }} />
+                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', borderTop: '1px solid #F1F5F9', paddingTop: '20px', marginTop: '20px' }}>
-                  {[
-                    { name: 'Questions', val: 340 },
-                    { name: 'Answers', val: 12 },
-                    { name: 'Bookmarks', val: '1.2k' },
-                    { name: 'Points', val: 89 }
-                  ].map((s, idx) => (
-                    <div key={idx}>
-                      <span style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', display: 'block' }}>{s.val}</span>
-                      <span style={{ fontSize: '8px', color: '#94A3B8', textTransform: 'uppercase' }}>{s.name}</span>
-                    </div>
-                  ))}
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', marginBottom: '6px' }}>{adminName}</h3>
+                
+                <span style={{ 
+                  fontSize: '11px', 
+                  backgroundColor: '#073622', 
+                  color: '#5FE3A1', 
+                  border: '1px solid rgba(95,227,161,0.2)', 
+                  padding: '3px 12px', 
+                  borderRadius: '20px', 
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  System Administrator
+                </span>
+
+                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.6', margin: '16px 0 24px', fontStyle: 'italic' }}>
+                  "{adminBio}"
+                </p>
+
+                {/* Account Details list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', borderTop: '1px solid #F1F5F9', paddingTop: '20px', marginBottom: '28px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Email Address</span>
+                    <strong style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700' }}>{adminEmail}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Contact Number</span>
+                    <strong style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700' }}>{adminPhone}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Access Control</span>
+                    <strong style={{ fontSize: '13.5px', color: '#10B981', fontWeight: '700' }}>Full DB Read/Write Permission</strong>
+                  </div>
+                </div>
+
+                {/* Profile actions */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button 
+                    onClick={() => setAdminProfileOpen(true)}
+                    style={{
+                      width: '100%', padding: '10px 0', borderRadius: '8px', 
+                      backgroundColor: '#FFFFFF', color: '#374151', border: '1.5px solid #D1D5DB',
+                      fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                    }}
+                  >
+                    <Settings size={14} /> Edit Admin Profile
+                  </button>
+                  <button 
+                    onClick={() => {
+                      logout();
+                      navigate('/');
+                    }}
+                    style={{
+                      width: '100%', padding: '10px 0', borderRadius: '8px', 
+                      backgroundColor: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FCA5A5',
+                      fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                    }}
+                  >
+                    <LogOut size={14} /> Sign Out of Panel
+                  </button>
                 </div>
               </div>
 
-              {/* Users History list */}
-              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid #E2E8F0', marginBottom: '20px' }}>
-                  {['My Questions', 'My Answers', 'Bookmarks', 'Activity'].map((t, idx) => (
-                    <span 
-                      key={idx}
-                      style={{
-                        padding: '12px 4px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                        borderBottom: idx === 0 ? '2px solid #1B8C0A' : '2px solid transparent',
-                        color: idx === 0 ? '#1B8C0A' : '#64748B'
-                      }}
-                    >
-                      {t}
-                    </span>
-                  ))}
+              {/* Right Column: Admin Stats and Operation Logs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Stats Grid */}
+                <div style={{ 
+                  backgroundColor: 'white', 
+                  padding: '24px', 
+                  borderRadius: '16px', 
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
+                }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', marginBottom: '20px', borderBottom: '1px solid #F1F5F9', paddingBottom: '10px' }}>
+                    Administrative Activity Metrics
+                  </h3>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                    {[
+                      { name: 'Jobs Posted', val: stats.totalJobs || 1248, color: '#1B8C0A' },
+                      { name: 'Exams Created', val: stats.totalExams || 342, color: '#2563EB' },
+                      { name: 'Articles Published', val: 156, color: '#007A78' },
+                      { name: 'Enquiries Managed', val: '450+', color: '#EA580C' }
+                    ].map((m, idx) => (
+                      <div key={idx} style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #F1F5F9', textAlign: 'center' }}>
+                        <span style={{ fontSize: '10px', color: '#64748B', display: 'block', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>{m.name}</span>
+                        <strong style={{ fontSize: '20px', fontWeight: '800', color: m.color }}>{m.val.toLocaleString()}</strong>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {[
-                    { title: 'How to prepare for JPSC Civil Services Exam 2026?', date: 'Posted 2 days ago' },
-                    { title: 'Which courses are best after 12th for government jobs?', date: 'Posted 3 days ago' }
-                  ].map((q, idx) => (
-                    <div key={idx} style={{ paddingBottom: '12px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#2563EB', cursor: 'pointer' }}>{q.title}</h4>
-                        <span style={{ fontSize: '10px', color: '#94A3B8' }}>{q.date}</span>
-                      </div>
-                      <ChevronRight size={16} style={{ color: '#94A3B8' }} />
-                    </div>
-                  ))}
+                {/* Recent Activities Log */}
+                <div style={{ 
+                  backgroundColor: 'white', 
+                  padding: '24px', 
+                  borderRadius: '16px', 
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
+                }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', marginBottom: '20px', borderBottom: '1px solid #F1F5F9', paddingBottom: '10px' }}>
+                    Recent Operations Log (System Audit)
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {[
+                      { title: 'Tata Steel Junior Developer vacancy posted successfully', date: '2 hours ago', icon: Briefcase, color: '#1B8C0A', bg: '#E8F5E3' },
+                      { title: 'JSSC CGL Exam Admit Card release information updated', date: 'Yesterday', icon: FileText, color: '#2563EB', bg: '#EFF6FF' },
+                      { title: 'New Current Affairs Practice Quiz #123 created in GK database', date: '2 days ago', icon: HelpCircle, color: '#EA580C', bg: '#FFF7ED' },
+                      { title: 'Sarkari Syllabus and exam pattern guide published for Police aspirants', date: '3 days ago', icon: BookOpen, color: '#7C3AED', bg: '#F5F3FF' },
+                      { title: 'Tata Motors Apprentice placement vacancies checklist updated', date: '5 days ago', icon: Briefcase, color: '#007A78', bg: '#E4F7F6' }
+                    ].map((log, idx) => {
+                      const LogIcon = log.icon;
+                      return (
+                        <div key={idx} style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center', 
+                          paddingBottom: '14px', 
+                          borderBottom: idx === 4 ? 'none' : '1px solid #F1F5F9'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ 
+                              width: '34px', 
+                              height: '34px', 
+                              borderRadius: '50%', 
+                              backgroundColor: log.bg, 
+                              color: log.color, 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <LogIcon size={16} />
+                            </div>
+                            <div>
+                              <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#374151', lineHeight: '1.4' }}>{log.title}</h4>
+                              <span style={{ fontSize: '10px', color: '#94A3B8' }}>Action completed by you • {log.date}</span>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700', backgroundColor: '#ECFDF5', padding: '2px 8px', borderRadius: '4px' }}>Success</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -2233,7 +3002,7 @@ const Admin = () => {
           )}
 
           {/* ==================== OTHER UNIMPLEMENTED FALLBACK SUBVIEWS ==================== */}
-          {!['Dashboard', 'Jobs', 'Exams', 'Admit Cards', 'Results', 'Career Guide', 'Articles & Blogs', 'Discussion Forum', 'Quizzes', 'Profile', 'Contacts / Enquiries', 'Newsletter'].includes(activeMenu) && (
+          {!['Dashboard', 'Jobs', 'Exams', 'Admit Cards', 'Results', 'Answer Keys', 'Career Guide', 'Articles & Blogs', 'Discussion Forum', 'Quizzes', 'Profile', 'Contacts / Enquiries', 'Newsletter'].includes(activeMenu) && (
             <div style={{ 
               backgroundColor: 'white', padding: '60px 40px', borderRadius: '16px', border: '1px solid #E2E8F0',
               textAlign: 'center', maxWidth: '500px', margin: '40px auto'
@@ -2308,24 +3077,36 @@ const Admin = () => {
                         <div>
                           <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Category *</label>
                           <select value={jobForm.category} onChange={(e) => setJobForm({...jobForm, category: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}>
-                            <option value="Private Jobs">Private Jobs</option>
-                            <option value="Govt Jobs">Govt Jobs</option>
+                            <option value="Private">Private</option>
+                            <option value="SSC">SSC</option>
+                            <option value="UPSC">UPSC</option>
+                            <option value="Railway">Railway</option>
+                            <option value="Jharkhand">Jharkhand</option>
+                            <option value="Other State">Other State</option>
                           </select>
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                         <div>
-                          <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Min Salary (per month) *</label>
+                          <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Min Salary *</label>
                           <input type="number" required value={jobForm.minSalary} onChange={(e) => setJobForm({...jobForm, minSalary: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. 25000" />
                         </div>
                         <div>
                           <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Max Salary *</label>
                           <input type="number" required value={jobForm.maxSalary} onChange={(e) => setJobForm({...jobForm, maxSalary: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. 45000" />
                         </div>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Vacancies *</label>
+                          <input type="number" required value={jobForm.vacancies} onChange={(e) => setJobForm({...jobForm, vacancies: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. 45" />
+                        </div>
                       </div>
                       <div>
                         <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Description *</label>
                         <textarea required value={jobForm.description} onChange={(e) => setJobForm({...jobForm, description: e.target.value})} rows="3" style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', resize: 'none' }} placeholder="Brief overview of role and criteria..." />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Redirect Apply Link (Optional)</label>
+                        <input type="text" value={jobForm.applyLink} onChange={(e) => setJobForm({...jobForm, applyLink: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. https://tata.com/careers/apply-job-123" />
                       </div>
                     </div>
                     <button type="submit" disabled={submitting} style={{ width: '100%', padding: '12px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
@@ -2355,7 +3136,7 @@ const Admin = () => {
                           <input type="text" required value={examForm.orgShort} onChange={(e) => setExamForm({...examForm, orgShort: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} />
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                         <div>
                           <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Category *</label>
                           <select value={examForm.category} onChange={(e) => setExamForm({...examForm, category: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}>
@@ -2369,10 +3150,55 @@ const Admin = () => {
                           <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Last Date / Release Date *</label>
                           <input type="text" required value={examForm.lastDate} onChange={(e) => setExamForm({...examForm, lastDate: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. 18 May 2026" />
                         </div>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Exam Date (Optional)</label>
+                          <input type="text" value={examForm.examDate} onChange={(e) => setExamForm({...examForm, examDate: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. 01 Jun 2024 Sunday" />
+                        </div>
                       </div>
                       <div>
                         <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Description *</label>
                         <textarea required value={examForm.description} onChange={(e) => setExamForm({...examForm, description: e.target.value})} rows="3" style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', resize: 'none' }} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Redirect Apply Link (Optional)</label>
+                          <input type="text" value={examForm.applyLink} onChange={(e) => setExamForm({...examForm, applyLink: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. https://jssc.nic.in/apply" />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Notification File (PDF/Doc/Image)</label>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input 
+                              type="text" 
+                              value={examForm.pdfUrl} 
+                              onChange={(e) => setExamForm({...examForm, pdfUrl: e.target.value})} 
+                              style={{ flex: 1, padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} 
+                              placeholder="File path or URL" 
+                            />
+                            <input 
+                              type="file" 
+                              id="exam-file-upload" 
+                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                              onChange={handleExamFileUpload} 
+                              style={{ display: 'none' }}
+                            />
+                            <label 
+                              htmlFor="exam-file-upload"
+                              style={{ 
+                                padding: '8px 16px', 
+                                backgroundColor: '#1E293B', 
+                                color: 'white', 
+                                fontSize: '12px', 
+                                fontWeight: '600', 
+                                borderRadius: '6px', 
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {uploadingFile ? 'Uploading...' : 'Upload'}
+                            </label>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <button type="submit" disabled={submitting} style={{ width: '100%', padding: '12px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
@@ -2454,6 +3280,43 @@ const Admin = () => {
                     </div>
                     <button type="submit" disabled={submitting} style={{ width: '100%', padding: '12px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
                       {submitting ? 'Publishing...' : 'Publish Article'}
+                    </button>
+                  </form>
+                )}
+
+                {/* 5. Quiz Form Modal */}
+                {modalType === 'quiz' && (
+                  <form onSubmit={handleQuizSubmit}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', marginBottom: '20px' }}>
+                      {isEditMode ? 'Edit Practice Quiz' : 'Add New Practice Quiz'}
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Quiz Title *</label>
+                        <input type="text" required value={quizForm.title} onChange={(e) => setQuizForm({...quizForm, title: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. Jharkhand GK Quiz #1" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Duration (in seconds) *</label>
+                        <input type="number" required value={quizForm.duration} onChange={(e) => setQuizForm({...quizForm, duration: e.target.value})} style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }} placeholder="e.g. 600" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Description *</label>
+                        <textarea required value={quizForm.description} onChange={(e) => setQuizForm({...quizForm, description: e.target.value})} rows="2" style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', resize: 'none' }} placeholder="Overview of the quiz..." />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>Questions List (JSON format) *</label>
+                        <textarea 
+                          required 
+                          rows="6" 
+                          value={typeof quizForm.questions === 'string' ? quizForm.questions : JSON.stringify(quizForm.questions, null, 2)} 
+                          onChange={(e) => setQuizForm({...quizForm, questions: e.target.value})} 
+                          style={{ width: '100%', padding: '8px 12px', fontSize: '12px', fontFamily: 'monospace', border: '1px solid #CBD5E1', borderRadius: '6px' }} 
+                          placeholder={`[\n  {\n    "question": "Birsa Munda birth date?",\n    "options": ["15 Nov 1875", "10 Dec 1880", "1 Jan 1870", "15 Aug 1875"],\n    "answer": 0,\n    "explanation": "He was born on 15 Nov 1875."\n  }\n]`}
+                        />
+                      </div>
+                    </div>
+                    <button type="submit" disabled={submitting} style={{ width: '100%', padding: '12px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
+                      {submitting ? 'Saving Quiz...' : isEditMode ? 'Update Quiz' : 'Publish Quiz'}
                     </button>
                   </form>
                 )}

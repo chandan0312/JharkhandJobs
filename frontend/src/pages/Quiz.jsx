@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+
 import { 
   Clock, 
   Award, 
@@ -31,6 +34,8 @@ import {
 
 const Quiz = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   // Quizzes list state
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +180,10 @@ const Quiz = () => {
 
   // Start selected quiz
   const handleStartQuiz = (subjectTitle) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     // 1. Check if we have dynamic quiz in fetched DB
     let selectedQuiz = quizzes.find(q => q.title.toLowerCase() === subjectTitle.toLowerCase());
     

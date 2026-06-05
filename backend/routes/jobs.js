@@ -2,6 +2,7 @@ import express from 'express';
 import Job from '../models/Job.js';
 import { protect, admin } from '../middleware/auth.js';
 import mockDb from '../config/mockDb.js';
+import { uploadNotificationDoc } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -56,7 +57,11 @@ router.get('/', async (req, res) => {
         filteredJobs.sort((a, b) => b.salary.max - a.salary.max);
       } else {
         // default newest
-        filteredJobs.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+        filteredJobs.sort((a, b) => {
+          const timeA = new Date(a.updatedAt || a.postedDate || 0).getTime();
+          const timeB = new Date(b.updatedAt || b.postedDate || 0).getTime();
+          return timeB - timeA;
+        });
       }
 
       return res.json({ success: true, count: filteredJobs.length, jobs: filteredJobs });
@@ -236,6 +241,21 @@ router.delete('/:id', protect, admin, async (req, res) => {
 
     await job.deleteOne();
     res.json({ success: true, message: 'Job deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @desc    Upload job notification file (PDF/Doc/Image)
+// @route   POST /api/jobs/upload
+// @access  Private/Admin
+router.post('/upload', protect, admin, uploadNotificationDoc.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload a file' });
+    }
+    const fileUrl = `/uploads/notifications/${req.file.filename}`;
+    res.json({ success: true, fileUrl });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

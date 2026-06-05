@@ -27,7 +27,11 @@ const mapJob = (j) => {
     status: j.status || 'active',
     postedDate: j.posted_date,
     lastDate: j.last_date,
+    updatedAt: j.updated_at || j.posted_date,
+    vacancies: j.vacancies !== undefined ? Number(j.vacancies) : 45,
     postedBy: j.posted_by,
+    applyLink: j.apply_link || '',
+    pdfUrl: j.pdf_url || '',
     deleteOne: async function() {
       await pgDb.query('DELETE FROM jobs WHERE id = $1', [this._id]);
       return { success: true };
@@ -127,14 +131,14 @@ const Job = {
           if (sortOption.postedDate === 1) {
             sql += ' ORDER BY posted_date ASC';
           } else if (sortOption.postedDate === -1) {
-            sql += ' ORDER BY posted_date DESC';
+            sql += ' ORDER BY updated_at DESC, posted_date DESC';
           } else if (sortOption['salary.max'] === -1) {
             sql += ' ORDER BY salary_max DESC';
           } else {
-            sql += ' ORDER BY posted_date DESC';
+            sql += ' ORDER BY updated_at DESC, posted_date DESC';
           }
         } else {
-          sql += ' ORDER BY posted_date DESC';
+          sql += ' ORDER BY updated_at DESC, posted_date DESC';
         }
 
         const res = await pgDb.query(sql, params);
@@ -172,6 +176,9 @@ const Job = {
     const requirements = jobData.requirements || [];
     const status = jobData.status || 'active';
     const postedBy = jobData.postedBy || null;
+    const vacancies = jobData.vacancies !== undefined ? Number(jobData.vacancies) : 45;
+    const applyLink = jobData.applyLink || '';
+    const pdfUrl = jobData.pdfUrl || '';
     
     // Auto initials
     const companyInitial = jobData.companyInitial || company.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
@@ -185,9 +192,9 @@ const Job = {
     const lastDate = jobData.lastDate ? new Date(jobData.lastDate) : null;
 
     const res = await pgDb.query(
-      `INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, last_date, posted_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), $21, $22) RETURNING *`,
-      [id, title, company, companyInitial, companyColor, location, type, salaryMin, salaryMax, salaryCurrency, salaryPeriod, experience, qualification, badgeText, category, industry, description, responsibilities, requirements, status, lastDate, postedBy]
+      `INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, last_date, vacancies, posted_by, apply_link, pdf_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), $21, $22, $23, $24, $25) RETURNING *`,
+      [id, title, company, companyInitial, companyColor, location, type, salaryMin, salaryMax, salaryCurrency, salaryPeriod, experience, qualification, badgeText, category, industry, description, responsibilities, requirements, status, lastDate, vacancies, postedBy, applyLink, pdfUrl]
     );
 
     return mapJob(res.rows[0]);
@@ -213,7 +220,10 @@ const Job = {
       description: updateData.description,
       responsibilities: updateData.responsibilities,
       requirements: updateData.requirements,
-      status: updateData.status
+      status: updateData.status,
+      vacancies: updateData.vacancies !== undefined ? Number(updateData.vacancies) : undefined,
+      apply_link: updateData.applyLink,
+      pdf_url: updateData.pdfUrl
     };
 
     if (updateData.company && !updateData.companyInitial) {
@@ -246,7 +256,7 @@ const Job = {
     }
 
     const res = await pgDb.query(
-      `UPDATE jobs SET ${setFields.join(', ')} WHERE id = $1 RETURNING *`,
+      `UPDATE jobs SET ${setFields.join(', ')}, updated_at = NOW() WHERE id = $1 RETURNING *`,
       params
     );
 

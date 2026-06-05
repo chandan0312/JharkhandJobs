@@ -28,6 +28,9 @@ export const initPgDb = async () => {
     
     // Seed default records if empty
     await seedTables();
+
+    // Migrate existing job categories to specific classifications
+    await runCategoryMigrations();
     
     return true;
   } catch (error) {
@@ -70,6 +73,7 @@ const runDDL = async () => {
       role VARCHAR(50) DEFAULT 'user',
       google_id VARCHAR(255) UNIQUE,
       saved_jobs TEXT[] DEFAULT '{}',
+      profile_data TEXT DEFAULT '{}',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -109,7 +113,10 @@ const runDDL = async () => {
       status VARCHAR(50) DEFAULT 'active',
       posted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       last_date TIMESTAMP,
-      posted_by VARCHAR(255)
+      vacancies INTEGER DEFAULT 45,
+      posted_by VARCHAR(255),
+      apply_link VARCHAR(555) DEFAULT '',
+      pdf_url VARCHAR(555) DEFAULT ''
     );`,
     
     // Exams table
@@ -123,7 +130,12 @@ const runDDL = async () => {
       posts VARCHAR(100),
       status VARCHAR(100),
       description TEXT,
-      is_new BOOLEAN DEFAULT TRUE
+      is_new BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      apply_link VARCHAR(555) DEFAULT '',
+      pdf_url VARCHAR(555) DEFAULT '',
+      exam_date VARCHAR(100) DEFAULT ''
     );`,
     
     // Blog posts table
@@ -188,36 +200,54 @@ const runDDL = async () => {
       author_id VARCHAR(255) NOT NULL,
       content TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`,
+
+    // Enquiries table
+    `CREATE TABLE IF NOT EXISTS enquiries (
+      id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      subject VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      status VARCHAR(50) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`,
+
+    // Subscribers table
+    `CREATE TABLE IF NOT EXISTS subscribers (
+      id VARCHAR(255) PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );`
   ];
 
   for (const queryStr of tables) {
     await pool.query(queryStr);
   }
+  // Ensure profile_data column exists dynamically
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data TEXT DEFAULT '{}';`);
+  // Ensure vacancies column exists dynamically on jobs
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS vacancies INTEGER DEFAULT 45;`);
+  // Ensure updated_at column exists dynamically on jobs
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+  // Ensure created_at and updated_at columns exist dynamically on exams
+  await pool.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+  await pool.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+  // Ensure apply_link column exists dynamically on jobs
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_link VARCHAR(555) DEFAULT '';`);
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(555) DEFAULT '';`);
+  // Ensure apply_link and pdf_url columns exist dynamically on exams
+  await pool.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS apply_link VARCHAR(555) DEFAULT '';`);
+  await pool.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(555) DEFAULT '';`);
+  await pool.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS exam_date VARCHAR(100) DEFAULT '';`);
   console.log('✅ PostgreSQL Schema Built successfully.');
 };
 
 const seedTables = async () => {
-  // Check if users table is empty, if so, seed
-  const userCheck = await pool.query('SELECT COUNT(*) FROM users');
-  if (parseInt(userCheck.rows[0].count) === 0) {
+  // Check if companies table is empty, if so, seed
+  const companyCheck = await pool.query('SELECT COUNT(*) FROM companies');
+  if (parseInt(companyCheck.rows[0].count) === 0) {
     console.log('🌱 Seeding PostgreSQL default records...');
-    
-    // Create seed passwords
-    const salt = await bcrypt.genSalt(10);
-    const adminPass = await bcrypt.hash('Admin@123', salt);
-    const userPass = await bcrypt.hash('User@123', salt);
-    
-    // Seed users
-    await pool.query(
-      `INSERT INTO users (id, name, email, password, phone, role, created_at) VALUES 
-       ($1, $2, $3, $4, $5, $6, NOW()),
-       ($7, $8, $9, $10, $11, $12, NOW())`,
-      [
-        'mock-user-admin-id', 'Jharkhand Jobs Admin', 'admin@jharkhandjobs.com', adminPass, '9876543210', 'admin',
-        'mock-user-demo-id', 'Rohan Kumar', 'rohan@gmail.com', userPass, '9123456789', 'user'
-      ]
-    );
 
     // Seed companies
     const companies = [
@@ -249,62 +279,190 @@ const seedTables = async () => {
     // Seed Jobs
     const jobs = [
       [
-        'mock-job-1-id', 'JSSC CGL Recruitment 2024', 'Jharkhand Staff Selection Commission (JSSC)', 'JSSC', '#1B8C0A', 
-        'Ranchi, Jharkhand', 'Full Time', 35400, 112400, '₹', 'monthly', '0 - 2 Years', 'Graduation', 'New', 'Govt Jobs', 'Public Service',
-        'Online application invited for JSSC CGL Combined Graduate Level examination for administrative posts.',
-        ['Perform administrative and supervisory duties in state departments.', 'Implement government schemes and regulations at block levels.', 'Maintain registers and records for official audits.'],
-        ['Bachelor\'s degree in any discipline from a recognized university.', 'Age between 21 and 35 years.', 'Knowledge of local customs and languages of Jharkhand.'],
-        'active', '2026-05-26', '2026-06-24', 'mock-user-admin-id'
+        'job-1', 'Combined Civil Services (Deputy Collector, DSP, etc.)', 'Jharkhand Public Service Commission (JPSC)', 'JPSC', '#005691', 
+        'Jharkhand, India', 'Full Time', 56100, 177500, '₹', 'monthly', 'Fresher / Experienced', 'Graduate', 'Recruitment Ongoing', 'Govt Jobs', 'Public Service',
+        'Jharkhand Public Service Commission (JPSC) invites applications for the Combined Civil Services Examination to recruit Deputy Collectors, DSPs, and other executive officers.',
+        ['Prelims Exam: Objective type questions on General Studies (Paper I & II).', 'Mains Exam: Written descriptive papers on core subjects and local languages.', 'Interview: Personality test and viva-voce.'],
+        ['Must hold a Bachelor\'s degree in any discipline from a recognized university.', 'Age must meet JPSC Civil Services eligibility guidelines.', 'Must satisfy physical standards eligibility for DSP and other uniformed services.'],
+        'active', '2026-05-28', '2026-12-31', 103, 'mock-user-admin-id'
       ],
       [
-        'mock-job-2-id', 'JPSC Civil Services Exam 2024', 'Jharkhand Public Service Commission (JPSC)', 'JPSC', '#005691', 
-        'Ranchi, Jharkhand', 'Full Time', 56100, 177500, '₹', 'monthly', '0 - 2 Years', 'Graduation', 'Featured', 'Govt Jobs', 'Public Service',
-        'State civil services exams for administrative, police, and finance service cadres of Jharkhand.',
-        ['Manage subdivision level governance and law enforcement assistance.', 'Coordinate state revenue collection and treasury audits.', 'Supervise administrative offices and public welfare delivery.'],
-        ['Graduation degree from an accredited institution.', 'Strong knowledge of Indian administration and Jharkhand GK.', 'Physical standards eligibility for DSP cadres.'],
-        'active', '2026-05-25', '2026-06-24', 'mock-user-admin-id'
+        'job-2', 'JTGLCCE (Assistant, Inspector & Others)', 'Jharkhand Staff Selection Commission (JSSC)', 'JSSC', '#1B8C0A', 
+        'Jharkhand, India', 'Full Time', 35400, 112400, '₹', 'monthly', 'Fresher / Experienced', 'B.Sc / M.Sc / B.Pharm / Graduate (Post-wise)', 'Apply Online', 'Govt Jobs', 'Public Service',
+        'Jharkhand Staff Selection Commission (JSSC) invites online applications for JTGLCCE to recruit Assistants, Inspectors, and other technical graduate posts.',
+        ['Perform administrative and technical supervisory duties in designated state departments.', 'Implement government schemes, checks, and regulations at block levels.', 'Review and maintain records/files for technical and general audits.'],
+        ['Graduation or Post-Graduation in B.Sc, M.Sc, B.Pharm, or specific streams matching the post details.', 'Age must fit the JSSC JTGLCCE regulations.', 'Knowledge of local customs and languages of Jharkhand is required.'],
+        'active', '2026-05-27', '2026-06-30', 611, 'mock-user-admin-id'
       ],
       [
-        'mock-job-3-id', 'RRB NTPC Graduate Vacancy 2024', 'Indian Railways', 'RRB', '#DC2626', 
-        'All India', 'Full Time', 35400, 112400, '₹', 'monthly', '0 - 2 Years', 'Graduation', 'Popular', 'Govt Jobs', 'Transportation',
-        'Non-Technical Popular Categories recruitment for Station Master, Goods Guard, and Commercial Clerks.',
-        ['Supervise station operations and train movements.', 'Coordinate cargo logistics and safety protocols.', 'Manage reservation counters and public relations.'],
-        ['University degree from any stream.', 'Excellent medical fitness and vision standards.', 'Successful clearance of CBT 1 and CBT 2 exams.'],
-        'active', '2026-05-24', '2026-06-12', 'mock-user-admin-id'
+        'job-3', 'Polytechnic Lecturer', 'Jharkhand Public Service Commission (JPSC)', 'JPSC', '#005691', 
+        'Jharkhand, India', 'Full Time', 56100, 79800, '₹', 'monthly', 'Fresher / Experienced', 'B.E. / B.Tech / M.Tech', 'New', 'Govt Jobs', 'Education / Teaching',
+        'Recruitment of Lecturers in government polytechnic institutes across Jharkhand state.',
+        ['Deliver technical curriculum and instructions in engineering/science disciplines.', 'Manage laboratory equipment and supervise practical experiment sessions.', 'Assess student performance, assignments, and participate in academic mentoring.'],
+        ['B.E. / B.Tech / M.Tech in relevant engineering discipline with first class or equivalent.', 'Strong subject matter expertise and academic teaching capabilities.'],
+        'active', '2026-05-26', null, 349, 'mock-user-admin-id'
       ],
       [
-        'mock-job-4-id', 'IBPS Clerk Recruitment 2024', 'IBPS', 'IBPS', '#2563EB', 
-        'All India', 'Full Time', 19900, 63200, '₹', 'monthly', '0 - 2 Years', 'Graduation', 'New', 'Govt Jobs', 'Banking',
-        'Clerical cadre selection examination for public sector banks across India.',
-        ['Handle cash receipts, ledger updates, and customer deposits.', 'Assist branch managers in document processing and loan files.', 'Promote retail banking services and address grievances.'],
-        ['Bachelor\'s degree in commerce, arts, science or engineering.', 'Computer literacy certificate or operating skills.', 'Proficiency in the local state language.'],
-        'active', '2026-05-23', '2026-06-11', 'mock-user-admin-id'
+        'job-5', 'Teacher Eligibility Test (JTET)', 'Jharkhand Academic Council (JAC)', 'JAC', '#7C3AED', 
+        'Jharkhand, India', 'Full Time', 0, 0, '₹', 'monthly', 'Fresher / Experienced', 'D.El.Ed / B.Ed', 'Eligibility Exam', 'Govt Jobs', 'Education / Teaching',
+        'Jharkhand Academic Council conducts the Teacher Eligibility Test (JTET) to certify primary and middle school teachers in the state.',
+        ['Qualifying exam to assess eligibility of primary (Class I-V) and middle (Class VI-VIII) school teachers.', 'Demonstrate proper teaching quality standards as per NCTE rules.'],
+        ['D.El.Ed or B.Ed qualification from a recognized NCTE college.', 'Passed secondary or senior secondary with minimum aggregate marks.'],
+        'active', '2026-05-24', null, 0, 'mock-user-admin-id'
       ],
       [
-        'mock-job-5-id', 'Jharkhand Police Constable 2024', 'Jharkhand Police', 'JHP', '#059669', 
-        'Jharkhand', 'Full Time', 21700, 69100, '₹', 'monthly', '0 - 2 Years', '12th Pass', 'Featured', 'Govt Jobs', 'Security / Defense',
-        'District level police constable recruitment for law enforcement and patrolling forces.',
-        ['Maintain public order and local community safety.', 'Assist senior officers in active crime investigation.', 'Perform patrol beats and checkpost guard duties.'],
-        ['10+2 / Intermediate pass from a recognized board.', 'Minimum height and chest measurement as per guidelines.', 'Ability to complete the 10km run in specified limits.'],
-        'active', '2026-05-22', '2026-06-09', 'mock-user-admin-id'
+        'job-6', 'Assistant Professor (Engineering)', 'Jharkhand Public Service Commission (JPSC)', 'JPSC', '#005691', 
+        'Jharkhand, India', 'Full Time', 57700, 182400, '₹', 'monthly', 'Fresher / Experienced', 'M.Tech / PhD', 'JPSC Faculty', 'Govt Jobs', 'Education / Teaching',
+        'Jharkhand Public Service Commission invites applications for Assistant Professor vacancies in Government Engineering Colleges.',
+        ['Engage in academic lectures, curriculum development, and laboratory guidance.', 'Mentor undergraduate students and publish technical papers in indexed journals.', 'Participate in college department committees and accreditation tasks.'],
+        ['M.Tech or PhD in relevant engineering stream from a recognized university.', 'Cleared national-level eligibility certifications (NET/SLET) where applicable.'],
+        'active', '2026-05-23', null, 45, 'mock-user-admin-id'
+      ],
+      [
+        'job-7', 'Lecturer (Govt Polytechnic)', 'Jharkhand Public Service Commission (JPSC)', 'JPSC', '#005691', 
+        'Jharkhand, India', 'Full Time', 56100, 177500, '₹', 'monthly', 'Fresher / Experienced', 'Engineering Degree', 'Ongoing', 'Govt Jobs', 'Education / Teaching',
+        'Recruitment for engineering and non-engineering lecturers in state government polytechnics under JPSC.',
+        ['Deliver technical curriculum lectures and supervise practical lab experiments.', 'Assist in college administrative tasks, semester examinations, and quality assurance.'],
+        ['Bachelor\'s Degree in Engineering/Technology in relevant branch with First Class.', 'Age limits and relaxations as per government directives.'],
+        'active', '2026-05-22', null, 50, 'mock-user-admin-id'
+      ],
+      [
+        'job-8', 'Group B & C Posts', 'Staff Selection Commission (SSC)', 'SSC', '#1A73E8', 
+        'All India', 'Full Time', 35400, 112400, '₹', 'monthly', 'Fresher / Experienced', 'Graduate', 'Apply Online', 'Govt Jobs', 'Public Service',
+        'Staff Selection Commission (SSC) conducts recruitment for various Group B & C posts across ministries and departments of the Government of India.',
+        ['Assist in administrative duties in ministries.', 'Maintain files and reports.', 'Implement government policies under senior supervision.'],
+        ['Must hold a Bachelor\'s degree in any discipline from a recognized university.', 'Age must be between 18-30 years as per post requirements.', 'Indian citizenship is mandatory.'],
+        'active', '2026-05-21', '2026-06-22', 12256, 'mock-user-admin-id'
+      ],
+      [
+        'job-9', 'Assistant Loco Pilot', 'Railway Recruitment Board (RRB)', 'Railway', '#D97706', 
+        'All India', 'Full Time', 19900, 35000, '₹', 'monthly', 'Fresher', 'ITI / Diploma', 'Apply Online', 'Govt Jobs', 'Railways',
+        'Railway Recruitment Board (RRB) invites applications for the recruitment of Assistant Loco Pilots (ALP) in Indian Railways.',
+        ['Assist in operating trains under the supervision of Loco Pilots.', 'Check the mechanical/electrical condition of locomotives.', 'Follow safety directives and rail signals carefully.'],
+        ['10th Pass + ITI or Diploma in Engineering streams.', 'Must meet strict medical standard (A1 visual standards).'],
+        'active', '2026-05-20', '2026-06-14', 11127, 'mock-user-admin-id'
+      ],
+      [
+        'job-10', 'Combined Defence Services', 'Union Public Service Commission (UPSC)', 'UPSC', '#9333EA', 
+        'All India', 'Full Time', 56100, 177500, '₹', 'monthly', 'Fresher', 'Graduate', 'Apply Online', 'Govt Jobs', 'Defense / Security',
+        'Union Public Service Commission (UPSC) conducts Combined Defence Services (CDS) Exam for admission into IMA, INA, AFA, and OTA.',
+        ['Undergo military officer training program.', 'Serve as a commissioned officer in the Indian Armed Forces.'],
+        ['Graduation degree in relevant streams (Engineering for Navy/Air Force, any discipline for Army).', 'Unmarried males/females matching UPSC age specifications.'],
+        'active', '2026-05-19', '2026-06-09', 451, 'mock-user-admin-id'
+      ],
+      [
+        'job-11', 'National Defence Academy', 'Union Public Service Commission (UPSC)', 'UPSC', '#9333EA', 
+        'All India', 'Full Time', 56100, 177500, '₹', 'monthly', 'Fresher', '12th Pass', 'Apply Online', 'Govt Jobs', 'Defense / Security',
+        'Union Public Service Commission (UPSC) conducts NDA & NA Exam for entry into Army, Navy and Air Force wings of National Defence Academy.',
+        ['Undergo basic defense and academic education training.', 'Serve in Indian Army, Navy, or Air Force.'],
+        ['12th Class Pass (with Physics and Mathematics for Air Force and Navy).', 'Unmarried male/female candidates.'],
+        'active', '2026-05-18', '2026-06-09', 394, 'mock-user-admin-id'
+      ],
+      [
+        'job-12', 'Flying & Ground Duty', 'Indian Air Force (IAF)', 'IAF', '#2563EB', 
+        'All India', 'Full Time', 56100, 110000, '₹', 'monthly', 'Fresher', 'Graduate / BE', 'Apply Online', 'Govt Jobs', 'Defense / Security',
+        'Indian Air Force (IAF) invites applications for Flying Branch and Ground Duty (Technical and Non-Technical) branches through AFCAT entry.',
+        ['Fulfill flying operations or supervise aeronautical technical/non-technical operations.', 'Manage command systems and ground logistics.'],
+        ['Bachelor Degree in any stream with Physics & Math at 10+2, or B.E./B.Tech.', 'Age limits: 20-24 years for Flying, 20-26 years for Ground Duty.'],
+        'active', '2026-05-17', '2026-06-19', 379, 'mock-user-admin-id'
+      ],
+      [
+        'job-13', 'Graduate/Diploma/Trade Apprentice', 'Northern Coalfields Limited (NCL)', 'NCL', '#059669', 
+        'Singrauli, MP/UP', 'Full Time', 8000, 10000, '₹', 'monthly', 'Fresher', 'ITI / Diploma / Degree', 'Ongoing', 'Govt Jobs', 'Mining / Public Enterprise',
+        'Northern Coalfields Limited (NCL) invites online applications for Graduate, Diploma, and Trade Apprentice training positions.',
+        ['Undergo technical training in designated engineering trades.', 'Assist in site mining operational units.'],
+        ['ITI in relevant trade, Diploma, or Degree in Engineering.', 'Must register on NATS/NAPS portal.'],
+        'active', '2026-05-16', null, 1607, 'mock-user-admin-id'
+      ],
+      [
+        'job-14', 'Group B & C Posts', 'Delhi Subordinate Services Selection Board (DSSSB)', 'DSSSB', '#DC2626', 
+        'Delhi, India', 'Full Time', 21700, 81100, '₹', 'monthly', 'Fresher / Experienced', '10th / 12th / Graduate', 'Starting June 16', 'Govt Jobs', 'Public Service',
+        'DSSSB releases advertisement No. 03/2026 for various Group B & C vacancies in departments of GNCTD. Applications start from June 16.',
+        ['Perform general administration, checking, and files clerical work.', 'Execute department field operations.'],
+        ['10th/12th pass or Graduate from a recognized Board/University (Post-wise criteria).'],
+        'active', '2026-05-15', '2026-07-16', 1979, 'mock-user-admin-id'
+      ],
+      [
+        'job-15', 'Management Trainee', 'Coal India Limited (CIL)', 'CIL', '#059669', 
+        'Kolkata, India', 'Full Time', 50000, 160000, '₹', 'monthly', 'Fresher', 'Engineering / MBA', 'Apply Online', 'Govt Jobs', 'Public Sector Undertaking (PSU)',
+        'Coal India Limited (CIL) recruits Management Trainees in disciplines of Mining, Civil, Mechanical, System, HR, Marketing, etc.',
+        ['Executive supervisory duties in designated disciplines.', 'Ensure project compliance, safety norms, and field efficiency.'],
+        ['B.E./B.Tech/B.Sc Engineering, or MBA/PG Diploma with minimum 60% marks.'],
+        'active', '2026-05-14', '2026-06-11', 660, 'mock-user-admin-id'
+      ],
+      [
+        'job-16', 'Agniveer GD/Technical/Clerk', 'Indian Army', 'Army', '#1B8C0A', 
+        'All India', 'Full Time', 30000, 40000, '₹', 'monthly', 'Fresher', '10th / 12th / ITI', 'Exam Ongoing', 'Govt Jobs', 'Defense / Security',
+        'Indian Army conducts online common entrance exam (CEE) for recruiting Agniveers in General Duty, Technical, Clerk/Store Keeper, and Tradesmen categories.',
+        ['Serve in primary field/combat/trades duties under the Agniveer scheme.', 'Maintain high physical training and security discipline.'],
+        ['10th Pass (GD), 12th Pass (Technical/Clerk), 8th/10th Pass (Tradesmen).', 'Age: 17.5 to 21 years.'],
+        'active', '2026-05-13', null, 25000, 'mock-user-admin-id'
+      ],
+      [
+        'job-17', 'General Duty Doctor', 'Civil Surgeon Office East Singhbhum', 'CSOES', '#059669',
+        'East Singhbhum, Jharkhand', 'Full Time', 45000, 65000, '₹', 'monthly', 'Fresher / Experienced', 'MBBS', 'Walk-in Interview', 'Jharkhand', 'Healthcare / Medical',
+        'Walk-in interview for the recruitment of General Duty Doctors under District Health Society, East Singhbhum, Jamshedpur.',
+        ['Provide clinical care and medical services in district hospitals.', 'Supervise outdoor and indoor patient departments.', 'Assist in implementation of state healthcare programs.'],
+        ['Must hold an MBBS degree from a recognized MCI college.', 'Valid registration certificate from state medical council.'],
+        'active', '2026-06-03', '2026-06-10', 5, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/civil-surgeon-office-east-singhbhum-general-duty-doctor-recruitment-2026-walkin-3052542'
+      ],
+      [
+        'job-18', 'Non Faculty Posts (Group B & C)', 'AIIMS Deoghar', 'AIIMSD', '#7C3AED',
+        'Deoghar, Jharkhand', 'Full Time', 35400, 112400, '₹', 'monthly', 'Experienced', 'Graduate / Diploma / 12th', 'Apply Offline', 'Jharkhand', 'Healthcare / Administration',
+        'Offline applications are invited for recruitment to various Non-Faculty Group B and C posts on deputation basis at AIIMS Deoghar.',
+        ['Execute daily administrative and clinical support workflows.', 'Maintain registers and records under supervision of senior officers.', 'Coordinate departmental tasks across hospital wings.'],
+        ['Graduate, Diploma, or 12th pass matching specific post criteria.', 'Experience in government health departments or public undertakings is preferred.'],
+        'active', '2026-06-03', '2026-07-03', 11, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/aiims-deoghar-non-faculty-recruitment-2026-apply-offline-for-11-posts-3050225'
+      ],
+      [
+        'job-19', 'Technician (Group II)', 'CSIR - Central Institute of Mining and Fuel Research', 'CIMFR', '#2563EB',
+        'Dhanbad, Jharkhand', 'Full Time', 19900, 63200, '₹', 'monthly', 'Fresher / Experienced', '10th Pass + ITI', 'Apply Online', 'Jharkhand', 'Mining / Technical',
+        'CSIR-CIMFR, Dhanbad invites online applications from enthusiastic Indian nationals for recruitment of Technicians (Group II) in various trades.',
+        ['Operate laboratory mining apparatus and trade equipment.', 'Follow standard chemical and safety protocols under team leads.', 'Log experiment observations and daily testing statistics.'],
+        ['10th class pass with science subjects from a recognized board.', 'Valid ITI certificate in relevant trade (Electrical, Fitter, etc.).'],
+        'active', '2026-05-20', '2026-06-19', 30, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/csir-cimfr-technician-recruitment-2026-apply-online-for-30-posts-3049841'
+      ],
+      [
+        'job-20', 'IT Executive', 'District Health Society Jharkhand', 'DHSJH', '#0891B2',
+        'Jharkhand, India', 'Full Time', 22000, 30000, '₹', 'monthly', 'Fresher / Experienced', 'B.Tech / B.E / M.Sc', 'Apply Online', 'Jharkhand', 'IT / Healthcare Support',
+        'Recruitment of IT Executives on contractual basis for Medical Colleges and District Hospitals under Jharkhand Health Department.',
+        ['Manage IT hardware, local area networks, and hospital information systems.', 'Provide technical support for state tele-medicine and digital health portals.', 'Maintain system backups and troubleshoot hardware faults.'],
+        ['B.Tech/B.E in Computer Science/IT or M.Sc in IT/Electronics.', 'Hands-on experience with hardware troubleshooting and basic SQL queries.'],
+        'active', '2026-05-13', '2026-06-25', 29, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/medical-college-and-district-hospital-jharkhand-it-executive-recruitment-2026-apply-online-for-29-posts-3048894'
       ]
     ];
 
     for (const j of jobs) {
+      const applyLink = j[24] || '';
+      const params = j.slice(0, 24).concat([applyLink]);
       await pool.query(
-        `INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, last_date, posted_by) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
-        j
+        `INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, last_date, vacancies, posted_by, apply_link) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
+        params
       );
     }
 
     // Seed Exams
     const exams = [
-      ['e1', 'JSSC CGL Recruitment 2024', 'Jharkhand Staff Selection Commission', 'JSSC', 'Upcoming Exams', '18 May 2026', '2,018 Posts', 'Apply Now', 'Online application invited for JSSC CGL Combined Graduate Level examination for administrative posts.', true],
-      ['e2', 'Jharkhand Police Constable Recruitment 2024', 'Jharkhand Staff Selection Commission', 'JSSC', 'Upcoming Exams', '20 May 2026', '4,919 Posts', 'Apply Now', 'Recruitment notice for constables in various districts of Jharkhand. Physical test followed by written test.', true],
-      ['e3', 'JPSC Combined Civil Services Prelims 2024', 'Jharkhand Public Service Commission', 'JPSC', 'Upcoming Exams', '15 Jun 2026', '342 Posts', 'Apply Now', 'JPSC Combined Civil Services Prelims exam notifications for administrative, finance, and executive roles.', false],
-      ['e4', 'JSSC CGL Admit Card 2024', 'Jharkhand Staff Selection Commission', 'JSSC', 'Admit Card', 'Released Now', '', 'Released', 'Admit card released. Download now from JSSC portal.', true],
-      ['e5', 'JPSC Civil Services Prelims Result 2024', 'Jharkhand Public Service Commission', 'JPSC', 'Results', 'Declared Now', '', 'Declared', 'Result declared. Check your roll number and scores.', true]
+      ['e1', 'Combined Civil Services (Deputy Collector, DSP, etc.)', 'Jharkhand Public Service Commission', 'JPSC', 'Upcoming Exams', 'Recruitment Ongoing', '103 Posts', 'Apply Now', 'Selection Process: Prelims + Mains + Interview. Open to graduates. Source: JPSC (https://www.jpsc.gov.in)', true],
+      ['e2', 'JTGLCCE (Assistant, Inspector & Others)', 'Jharkhand Staff Selection Commission', 'JSSC', 'Upcoming Exams', '30 Jun 2026', '611 Posts', 'Apply Now', 'Selection Process: Written Exam. B.Sc / M.Sc / B.Pharm / Graduate (Post-wise). Source: FreeJobAlert (https://www.freejobalert.com)', true],
+      ['e3', 'Polytechnic Lecturer', 'Jharkhand Public Service Commission', 'JPSC', 'Upcoming Exams', 'As per Notification', '349+ Posts', 'Apply Now', 'Selection Process: Written + Interview. B.E./B.Tech / M.Tech. Source: The Times of India (https://timesofindia.indiatimes.com)', true],
+      ['e5', 'Teacher Eligibility Test (JTET)', 'Jharkhand Academic Council', 'JAC', 'Upcoming Exams', 'Registration Closing', 'Eligibility Exam', 'Apply Now', 'Selection Process: Written Exam. D.El.Ed/B.Ed. Source: The Times of India (https://timesofindia.indiatimes.com)', true],
+      ['e6', 'Assistant Professor (Engineering)', 'Jharkhand Public Service Commission', 'JPSC', 'Admit Card', 'Ongoing', 'Multiple Posts', 'Apply Now', 'Selection Process: Interview/Written. M.Tech/PhD. Source: JPSC (https://www.jpsc.gov.in)', false],
+      ['e7', 'Lecturer (Govt Polytechnic)', 'Jharkhand Public Service Commission', 'JPSC', 'Admit Card', 'Ongoing', 'Multiple Posts', 'Apply Now', 'Selection Process: Written + Interview. Engineering Degree. Source: JPSC (https://www.jpsc.gov.in)', false],
+      ['e8', 'Group B & C Posts', 'Staff Selection Commission', 'SSC', 'Upcoming Exams', '22 Jun 2026', '12,256 Posts', 'Apply Now', 'Selection Process: Tier 1 + Tier 2 Computer Based Exams. Open to graduates. Source: Navbharat Times (https://navbharattimes.indiatimes.com)', true],
+      ['e9', 'Assistant Loco Pilot', 'Railway Recruitment Board', 'Railway', 'Admit Card', '14 Jun 2026', '11,127 Posts', 'Apply Now', 'Selection Process: CBT 1 & 2 + CBAT + Document Verification. ITI/Diploma. Source: Navbharat Times (https://navbharattimes.indiatimes.com)', true],
+      ['e10', 'Combined Defence Services', 'Union Public Service Commission', 'UPSC', 'Results', '9 Jun 2026', '451 Posts', 'Apply Now', 'Selection Process: Written Exam + SSB Interview. Open to graduates. Source: Navbharat Times (https://navbharattimes.indiatimes.com)', true],
+      ['e11', 'National Defence Academy', 'Union Public Service Commission', 'UPSC', 'Admit Card', '9 Jun 2026', '394 Posts', 'Apply Now', 'Selection Process: Written Exam + SSB Interview. Open to 12th pass. Source: Navbharat Times (https://navbharattimes.indiatimes.com)', true],
+      ['e12', 'Flying & Ground Duty', 'Indian Air Force', 'IAF', 'Results', '19 Jun 2026', '379 Posts', 'Apply Now', 'Selection Process: Written Exam + AFSB Testing. Open to graduates/BE. Source: Navbharat Times (https://navbharattimes.indiatimes.com)', true],
+      ['e13', 'Graduate/Diploma/Trade Apprentice', 'Northern Coalfields Limited', 'NCL', 'Results', 'Ongoing', '1,607 Posts', 'Apply Now', 'Selection Process: Merit List based on Marks. ITI/Diploma/Degree. Source: The Times of India (https://timesofindia.indiatimes.com)', true],
+      ['e14', 'Group B & C Posts', 'Delhi Subordinate Services Selection Board', 'DSSSB', 'Results', 'Applications Start 16 Jun', '1,979 Posts', 'Notification Out', 'Selection Process: Written Examination. Open to 10th/12th/Graduates. Source: The Times of India (https://timesofindia.indiatimes.com)', true],
+      ['e15', 'Management Trainee', 'Coal India Limited', 'CIL', 'Results', '11 Jun 2026', '660 Posts', 'Apply Now', 'Selection Process: GATE Score / CBT + Interview. Engineering/MBA. Source: Career Power (https://www.careerpower.in)', true],
+      ['e16', 'Agniveer GD/Technical/Clerk', 'Indian Army', 'Army', 'Admit Card', 'Exam Ongoing', 'Thousands', 'Admit Card Out', 'Selection Process: Online CEE + Physical Fitness Test. Open to 10th/12th/ITI. Source: The Times of India (https://timesofindia.indiatimes.com)', true]
     ];
 
     for (const e of exams) {
@@ -424,5 +582,130 @@ const seedTables = async () => {
     console.log('🌲 PostgreSQL Seeding Finished successfully.');
   } else {
     console.log('👍 PostgreSQL tables already populated. Skipping seed data insertion.');
+  }
+};
+
+const runCategoryMigrations = async () => {
+  console.log('🔄 Running SQL category migrations...');
+  try {
+    // 1. Update Govt Jobs based on company_initial
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'Jharkhand' 
+      WHERE category IN ('Govt Jobs', 'Govt') 
+        AND company_initial IN ('JPSC', 'JSSC', 'JAC', 'JHGD');
+    `);
+    
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'SSC' 
+      WHERE category IN ('Govt Jobs', 'Govt') 
+        AND company_initial = 'SSC';
+    `);
+
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'UPSC' 
+      WHERE category IN ('Govt Jobs', 'Govt') 
+        AND company_initial = 'UPSC';
+    `);
+
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'Railway' 
+      WHERE category IN ('Govt Jobs', 'Govt') 
+        AND company_initial IN ('Railway', 'RRB');
+    `);
+
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'Other State' 
+      WHERE category IN ('Govt Jobs', 'Govt') 
+        AND company_initial IN ('IAF', 'DSSSB', 'CIL', 'NCL', 'Army', 'Defence');
+    `);
+
+    // Fallback for location/other fields
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'Jharkhand' 
+      WHERE category IN ('Govt Jobs', 'Govt') 
+        AND (location ILIKE '%Jharkhand%' OR company ILIKE '%Jharkhand%');
+    `);
+
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'Other State' 
+      WHERE category IN ('Govt Jobs', 'Govt');
+    `);
+
+    // 2. Map Private/Private Jobs to 'Private'
+    await pool.query(`
+      UPDATE jobs 
+      SET category = 'Private' 
+      WHERE category IN ('Private Jobs', 'Private');
+    `);
+
+    // 3. Insert new live Jharkhand jobs if they don't already exist
+    const newJobsToInsert = [
+      [
+        'job-17', 'General Duty Doctor', 'Civil Surgeon Office East Singhbhum', 'CSOES', '#059669',
+        'East Singhbhum, Jharkhand', 'Full Time', 45000, 65000, '₹', 'monthly', 'Fresher / Experienced', 'MBBS', 'Walk-in Interview', 'Jharkhand', 'Healthcare / Medical',
+        'Walk-in interview for the recruitment of General Duty Doctors under District Health Society, East Singhbhum, Jamshedpur.',
+        ['Provide clinical care and medical services in district hospitals.', 'Supervise outdoor and indoor patient departments.', 'Assist in implementation of state healthcare programs.'],
+        ['Must hold an MBBS degree from a recognized MCI college.', 'Valid registration certificate from state medical council.'],
+        'active', '2026-06-03', '2026-06-10', 5, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/civil-surgeon-office-east-singhbhum-general-duty-doctor-recruitment-2026-walkin-3052542'
+      ],
+      [
+        'job-18', 'Non Faculty Posts (Group B & C)', 'AIIMS Deoghar', 'AIIMSD', '#7C3AED',
+        'Deoghar, Jharkhand', 'Full Time', 35400, 112400, '₹', 'monthly', 'Experienced', 'Graduate / Diploma / 12th', 'Apply Offline', 'Jharkhand', 'Healthcare / Administration',
+        'Offline applications are invited for recruitment to various Non-Faculty Group B and C posts on deputation basis at AIIMS Deoghar.',
+        ['Execute daily administrative and clinical support workflows.', 'Maintain registers and records under supervision of senior officers.', 'Coordinate departmental tasks across hospital wings.'],
+        ['Graduate, Diploma, or 12th pass matching specific post criteria.', 'Experience in government health departments or public undertakings is preferred.'],
+        'active', '2026-06-03', '2026-07-03', 11, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/aiims-deoghar-non-faculty-recruitment-2026-apply-offline-for-11-posts-3050225'
+      ],
+      [
+        'job-19', 'Technician (Group II)', 'CSIR - Central Institute of Mining and Fuel Research', 'CIMFR', '#2563EB',
+        'Dhanbad, Jharkhand', 'Full Time', 19900, 63200, '₹', 'monthly', 'Fresher / Experienced', '10th Pass + ITI', 'Apply Online', 'Jharkhand', 'Mining / Technical',
+        'CSIR-CIMFR, Dhanbad invites online applications from enthusiastic Indian nationals for recruitment of Technicians (Group II) in various trades.',
+        ['Operate laboratory mining apparatus and trade equipment.', 'Follow standard chemical and safety protocols under team leads.', 'Log experiment observations and daily testing statistics.'],
+        ['10th class pass with science subjects from a recognized board.', 'Valid ITI certificate in relevant trade (Electrical, Fitter, etc.).'],
+        'active', '2026-05-20', '2026-06-19', 30, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/csir-cimfr-technician-recruitment-2026-apply-online-for-30-posts-3049841'
+      ],
+      [
+        'job-20', 'IT Executive', 'District Health Society Jharkhand', 'DHSJH', '#0891B2',
+        'Jharkhand, India', 'Full Time', 22000, 30000, '₹', 'monthly', 'Fresher / Experienced', 'B.Tech / B.E / M.Sc', 'Apply Online', 'Jharkhand', 'IT / Healthcare Support',
+        'Recruitment of IT Executives on contractual basis for Medical Colleges and District Hospitals under Jharkhand Health Department.',
+        ['Manage IT hardware, local area networks, and hospital information systems.', 'Provide technical support for state tele-medicine and digital health portals.', 'Maintain system backups and troubleshoot hardware faults.'],
+        ['B.Tech/B.E in Computer Science/IT or M.Sc in IT/Electronics.', 'Hands-on experience with hardware troubleshooting and basic SQL queries.'],
+        'active', '2026-05-13', '2026-06-25', 29, 'mock-user-admin-id',
+        'https://www.freejobalert.com/articles/medical-college-and-district-hospital-jharkhand-it-executive-recruitment-2026-apply-online-for-29-posts-3048894'
+      ]
+    ];
+
+    for (const j of newJobsToInsert) {
+      const check = await pool.query('SELECT COUNT(*) FROM jobs WHERE id = $1', [j[0]]);
+      if (parseInt(check.rows[0].count) === 0) {
+        console.log(`🌱 Migration inserting new live job: ${j[1]}`);
+        const applyLink = j[24] || '';
+        const params = j.slice(0, 24).concat([applyLink]);
+        await pool.query(
+          `INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, last_date, vacancies, posted_by, apply_link) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
+          params
+        );
+      }
+    }
+
+    // 4. Delete expired jobs and exams
+    await pool.query("DELETE FROM jobs WHERE id = 'job-4' OR last_date < NOW()::date;");
+    await pool.query("DELETE FROM exams WHERE id = 'e4' OR (last_date = '4 Jun 2026' AND org_short = 'JHGD');");
+    console.log('🗑️ Expired job and exam posts removed successfully from database.');
+
+    console.log('✅ SQL category migrations completed successfully.');
+  } catch (error) {
+    console.error('❌ SQL category migrations error:', error.message);
   }
 };

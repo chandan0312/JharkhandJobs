@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Lock, Mail, User, Phone, CheckSquare, AlertCircle, X, ChevronRight, UserCheck } from 'lucide-react';
+import { 
+  Lock, Mail, User, Phone, AlertCircle, Eye, EyeOff, 
+  ShieldCheck, Briefcase, Bell, BookOpen, Star 
+} from 'lucide-react';
 
 const Login = () => {
   const { t } = useLanguage();
@@ -15,17 +18,14 @@ const Login = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Simulated Google Sign-In Modal States
-  const [googleModalOpen, setGoogleModalOpen] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
-  const [showCustomGoogleForm, setShowCustomGoogleForm] = useState(false);
+  const [googleInitialized, setGoogleInitialized] = useState(false);
 
-  // If already logged in, redirect to correct dashboard/home
+  // Redirect to correct panel on successful login
   useEffect(() => {
     if (user) {
       if (user.role === 'admin') {
@@ -45,36 +45,34 @@ const Login = () => {
       if (activeTab === 'login') {
         const success = await login(email, password);
         if (success) {
-          // Auth Context state will trigger redirect via useEffect above
+          // Redirect handled by useEffect
         }
       } else {
+        // Enforce strong password requirements
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!strongPasswordRegex.test(password)) {
+          throw new Error('Password must be at least 8 characters, and contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. @$!%*?&).');
+        }
+
         const success = await register(name, email, password, phone);
         if (success) {
-          // Auth Context state will trigger redirect via useEffect above
+          // Redirect handled by useEffect
         }
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'Authentication failed. Please check your inputs.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Google Login Select profile triggers
-  const handleGoogleSignInSelected = async (googleUserEmail, googleUserName) => {
-    setGoogleModalOpen(false);
+  const handleGoogleCredentialResponse = async (response) => {
     setSubmitting(true);
     setError(null);
     try {
-      const mockGooglePayload = {
-        googleId: 'mock-google-id-' + Math.floor(Math.random() * 1e9),
-        email: googleUserEmail,
-        name: googleUserName,
-      };
-      
-      const success = await loginWithGoogle(mockGooglePayload);
+      const success = await loginWithGoogle({ credential: response.credential });
       if (success) {
-        // Redirection handled in useEffect
+        // Redirect handled by useEffect
       }
     } catch (err) {
       setError(err.message || 'Google Login failed.');
@@ -83,608 +81,538 @@ const Login = () => {
     }
   };
 
-  const handleCustomGoogleSubmit = (e) => {
-    e.preventDefault();
-    if (!customGoogleEmail) return;
-    const resolvedName = customGoogleName || customGoogleEmail.split('@')[0];
-    handleGoogleSignInSelected(customGoogleEmail, resolvedName);
-  };
+  // Initialize official Google Identity Services button
+  useEffect(() => {
+    /* global google */
+    const initGsi = () => {
+      if (typeof google !== 'undefined') {
+        try {
+          google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '976260447025-u5a4ki77guc06to3f0avpt4nfjphg25j.apps.googleusercontent.com',
+            callback: handleGoogleCredentialResponse,
+          });
 
-  const testGoogleAccounts = [
-    {
-      name: 'Rohan Kumar',
-      email: 'rohan.google@gmail.com',
-      initials: 'RK',
-      bgColor: '#4F46E5', // Indigo
-      roleText: 'Candidate Profile (User)'
-    },
-    {
-      name: 'Ananya Sharma',
-      email: 'ananya.google@gmail.com',
-      initials: 'AS',
-      bgColor: '#EC4899', // Pink
-      roleText: 'Candidate Profile (User)'
-    },
-    {
-      name: 'Jharkhand Jobs Admin',
-      email: 'admin.google@jharkhandjobs.com',
-      initials: 'AD',
-      bgColor: '#10B981', // Emerald
-      roleText: 'Administrator Access (Admin)'
+          const buttonElement = document.getElementById('google-signin-button');
+          if (buttonElement) {
+            google.accounts.id.renderButton(
+              buttonElement,
+              { 
+                theme: 'outline', 
+                size: 'large', 
+                width: 396,
+                text: 'continue_with',
+                shape: 'rectangular'
+              }
+            );
+            setGoogleInitialized(true);
+          }
+        } catch (err) {
+          console.error('Failed to initialize Google Sign-In:', err);
+        }
+      }
+    };
+
+    if (activeTab === 'login') {
+      if (typeof google !== 'undefined') {
+        initGsi();
+      } else {
+        const timer = setTimeout(() => {
+          initGsi();
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
-  ];
+  }, [activeTab, googleInitialized]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', position: 'relative', minHeight: '80vh' }}>
-      
-      <div className="animate-scale-in" style={{
-        maxWidth: '450px',
-        width: '100%',
-        padding: '40px 36px',
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
-        backdropFilter: 'blur(24px)',
-        border: '1.5px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '24px',
-        boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)'
-      }}>
-        
-        {/* Tab Selection */}
-        <div style={{ display: 'flex', borderBottom: '2px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
-          <button 
-            type="button"
-            onClick={() => { setActiveTab('login'); setError(null); }}
-            className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
-            style={{ 
-              flex: 1, 
-              textAlign: 'center', 
-              padding: '12px 0', 
-              border: 'none', 
-              background: 'none', 
-              borderBottom: activeTab === 'login' ? '2.5px solid #1B8C0A' : 'none', 
-              color: activeTab === 'login' ? '#86EFAC' : '#94A3B8', 
-              fontWeight: '700', 
-              fontSize: '14px', 
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            {t('login.login')}
-          </button>
-          <button 
-            type="button"
-            onClick={() => { setActiveTab('register'); setError(null); }}
-            className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-            style={{ 
-              flex: 1, 
-              textAlign: 'center', 
-              padding: '12px 0', 
-              border: 'none', 
-              background: 'none', 
-              borderBottom: activeTab === 'register' ? '2.5px solid #1B8C0A' : 'none', 
-              color: activeTab === 'register' ? '#86EFAC' : '#94A3B8', 
-              fontWeight: '700', 
-              fontSize: '14px', 
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            {t('login.register')}
-          </button>
-        </div>
+    <div className="login-page-container">
+      {/* Dynamic Inject Responsive CSS Styles */}
+      <style>{`
+        .login-page-container {
+          display: flex;
+          min-height: 100vh;
+          background-color: #F8FAFC;
+          font-family: 'Inter', sans-serif;
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          width: 100%;
+        }
+        .login-sidebar {
+          width: 42%;
+          min-width: 420px;
+          background: linear-gradient(180deg, #092015 0%, #051A10 100%);
+          color: white;
+          padding: 48px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          box-sizing: border-box;
+        }
+        .login-form-container {
+          flex: 1;
+          padding: 48px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          align-items: center;
+          box-sizing: border-box;
+          min-height: 100vh;
+          overflow-y: auto;
+        }
+        .login-input:focus {
+          border-color: #1B8C0A !important;
+          box-shadow: 0 0 0 3px rgba(27, 140, 10, 0.1) !important;
+        }
+        @media (max-width: 992px) {
+          .login-sidebar {
+            display: none !important;
+          }
+          .login-form-container {
+            padding: 32px 16px !important;
+            justify-content: center !important;
+          }
+        }
+      `}</style>
 
-        {/* Header Branding */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px' }}>
-            {activeTab === 'login' ? t('login.welcomeBack') : t('login.createAccount')}
-          </h2>
-          <p style={{ fontSize: '12.5px', color: '#94A3B8', marginTop: '6px' }}>
-            {activeTab === 'login' ? t('login.signInSubtitle') : t('login.registerSubtitle')}
-          </p>
-        </div>
-
-        {/* Displays alert messages */}
-        {(error || authError) && (
-          <div style={{ 
-            backgroundColor: 'rgba(239, 68, 68, 0.15)', 
-            borderLeft: '4px solid #EF4444', 
-            color: '#FCA5A5', 
-            padding: '12px', 
-            fontSize: '13px', 
-            borderRadius: '8px', 
-            marginBottom: '20px', 
-            display: 'flex', 
-            gap: '8px', 
-            alignItems: 'center' 
-          }}>
-            <AlertCircle size={16} style={{ color: '#EF4444' }} />
-            <span>{error || authError}</span>
+      {/* ==================== LEFT TRIBAL WARRIOR PANEL ==================== */}
+      <aside className="login-sidebar">
+        {/* Top: Branding Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          <div style={{ padding: '8px', backgroundColor: '#0A2D1E', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/assets/images/logo.png" alt="Jharkhand Jobs Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
           </div>
-        )}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '0.5px', lineHeight: '1.2' }}>Jharkhand Jobs</span>
+            <span style={{ fontSize: '10px', color: '#86EFAC', fontWeight: '600' }}>Apna Jharkhand, Apna Career</span>
+          </div>
+        </div>
 
-        {/* Input Forms */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          
-          {activeTab === 'register' && (
-            <>
-              {/* Full Name */}
-              <div style={{ position: 'relative' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.fullName')}</label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <User size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Rohan Kumar"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="form-input"
-                    style={{ 
-                      paddingLeft: '40px', 
-                      width: '100%', 
-                      height: '44px', 
-                      borderRadius: '10px', 
-                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-                      backgroundColor: '#0F172A', 
-                      color: 'white', 
-                      outline: 'none', 
-                      fontSize: '13.5px',
-                      transition: 'all 0.2s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-              </div>
+        {/* Center Descriptions & Statues */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center' }}>
+          {/* Welcome Text */}
+          <div style={{ marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '32px', fontWeight: '850', color: '#FFFFFF', margin: '0 0 8px 0', lineHeight: '1.2', letterSpacing: '-0.5px' }}>
+              Welcome Back!<br />
+              <span style={{ color: '#22C55E' }}>Login to Your Account</span>
+            </h1>
+            <p style={{ fontSize: '13px', color: '#A7F3D0', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+              Access thousands of jobs, exams, study materials and career resources.
+            </p>
+          </div>
 
-              {/* Phone */}
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.phone')}</label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Phone size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. +91 91234 56789"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="form-input"
-                    style={{ 
-                      paddingLeft: '40px', 
-                      width: '100%', 
-                      height: '44px', 
-                      borderRadius: '10px', 
-                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-                      backgroundColor: '#0F172A', 
-                      color: 'white', 
-                      outline: 'none', 
-                      fontSize: '13.5px',
-                      transition: 'all 0.2s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
+          {/* Features highlight */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '16px 0' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#4ADE80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Briefcase size={16} />
               </div>
-            </>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '750', color: '#FFFFFF' }}>Latest Job Updates</span>
+                <span style={{ fontSize: '11.5px', color: '#94A3B8', fontWeight: '500' }}>Get instant notifications for new opportunities</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#4ADE80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Bell size={16} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '750', color: '#FFFFFF' }}>Exam & Result Alerts</span>
+                <span style={{ fontSize: '11.5px', color: '#94A3B8', fontWeight: '500' }}>Stay updated with all exam and result information</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#4ADE80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <BookOpen size={16} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '750', color: '#FFFFFF' }}>Study & Preparation</span>
+                <span style={{ fontSize: '11.5px', color: '#94A3B8', fontWeight: '500' }}>Access study materials, mock tests and career guidance</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Majestic Statue Illustration */}
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0', alignItems: 'center' }}>
+            <img 
+              src="/assets/images/birsa_munda_statue.png" 
+              alt="Birsa Munda Statue" 
+              style={{ 
+                width: '100%', 
+                maxHeight: '280px', 
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 15px 30px rgba(0,0,0,0.45))'
+              }} 
+            />
+          </div>
+        </div>
+
+        {/* Bottom Social Proof */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          padding: '12px 20px', 
+          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+          border: '1px solid rgba(255, 255, 255, 0.08)', 
+          borderRadius: '16px',
+          backdropFilter: 'blur(8px)'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#E2E8F0' }}>Trusted by 8,000+ Aspirants</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', marginRight: '-4px' }}>
+              {['A', 'B', 'C', 'D'].map((nameChar, idx) => (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    width: '24px', 
+                    height: '24px', 
+                    borderRadius: '50%', 
+                    border: '2.5px solid #051A10', 
+                    backgroundColor: idx % 2 === 0 ? '#10B981' : '#2563EB',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '8px',
+                    fontWeight: '900',
+                    marginLeft: idx > 0 ? '-8px' : '0',
+                    zIndex: 4 - idx
+                  }}
+                >
+                  {nameChar}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <Star size={12} style={{ color: '#FBBF24', fill: '#FBBF24' }} />
+              <span style={{ fontSize: '11px', fontWeight: '800', color: '#FFFFFF' }}>4.8/5</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ==================== RIGHT SECURE FORM PANEL ==================== */}
+      <section className="login-form-container">
+        {/* Top: Secure floating pill */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', pointerEvents: 'none' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px', 
+            backgroundColor: '#ECFDF5', 
+            border: '1px solid #D1FAE5', 
+            padding: '6px 14px', 
+            borderRadius: '8px'
+          }}>
+            <ShieldCheck size={14} style={{ color: '#059669' }} />
+            <span style={{ fontSize: '11px', fontWeight: '750', color: '#065F46' }}>Secure</span>
+            <span style={{ fontSize: '10.5px', color: '#047857', fontWeight: '500' }}>| 100% Safe & Secure</span>
+          </div>
+        </div>
+
+        {/* Center: Core Authentication Card */}
+        <div className="animate-scale-in" style={{
+          maxWidth: '460px',
+          width: '100%',
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '40px 32px',
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.02), 0 8px 10px -6px rgba(0,0,0,0.02)',
+          boxSizing: 'border-box',
+          margin: '24px 0'
+        }}>
+          {/* Internal Tab Slider Switcher */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', marginBottom: '24px' }}>
+            <button 
+              type="button" 
+              onClick={() => { setActiveTab('login'); setError(null); }}
+              style={{
+                flex: 1, padding: '12px 0', border: 'none', background: 'none',
+                borderBottom: activeTab === 'login' ? '2.5px solid #1B8C0A' : '2.5px solid transparent',
+                color: activeTab === 'login' ? '#1B8C0A' : '#64748B',
+                fontWeight: '750', fontSize: '13.5px', cursor: 'pointer',
+                outline: 'none', transition: 'all 0.2s ease'
+              }}
+            >
+              Login
+            </button>
+            <button 
+              type="button" 
+              onClick={() => { setActiveTab('register'); setError(null); }}
+              style={{
+                flex: 1, padding: '12px 0', border: 'none', background: 'none',
+                borderBottom: activeTab === 'register' ? '2.5px solid #1B8C0A' : '2.5px solid transparent',
+                color: activeTab === 'register' ? '#1B8C0A' : '#64748B',
+                fontWeight: '750', fontSize: '13.5px', cursor: 'pointer',
+                outline: 'none', transition: 'all 0.2s ease'
+              }}
+            >
+              Create Account
+            </button>
+          </div>
+
+          {/* Form Headers */}
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.5px' }}>
+              {activeTab === 'login' ? 'Login to your account' : 'Register your account'}
+            </h2>
+            <p style={{ fontSize: '12px', color: '#64748B', margin: 0, fontWeight: '500' }}>
+              {activeTab === 'login' ? 'Welcome back! Please enter your details.' : 'Join thousands of Jharkhand aspirants today.'}
+            </p>
+          </div>
+
+          {/* Auth Alert Messages */}
+          {(error || authError) && (
+            <div style={{ 
+              backgroundColor: '#FEF2F2', 
+              borderLeft: '4px solid #EF4444', 
+              color: '#991B1B', 
+              padding: '12px', 
+              fontSize: '12.5px', 
+              borderRadius: '6px', 
+              marginBottom: '20px', 
+              display: 'flex', 
+              gap: '8px', 
+              alignItems: 'flex-start'
+            }}>
+              <AlertCircle size={16} style={{ color: '#EF4444', flexShrink: 0, marginTop: '2px' }} />
+              <span>{error || authError}</span>
+            </div>
           )}
 
-          {/* Email */}
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.email')}</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Mail size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
-              <input
-                type="email"
-                required
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="form-input"
-                style={{ 
-                  paddingLeft: '40px', 
-                  width: '100%', 
-                  height: '44px', 
-                  borderRadius: '10px', 
-                  border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-                  backgroundColor: '#0F172A', 
-                  color: 'white', 
-                  outline: 'none', 
-                  fontSize: '13.5px',
-                  transition: 'all 0.2s'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-              />
-            </div>
-          </div>
+          {/* Inputs Form */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {activeTab === 'register' && (
+              <>
+                {/* Full Name Field */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Full Name</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <User size={15} style={{ position: 'absolute', left: '12px', color: '#94A3B8' }} />
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="e.g. Rohan Kumar" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      style={{
+                        width: '100%', padding: '10px 12px 10px 36px', fontSize: '13px',
+                        border: '1px solid #CBD5E1', borderRadius: '8px', outline: 'none',
+                        transition: 'all 0.2s ease', backgroundColor: 'white', color: '#0F172A',
+                        boxSizing: 'border-box'
+                      }}
+                      className="login-input"
+                    />
+                  </div>
+                </div>
 
-          {/* Password */}
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0', display: 'block', marginBottom: '6px' }}>{t('login.password')}</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Lock size={16} style={{ position: 'absolute', left: '14px', color: '#9CA3AF' }} />
-              <input
-                type="password"
-                required
-                placeholder="Min 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input"
-                style={{ 
-                  paddingLeft: '40px', 
-                  width: '100%', 
-                  height: '44px', 
-                  borderRadius: '10px', 
-                  border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-                  backgroundColor: '#0F172A', 
-                  color: 'white', 
-                  outline: 'none', 
-                  fontSize: '13.5px',
-                  transition: 'all 0.2s'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-              />
-            </div>
-          </div>
+                {/* Mobile Number Field */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Mobile Number</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Phone size={15} style={{ position: 'absolute', left: '12px', color: '#94A3B8' }} />
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="e.g. 9123456789" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      style={{
+                        width: '100%', padding: '10px 12px 10px 36px', fontSize: '13px',
+                        border: '1px solid #CBD5E1', borderRadius: '8px', outline: 'none',
+                        transition: 'all 0.2s ease', backgroundColor: 'white', color: '#0F172A',
+                        boxSizing: 'border-box'
+                      }}
+                      className="login-input"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
-          {/* Remember Me Checkbox */}
-          {activeTab === 'login' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            {/* Email Field */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Email Address</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Mail size={15} style={{ position: 'absolute', left: '12px', color: '#94A3B8' }} />
+                <input 
+                  type="email" 
+                  required
+                  placeholder="name@example.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px 10px 36px', fontSize: '13px',
+                    border: '1px solid #CBD5E1', borderRadius: '8px', outline: 'none',
+                    transition: 'all 0.2s ease', backgroundColor: 'white', color: '#0F172A',
+                    boxSizing: 'border-box'
+                  }}
+                  className="login-input"
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Password</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Lock size={15} style={{ position: 'absolute', left: '12px', color: '#94A3B8' }} />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  required
+                  placeholder={activeTab === 'login' ? "Enter your password" : "Min 8 chars, 1 uppercase, 1 symbol"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 36px 10px 36px', fontSize: '13px',
+                    border: '1px solid #CBD5E1', borderRadius: '8px', outline: 'none',
+                    transition: 'all 0.2s ease', backgroundColor: 'white', color: '#0F172A',
+                    boxSizing: 'border-box'
+                  }}
+                  className="login-input"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '12px', border: 'none', background: 'none', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center', padding: 0 }}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Checkbox & Forgot Password link */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 8px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
                 <input 
                   type="checkbox" 
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  style={{ width: '15px', height: '15px', accentColor: '#1B8C0A' }}
+                  style={{ width: '15px', height: '15px', accentColor: '#1B8C0A', cursor: 'pointer' }}
                 />
-                <span style={{ fontSize: '13px', color: '#E2E8F0' }}>{t('login.rememberMe')}</span>
+                <span style={{ fontSize: '12.5px', color: '#475569', fontWeight: '600' }}>Remember me</span>
               </label>
-              <a href="#forgot" style={{ fontSize: '13px', color: '#86EFAC', fontWeight: '600', textDecoration: 'none' }}>{t('login.forgotPassword')}</a>
+              {activeTab === 'login' && (
+                <a href="#forgot" style={{ fontSize: '12.5px', color: '#1B8C0A', fontWeight: '750', textDecoration: 'none' }}>Forgot Password?</a>
+              )}
             </div>
-          )}
 
-          {/* Submit Action Button */}
-          <button 
-            type="submit" 
-            disabled={submitting}
-            className="btn btn-primary" 
-            style={{ 
-              width: '100%', 
-              padding: '12px 0', 
-              fontSize: '15px', 
-              marginTop: '8px', 
-              cursor: 'pointer', 
-              backgroundColor: '#1B8C0A', 
-              border: 'none', 
-              color: 'white', 
-              fontWeight: '700', 
-              borderRadius: '10px', 
-              transition: 'background-color 0.2s',
-              boxShadow: '0 4px 12px rgba(27, 140, 10, 0.25)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#157008'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1B8C0A'}
-          >
-            {submitting ? t('login.authenticating') : activeTab === 'login' ? t('login.signInBtn') : t('login.createAccountBtn')}
-          </button>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '12px 0' }}>
-            <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
-            <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase' }}>{t('login.or')}</span>
-            <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
-          </div>
-
-          {/* Social Google Login button */}
-          <button 
-            type="button"
-            onClick={() => setGoogleModalOpen(true)}
-            className="btn btn-ghost" 
-            style={{ 
-              width: '100%', 
-              padding: '10px 0', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: '8px', 
-              fontSize: '14px', 
-              border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-              backgroundColor: 'rgba(255, 255, 255, 0.03)', 
-              borderRadius: '10px', 
-              cursor: 'pointer', 
-              color: '#F1F5F9', 
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.07)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-            </svg>
-            <span>{t('login.continueGoogle')}</span>
-          </button>
-
-        </form>
-
-      </div>
-
-      {/* ==================== SOCIAL GOOGLE ACCOUNT SELECTOR MODAL OVERLAY ==================== */}
-      {googleModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '16px'
-        }}>
-          
-          <div 
-            className="animate-scale-in"
-            style={{
-              backgroundColor: '#1E293B',
-              borderRadius: '24px',
-              maxWidth: '420px',
-              width: '100%',
-              padding: '36px 32px',
-              boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.5)',
-              border: '1.5px solid rgba(255, 255, 255, 0.08)',
-              position: 'relative',
-              color: 'white'
-            }}
-          >
-            {/* Close Button */}
+            {/* Submit Button with Dynamic Lift */}
             <button 
-              type="button"
-              onClick={() => { setGoogleModalOpen(false); setShowCustomGoogleForm(false); }}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                color: '#9CA3AF',
-                padding: '4px',
+              type="submit" 
+              disabled={submitting}
+              style={{ 
+                width: '100%', 
+                padding: '12px 0', 
+                fontSize: '14.5px', 
+                marginTop: '4px', 
+                cursor: 'pointer', 
+                backgroundColor: '#1B8C0A', 
+                border: 'none', 
+                color: 'white', 
+                fontWeight: '700', 
+                borderRadius: '8px', 
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(27, 140, 10, 0.2)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '50%',
-                transition: 'all 0.2s'
+                gap: '6px'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#157008';
+                e.currentTarget.style.transform = 'translateY(-0.5px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#1B8C0A';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              <X size={18} />
+              <span>{submitting ? 'Authenticating...' : activeTab === 'login' ? 'Login' : 'Create Account'}</span>
+              <span style={{ fontSize: '14px', lineHeight: 1 }}>→</span>
             </button>
 
-            {/* Header Branding */}
-            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-              {/* Google Colored Logo */}
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style={{ margin: '0 auto 12px' }}>
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-              </svg>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.3px' }}>Sign in with Google</h3>
-              <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px' }}>to continue to Jharkhand Jobs</p>
-            </div>
-
-            {!showCustomGoogleForm ? (
+            {activeTab === 'login' && (
               <>
-                {/* Account list selector */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                  {testGoogleAccounts.map((account, index) => (
-                    <div 
-                      key={index}
-                      onClick={() => handleGoogleSignInSelected(account.email, account.name)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '14px 18px',
-                        borderRadius: '12px',
-                        border: '1.5px solid rgba(255, 255, 255, 0.08)',
-                        backgroundColor: '#0F172A',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.borderColor = account.bgColor;
-                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
-                        e.currentTarget.style.boxShadow = `0 6px 18px ${account.bgColor}25`;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                        e.currentTarget.style.backgroundColor = '#0F172A';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {/* Circular Initials Avatar */}
-                        <div style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: '50%',
-                          backgroundColor: account.bgColor,
-                          color: 'white',
-                          fontWeight: '800',
-                          fontSize: '13px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: `0 3px 6px ${account.bgColor}30`
-                        }}>
-                          {account.initials}
-                        </div>
-                        <div>
-                          <strong style={{ fontSize: '13.5px', color: 'white', display: 'block' }}>{account.name}</strong>
-                          <span style={{ fontSize: '11px', color: '#94A3B8', display: 'block', marginTop: '1px' }}>{account.email}</span>
-                          <span style={{ fontSize: '9.5px', color: account.bgColor, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginTop: '2px' }}>{account.roleText}</span>
-                        </div>
-                      </div>
-                      <ChevronRight size={16} style={{ color: '#94A3B8' }} />
-                    </div>
-                  ))}
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '8px 0' }}>
+                  <div style={{ flex: 1, height: '1px', backgroundColor: '#E2E8F0' }} />
+                  <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.5px' }}>or continue with</span>
+                  <div style={{ flex: 1, height: '1px', backgroundColor: '#E2E8F0' }} />
                 </div>
 
-                {/* Switch to Custom button */}
-                <button 
-                  type="button"
-                  onClick={() => setShowCustomGoogleForm(true)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 0',
-                    borderRadius: '10px',
-                    border: '1.5px dashed rgba(255, 255, 255, 0.15)',
-                    backgroundColor: 'transparent',
-                    color: '#94A3B8',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'center'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#1B8C0A';
-                    e.currentTarget.style.color = '#86EFAC';
-                    e.currentTarget.style.backgroundColor = 'rgba(27, 140, 10, 0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                    e.currentTarget.style.color = '#94A3B8';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  ➕ Use another Google account
-                </button>
+                {/* Google Sign-In Container */}
+                <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0' }}>
+                  <div id="google-signin-button" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}></div>
+                </div>
               </>
-            ) : (
-              /* Custom dynamic Google account form */
-              <form onSubmit={handleCustomGoogleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Google Name</label>
-                  <input 
-                    type="text"
-                    required
-                    placeholder="e.g. Priyesh Oraon"
-                    value={customGoogleName}
-                    onChange={(e) => setCustomGoogleName(e.target.value)}
-                    style={{ 
-                      width: '100%', 
-                      height: '42px', 
-                      borderRadius: '10px', 
-                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-                      backgroundColor: '#0F172A', 
-                      color: 'white', 
-                      padding: '0 14px', 
-                      outline: 'none', 
-                      fontSize: '13.5px',
-                      transition: 'all 0.2s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Google Email Address</label>
-                  <input 
-                    type="email"
-                    required
-                    placeholder="priyesh.google@gmail.com"
-                    value={customGoogleEmail}
-                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    style={{ 
-                      width: '100%', 
-                      height: '42px', 
-                      borderRadius: '10px', 
-                      border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-                      backgroundColor: '#0F172A', 
-                      color: 'white', 
-                      padding: '0 14px', 
-                      outline: 'none', 
-                      fontSize: '13.5px',
-                      transition: 'all 0.2s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#1B8C0A'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomGoogleForm(false)}
-                    style={{ 
-                      flex: 1, 
-                      height: '42px', 
-                      borderRadius: '10px', 
-                      border: '1.5px solid rgba(255, 255, 255, 0.15)', 
-                      backgroundColor: 'transparent', 
-                      color: '#E2E8F0', 
-                      fontWeight: '700', 
-                      fontSize: '13.5px', 
-                      cursor: 'pointer',
-                      transition: 'all 0.2s' 
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    style={{ 
-                      flex: 1, 
-                      height: '42px', 
-                      borderRadius: '10px', 
-                      border: 'none', 
-                      backgroundColor: '#4285F4', 
-                      color: 'white', 
-                      fontWeight: '700', 
-                      fontSize: '13.5px', 
-                      cursor: 'pointer', 
-                      boxShadow: '0 4px 10px rgba(66, 133, 244, 0.3)' 
-                    }}
-                  >
-                    Sign In
-                  </button>
-                </div>
-              </form>
             )}
 
-            {/* Google Footer */}
-            <div style={{ textAlign: 'center', marginTop: '28px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '16px' }}>
-              <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.4' }}>
-                To continue, Google will share your name, email address, language preference, and profile picture with Jharkhand Jobs.
-              </p>
-            </div>
+          </form>
 
+          {/* Under Card Form Tab Swapper link */}
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <span style={{ fontSize: '12.5px', color: '#64748B', fontWeight: '500' }}>
+              {activeTab === 'login' ? "Don't have an account? " : "Already have an account? "}
+              <button 
+                type="button" 
+                onClick={() => { setActiveTab(activeTab === 'login' ? 'register' : 'login'); setError(null); }}
+                style={{ border: 'none', background: 'none', color: '#1B8C0A', fontWeight: '750', cursor: 'pointer', fontSize: '12.5px', padding: 0 }}
+              >
+                {activeTab === 'login' ? 'Sign Up' : 'Login'}
+              </button>
+            </span>
           </div>
 
         </div>
-      )}
 
+        {/* Bottom Trust Row */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: '24px', 
+          width: '100%', 
+          marginTop: 'auto',
+          flexWrap: 'wrap',
+          borderTop: '1px solid #E2E8F0',
+          paddingTop: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
+              <ShieldCheck size={14} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: '750', color: '#0F172A', lineHeight: '1.2' }}>Secure</span>
+              <span style={{ fontSize: '9px', color: '#64748B', fontWeight: '550' }}>Your data is safe</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
+              <ShieldCheck size={14} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: '750', color: '#0F172A', lineHeight: '1.2' }}>Fast</span>
+              <span style={{ fontSize: '9px', color: '#64748B', fontWeight: '550' }}>Quick access</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
+              <ShieldCheck size={14} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: '750', color: '#0F172A', lineHeight: '1.2' }}>Reliable</span>
+              <span style={{ fontSize: '9px', color: '#64748B', fontWeight: '550' }}>Trusted platform</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

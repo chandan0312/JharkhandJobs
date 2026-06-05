@@ -1,111 +1,149 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { 
-  Briefcase, Calendar, Award, ChevronRight, AlertCircle, CheckCircle, 
+  Briefcase, Calendar, Award, AlertCircle, CheckCircle, 
   ArrowUpRight, HelpCircle, Star, Send, TrendingUp, Bell, FileText, 
   Bookmark, Clock, Search, BookOpen, Clipboard, Compass, Monitor, Sparkles
 } from 'lucide-react';
 
-// Pure React Circular Progress Ring Component for high-fidelity rendering
-const ProgressRing = ({ percentage, color = '#10B981' }) => {
-  const radius = 18;
-  const stroke = 3;
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div style={{ position: 'relative', width: `${radius * 2}px`, height: `${radius * 2}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg height={radius * 2} width={radius * 2}>
-        <circle
-          stroke="#E2E8F0"
-          fill="transparent"
-          strokeWidth={stroke}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
-        />
-        <circle
-          stroke={color}
-          fill="transparent"
-          strokeWidth={stroke}
-          strokeDasharray={circumference + ' ' + circumference}
-          style={{ strokeDashoffset, transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
-          strokeLinecap="round"
-        />
-      </svg>
-      <span style={{ position: 'absolute', fontSize: '9px', fontWeight: '800', color: '#0F172A' }}>{percentage}%</span>
-    </div>
-  );
-};
-
 const Home = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [recentJobs, setRecentJobs] = useState([]);
+  const { user } = useAuth();
+  const [allJobs, setAllJobs] = useState([]);
+  const [allExams, setAllExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [homeSearch, setHomeSearch] = useState('');
+
+  const formatJobTitle = (title) => {
+    if (!title) return '';
+    let cleanTitle = title.split('(')[0].trim();
+    if (cleanTitle.length > 32) {
+      cleanTitle = cleanTitle.slice(0, 29) + '...';
+    }
+    return cleanTitle;
+  };
+
+  const formatLastDate = (dateVal) => {
+    if (!dateVal) return 'N/A';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) {
+        return String(dateVal);
+      }
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    } catch (e) {
+      return String(dateVal);
+    }
+  };
+
+  const handleHomeSearchSubmit = (e) => {
+    e.preventDefault();
+    if (homeSearch.trim()) {
+      navigate(`/jobs?search=${encodeURIComponent(homeSearch.trim())}`);
+      setHomeSearch('');
+    }
+  };
 
   useEffect(() => {
-    const fetchRecentJobs = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await api.get('/jobs');
-        if (res.data.success) {
-          setRecentJobs(res.data.jobs.slice(0, 3));
+        console.log('[Home] Fetching jobs and exams...');
+        const [jobsRes, examsRes] = await Promise.all([
+          api.get('/jobs'),
+          api.get('/exams')
+        ]);
+        console.log('[Home] Jobs response success:', jobsRes.data?.success, 'Count:', jobsRes.data?.jobs?.length);
+        console.log('[Home] Exams response success:', examsRes.data?.success, 'Count:', examsRes.data?.exams?.length);
+        if (jobsRes.data && jobsRes.data.success) {
+          setAllJobs(jobsRes.data.jobs || []);
+        }
+        if (examsRes.data && examsRes.data.success) {
+          setAllExams(examsRes.data.exams || []);
         }
       } catch (err) {
-        console.error('Jobs fetch error:', err.message);
+        console.error('[Home] Fetch data error:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchRecentJobs();
+    fetchData();
   }, []);
 
-  // Standard fallback jobs to guarantee high-fidelity presentation
-  const defaultJobs = [
-    {
-      title: 'JSSC CGL 2024',
-      company: 'Jharkhand Staff Selection Commission',
-      location: 'Ranchi',
-      date: 'Apply by 31 May 2024',
-      time: '2 hours ago',
-      color: '#E8F5E3',
-      iconColor: '#1B8C0A',
-      initial: 'J'
-    },
-    {
-      title: 'Railway ALP Recruitment 2024',
-      company: 'Indian Railways',
-      location: 'All India',
-      date: 'Apply by 15 Jun 2024',
-      time: '4 hours ago',
-      color: '#FEF2F2',
-      iconColor: '#EF4444',
-      initial: 'R'
-    },
-    {
-      title: 'SBI PO Recruitment 2024',
-      company: 'State Bank of India',
-      location: 'All India',
-      date: 'Apply by 20 May 2024',
-      time: '6 hours ago',
-      color: '#EFF6FF',
-      iconColor: '#2563EB',
-      initial: 'S'
-    }
-  ];
+  // Compute Job Alerts: Sort newest first (by updatedAt, falling back to postedDate), take top 10
+  const latestJobs = [...allJobs]
+    .sort((a, b) => new Date(b.updatedAt || b.postedDate || b.createdAt || 0) - new Date(a.updatedAt || a.postedDate || a.createdAt || 0))
+    .slice(0, 10);
 
-  const jobsToDisplay = recentJobs.length >= 3 ? recentJobs.map((j, idx) => ({
-    title: j.title,
-    company: j.company,
-    location: j.location || 'All India',
-    date: `Apply by ${j.lastDate ? new Date(j.lastDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '31 May 2024'}`,
-    time: idx === 0 ? '2 hours ago' : idx === 1 ? '4 hours ago' : '6 hours ago',
-    color: idx === 0 ? '#E8F5E3' : idx === 1 ? '#FEF2F2' : '#EFF6FF',
-    iconColor: idx === 0 ? '#1B8C0A' : idx === 1 ? '#EF4444' : '#2563EB',
-    initial: j.companyInitial || j.company.charAt(0)
-  })) : defaultJobs;
+  // Compute Admit Cards: category === 'Admit Card', take top 10 sorted newest first
+  const admitCards = allExams
+    .filter(e => e.category === 'Admit Card')
+    .sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      if (dateA || dateB) return dateB - dateA;
+      const numA = parseInt(a._id.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b._id.replace(/\D/g, '')) || 0;
+      return numB - numA;
+    })
+    .slice(0, 10);
+
+  // Compute Results: category === 'Results', take top 10 sorted newest first
+  const examResults = allExams
+    .filter(e => e.category === 'Results')
+    .sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      if (dateA || dateB) return dateB - dateA;
+      const numA = parseInt(a._id.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b._id.replace(/\D/g, '')) || 0;
+      return numB - numA;
+    })
+    .slice(0, 10);
+
+  // Compute dynamic announcement text from latest jobs and exams
+  const announcementText = (() => {
+    const parts = [];
+    
+    // Get top 4 latest jobs
+    const topJobs = [...allJobs]
+      .sort((a, b) => new Date(b.updatedAt || b.postedDate || 0) - new Date(a.updatedAt || a.postedDate || 0))
+      .slice(0, 4);
+    topJobs.forEach(j => {
+      parts.push(`${j.companyInitial || 'Job'}: ${formatJobTitle(j.title)}`);
+    });
+
+    // Get top 4 latest exams
+    const topExams = [...allExams]
+      .sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 4);
+    topExams.forEach(e => {
+      parts.push(`${e.orgShort || 'Exam'}: ${e.title.split('(')[0].trim()}`);
+    });
+
+    if (parts.length > 0) {
+      return parts.join('   |   📢   ');
+    }
+    return 'JSSC CGL 2024 Result Declared   |   📢   JPSC Assistant Engineer Notification Out   |   📢   Welcome to Jharkhand Jobs!';
+  })();
+
+
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column' }}>
+        <div style={{ border: '4px solid #f3f4f6', borderTop: '4px solid #1B8C0A', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        <p style={{ marginTop: '16px', color: '#6B7280', fontSize: '14px', fontFamily: 'sans-serif' }}>Loading dashboard data...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', boxSizing: 'border-box', width: '100%' }}>
@@ -117,44 +155,38 @@ const Home = () => {
           gap: 16px;
           width: 100%;
         }
-        .dash-grid-2 {
+        .dash-grid-three-cols {
           display: grid;
-          grid-template-columns: 1.3fr 0.9fr 0.8fr;
+          grid-template-columns: 1.4fr 0.8fr 0.8fr;
           gap: 24px;
           width: 100%;
         }
-        .dash-grid-3 {
+        .quick-access-row {
           display: grid;
-          grid-template-columns: 1.1fr 1fr 0.9fr;
-          gap: 24px;
+          grid-template-columns: repeat(8, 1fr);
+          gap: 12px;
           width: 100%;
         }
         @media (max-width: 1200px) {
           .dash-grid-1 {
             grid-template-columns: repeat(3, 1fr) !important;
           }
-          .dash-grid-2 {
-            grid-template-columns: 1.2fr 1fr !important;
+          .dash-grid-three-cols {
+            grid-template-columns: 1.2fr 0.8fr !important;
           }
-          .dash-grid-3 {
-            grid-template-columns: 1.2fr 1fr !important;
-          }
-          .stack-col {
-            grid-column: span 2 !important;
+          .quick-access-row {
+            grid-template-columns: repeat(4, 1fr) !important;
           }
         }
         @media (max-width: 768px) {
           .dash-grid-1 {
             grid-template-columns: repeat(2, 1fr) !important;
           }
-          .dash-grid-2 {
+          .dash-grid-three-cols {
             grid-template-columns: 1fr !important;
           }
-          .dash-grid-3 {
-            grid-template-columns: 1fr !important;
-          }
-          .stack-col {
-            grid-column: span 1 !important;
+          .quick-access-row {
+            grid-template-columns: repeat(2, 1fr) !important;
           }
         }
         @media (max-width: 480px) {
@@ -162,10 +194,29 @@ const Home = () => {
             grid-template-columns: 1fr !important;
           }
         }
+        @keyframes marquee {
+          0% { transform: translate3d(20%, 0, 0); }
+          100% { transform: translate3d(-100%, 0, 0); }
+        }
+        .marquee-container {
+          overflow: hidden;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          flex: 1;
+          margin: 0 16px;
+        }
+        .marquee-content {
+          display: inline-block;
+          white-space: nowrap;
+          animation: marquee 25s linear infinite;
+        }
+        .marquee-content:hover {
+          animation-play-state: paused;
+        }
       `}</style>
 
       {/* ==================== WELCOME HERO BANNER & TICKER ==================== */}
-      {/* 1. Welcome Card Banner with Custom Gradient, Clear Statue (No cards, reduced size) */}
       <div style={{
         backgroundImage: 'linear-gradient(to right, rgba(9, 35, 23, 0.98) 0%, rgba(9, 35, 23, 0.88) 35%, rgba(9, 35, 23, 0.4) 65%, rgba(9, 35, 23, 0.05) 100%), url("/assets/images/jharkhand_hero.png")',
         backgroundSize: 'cover',
@@ -183,10 +234,7 @@ const Home = () => {
         boxShadow: '0 12px 35px rgba(27,140,10,0.12)',
         border: '1px solid rgba(16, 185, 129, 0.15)'
       }}>
-        {/* Overlay details for visual depth */}
         <div style={{ zIndex: 2, display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-          
-          {/* Top: Welcome Pill & Let's build badge */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
             <div style={{ 
               display: 'inline-flex', 
@@ -225,13 +273,11 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Middle Text: Headings and Description */}
           <div style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)', maxWidth: '58%' }}>
             <h1 style={{ fontSize: '36px', fontWeight: '800', lineHeight: '1.2', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
               Good Afternoon,<br />
               <span style={{ color: '#22C55E', position: 'relative', display: 'inline-block' }}>
-                Aspirant!
-                {/* Custom tapered handdrawn yellow line */}
+                {user ? user.name.split(' ')[0] : 'Aspirant'}!
                 <svg style={{ position: 'absolute', bottom: '-6px', left: 0, width: '100%', height: '6px' }} viewBox="0 0 100 10" preserveAspectRatio="none">
                   <path d="M0,5 Q50,9 100,3" stroke="#FBBF24" strokeWidth="4" fill="none" strokeLinecap="round" />
                 </svg>
@@ -251,11 +297,55 @@ const Home = () => {
                 Jharkhand Jobs.
               </span>
             </p>
+
+            <form onSubmit={handleHomeSearchSubmit} style={{ display: 'flex', gap: '10px', marginTop: '20px', maxWidth: '520px', width: '100%' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#A7F3D0' }} />
+                <input 
+                  type="text" 
+                  placeholder="Search exams, vacancies, keywords..." 
+                  value={homeSearch}
+                  onChange={(e) => setHomeSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px 12px 44px',
+                    fontSize: '13px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '30px',
+                    color: 'white',
+                    outline: 'none',
+                    fontWeight: '500',
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.05)',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <button 
+                type="submit"
+                style={{
+                  backgroundColor: '#22C55E',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0 24px',
+                  borderRadius: '30px',
+                  fontSize: '12.5px',
+                  fontWeight: '750',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#22C55E'}
+              >
+                Search
+              </button>
+            </form>
           </div>
         </div>
       </div>
 
-      {/* Bottom Row under welcome card: Updates Ticker on left & Action buttons on right */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -264,7 +354,6 @@ const Home = () => {
         flexWrap: 'wrap',
         marginTop: '-8px' 
       }}>
-        {/* Updates ticker (white pill bar) */}
         <div style={{
           flex: 1,
           backgroundColor: '#FFFFFF',
@@ -275,14 +364,17 @@ const Home = () => {
           justifyContent: 'space-between',
           boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
           border: '1px solid #E2E8F0',
-          minWidth: '320px'
+          minWidth: '320px',
+          overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span role="img" aria-label="announcement" style={{ fontSize: '15px' }}>📢</span>
-            <span style={{ fontSize: '13px', fontWeight: '800', color: '#10B981' }}>Latest Update:</span>
-            <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#1F2937', marginLeft: '6px' }}>
-              JSSC CGL 2024 Result Declared | JPSC Assistant Engineer Notification Out
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, overflow: 'hidden' }}>
+            <span role="img" aria-label="announcement" style={{ fontSize: '15px', flexShrink: 0 }}>📢</span>
+            <span style={{ fontSize: '13px', fontWeight: '800', color: '#10B981', flexShrink: 0 }}>Latest Update:</span>
+            <div className="marquee-container">
+              <span className="marquee-content" style={{ fontSize: '12.5px', fontWeight: '700', color: '#1F2937', cursor: 'pointer' }} onClick={() => navigate('/exams')}>
+                {announcementText}
+              </span>
+            </div>
           </div>
           <button 
             onClick={() => navigate('/exams')}
@@ -295,14 +387,14 @@ const Home = () => {
               fontSize: '11px',
               fontWeight: '700',
               cursor: 'pointer',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              flexShrink: 0
             }}
           >
             View All Updates →
           </button>
         </div>
 
-        {/* Right quick actions buttons */}
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
             onClick={() => navigate('/jobs')}
@@ -342,9 +434,9 @@ const Home = () => {
             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>Total Jobs</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>1,248</span>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>{allJobs.length}</span>
             <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              ▲ +16% <span style={{ color: '#94A3B8', fontWeight: '500' }}>this week</span>
+              ▲ Active <span style={{ color: '#94A3B8', fontWeight: '500' }}>listings</span>
             </span>
           </div>
         </div>
@@ -381,9 +473,9 @@ const Home = () => {
             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>Saved Jobs</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>8</span>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>{user?.savedJobs?.length || 0}</span>
             <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              ▲ +2 <span style={{ color: '#94A3B8', fontWeight: '500' }}>new this week</span>
+              ▲ bookmarked <span style={{ color: '#94A3B8', fontWeight: '500' }}>listings</span>
             </span>
           </div>
         </div>
@@ -400,10 +492,10 @@ const Home = () => {
             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>Job Alerts</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>25</span>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>{allExams.length}</span>
             <span style={{ fontSize: '10px', color: '#16A34A', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
-              New alerts today
+              Active notifications
             </span>
           </div>
         </div>
@@ -420,9 +512,9 @@ const Home = () => {
             <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>Exam Updates</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>18</span>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>{allExams.filter(e => e.isNew).length}</span>
             <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              ▲ +5 <span style={{ color: '#94A3B8', fontWeight: '500' }}>new updates</span>
+              ▲ New <span style={{ color: '#94A3B8', fontWeight: '500' }}>releases</span>
             </span>
           </div>
         </div>
@@ -447,8 +539,9 @@ const Home = () => {
         </div>
       </div>
 
-      {/* ==================== ROW 2: MAIN MIDDLE GRID ==================== */}
-      <div className="dash-grid-2">
+      {/* ==================== ROW 2: MAIN THREE COLUMNS GRID ==================== */}
+      <div className="dash-grid-three-cols">
+        
         {/* Column 1: Latest Job Alerts */}
         <div style={{
           backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
@@ -457,379 +550,209 @@ const Home = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Briefcase size={18} style={{ color: '#1B8C0A' }} />
-              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Latest Job Alerts</h3>
+              <h3 style={{ fontSize: '14.5px', fontWeight: '850', color: '#0F172A', margin: 0 }}>Latest Job Alerts</h3>
             </div>
-            <Link to="/jobs" style={{ fontSize: '12px', fontWeight: '700', color: '#1B8C0A', textDecoration: 'none' }}>View All</Link>
+            <Link to="/jobs" style={{ fontSize: '11.5px', fontWeight: '700', color: '#1B8C0A', textDecoration: 'none' }}>View All</Link>
           </div>
 
-          {/* Job Items List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {jobsToDisplay.map((job, idx) => (
-              <div key={idx} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px',
-                border: '1px solid #F1F5F9', borderRadius: '10px', backgroundColor: '#F8FAFC'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '38px', height: '38px', borderRadius: '8px', backgroundColor: job.color || '#E8F5E3',
-                    color: job.iconColor || '#1B8C0A', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: '800', fontSize: '14px'
-                  }}>
-                    {job.initial || 'J'}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: '850', color: '#0F172A', margin: 0 }}>{job.title}</h4>
-                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '500' }}>{job.company}</span>
-                    <span style={{ fontSize: '11px', color: '#10B981', fontWeight: '750', marginTop: '2px' }}>{job.date}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                  <span style={{ fontSize: '11px', color: '#334155', fontWeight: '700' }}>{job.location}</span>
-                  <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '500' }}>{job.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Notification Opportunity Banner */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-            backgroundColor: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)',
-            borderRadius: '12px', padding: '14px 20px', marginTop: '6px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles size={16} style={{ color: '#10B981' }} />
-              </div>
-              <p style={{ fontSize: '11.5px', color: '#065F46', margin: 0, fontWeight: '500', lineHeight: '1.4' }}>
-                <strong>Don't miss any opportunity!</strong><br />
-                Enable notifications and get instant alerts for jobs, exams and results.
-              </p>
-            </div>
-            <button 
-              onClick={() => alert('Notifications enabled successfully!')}
-              style={{
-                backgroundColor: '#0F764E', color: '#FFFFFF', border: 'none', padding: '8px 16px',
-                borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer',
-                whiteSpace: 'nowrap', transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#10B981'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F764E'}
-            >
-              Enable Alerts
-            </button>
-          </div>
-        </div>
-
-        {/* Column 2: Upcoming Exams */}
-        <div style={{
-          backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
-          display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calendar size={18} style={{ color: '#1B8C0A' }} />
-              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Upcoming Exams</h3>
-            </div>
-            <Link to="/exams" style={{ fontSize: '12px', fontWeight: '700', color: '#1B8C0A', textDecoration: 'none' }}>View All</Link>
-          </div>
-
-          {/* Exam Calendar Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { title: 'JSSC CGL 2024', sub: 'Prelims Exam', day: '31', month: 'May 2024', left: '25 Days Left' },
-              { title: 'JPSC Civil Services', sub: 'Prelims Exam', day: '15', month: 'Jun 2024', left: '40 Days Left' },
-              { title: 'SSC CGL 2024', sub: 'Tier 1 Exam', day: '03', month: 'Jul 2024', left: '58 Days Left' },
-              { title: 'IBPS PO 2024', sub: 'Prelims Exam', day: '20', month: 'Jul 2024', left: '75 Days Left' }
-            ].map((ex, idx) => (
-              <div key={idx} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px',
-                border: '1px solid #F1F5F9', borderRadius: '10px', backgroundColor: '#FFFFFF'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {/* Calendar Block Icon */}
-                  <div style={{
-                    width: '44px', height: '46px', borderRadius: '8px', border: '1px solid #E2E8F0',
-                    display: 'flex', flexDirection: 'column', overflow: 'hidden', textAlign: 'center'
-                  }}>
-                    <div style={{ height: '14px', backgroundColor: '#E2E8F0', color: '#475569', fontSize: '9px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      DATE
-                    </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '850', color: '#0F172A', lineHeight: '1.1' }}>{ex.day}</span>
-                      <span style={{ fontSize: '7px', color: '#94A3B8', fontWeight: '800', textTransform: 'uppercase' }}>{ex.month.split(' ')[0]}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <h4 style={{ fontSize: '12.5px', fontWeight: '800', color: '#0F172A', margin: 0 }}>{ex.title}</h4>
-                    <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500', marginTop: '1px' }}>{ex.sub}</span>
-                  </div>
-                </div>
-
-                <span style={{
-                  padding: '4px 10px', borderRadius: '20px', fontSize: '10.5px', fontWeight: '750',
-                  backgroundColor: '#E8F5E3', color: '#1B8C0A'
-                }}>
-                  {ex.left}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <button 
-            onClick={() => navigate('/exams')}
-            style={{
-              width: '100%', padding: '10px', border: '1.5px solid #10B981', color: '#10B981',
-              borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
-              backgroundColor: 'transparent', transition: 'all 0.2s ease', marginTop: '6px'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#10B981';
-              e.currentTarget.style.color = '#FFFFFF';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#10B981';
-            }}
-          >
-            View All Exams
-          </button>
-        </div>
-
-        {/* Column 3: Stacked Right Panels */}
-        <div className="stack-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Card 1: Recent Notifications */}
-          <div style={{
-            backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
-            display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Bell size={18} style={{ color: '#1B8C0A' }} />
-                <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Recent Notifications</h3>
-              </div>
-              <Link to="/exams" style={{ fontSize: '12px', fontWeight: '700', color: '#1B8C0A', textDecoration: 'none' }}>View All</Link>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { title: 'JSSC CGL 2024 Result Declared', sub: 'Click to check your result now', iconBg: '#FFF7ED', iconColor: '#EA580C', dotColor: '#10B981', time: '2h ago' },
-                { title: 'New Job Alert: 256 New Jobs', sub: 'Check the latest job opportunities', iconBg: '#EFF6FF', iconColor: '#2563EB', dotColor: '#2563EB', time: '4h ago' },
-                { title: 'Admit Card Released', sub: 'JPSC Assistant Engineer Admit Card', iconBg: '#F3E8FF', iconColor: '#7C3AED', dotColor: '#10B981', time: '6h ago' },
-                { title: 'New Article Published', sub: 'How to Prepare for JSSC CGL 2024', iconBg: '#FFF7ED', iconColor: '#EA580C', dotColor: '#D97706', time: '1d ago' }
-              ].map((n, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: n.iconBg, color: n.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Bell size={14} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>{n.title}</span>
-                      <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500', marginTop: '1px' }}>{n.sub}</span>
-                    </div>
-                  </div>
-
-                  <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-                    {n.time}
-                    <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: n.dotColor }} />
+            {latestJobs.map((job) => (
+              <div 
+                key={job._id}
+                onClick={() => navigate(`/jobs/${job._id}`)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px',
+                  border: '1px solid #F1F5F9', borderRadius: '10px', backgroundColor: '#F8FAFC', cursor: 'pointer',
+                  transition: 'border-color 0.2s ease', gap: '16px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B8C0A'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#F1F5F9'}
+              >
+                {/* Left: Last Day in Calendar Icon */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, minWidth: '95px' }}>
+                  <Calendar size={15} style={{ color: '#EF4444', flexShrink: 0 }} />
+                  <span style={{ fontSize: '11px', color: '#EF4444', fontWeight: '800', whiteSpace: 'nowrap' }}>
+                    {formatLastDate(job.lastDate)}
                   </span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Card 2: Continue Your Preparation */}
-          <div style={{
-            backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
-            display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpen size={18} style={{ color: '#1B8C0A' }} />
-              <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Continue Your Preparation</h3>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {[
-                { title: 'JSSC CGL Mock Test 5', sub: 'Continue Test', percent: 65, color: '#10B981' },
-                { title: 'General Knowledge Quiz', sub: '10 Questions Remaining', percent: 40, color: '#EA580C' },
-                { title: 'Current Affairs - May 2024', sub: 'Read Article', percent: 30, color: '#EF4444' }
-              ].map((prep, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <FileText size={15} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>{prep.title}</span>
-                      <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>{prep.sub}</span>
-                    </div>
-                  </div>
-
-                  <ProgressRing percentage={prep.percent} color={prep.color} />
+                {/* Middle: Job Name / Company */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flex: 1, minWidth: 0 }}>
+                  <h4 style={{ 
+                    fontSize: '12.5px', fontWeight: '800', color: '#0F172A', margin: 0, lineHeight: '1.2',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                  }}>
+                    {formatJobTitle(job.title)}
+                  </h4>
+                  <span style={{ 
+                    fontSize: '10.5px', color: '#64748B', fontWeight: '500',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                  }}>
+                    {job.company}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-        </div>
-      </div>
-
-      {/* ==================== ROW 3: BOTTOM ACCESS & PROGRESS GRID ==================== */}
-      <div className="dash-grid-3">
-        {/* Column 1: Quick Access (8 Buttons in 2x4 grid) */}
-        <div style={{
-          backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
-          display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clipboard size={18} style={{ color: '#1B8C0A' }} />
-            <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Quick Access</h3>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '12px',
-            textAlign: 'center'
-          }}>
-            {[
-              { label: 'Admit Cards', color: '#E8F5E3', iconColor: '#1B8C0A', icon: <FileText size={18} />, path: '/exams' },
-              { label: 'Results', color: '#EFF6FF', iconColor: '#2563EB', icon: <Award size={18} />, path: '/exams' },
-              { label: 'Current Affairs', color: '#FFF7ED', iconColor: '#EA580C', icon: <Sparkles size={18} />, path: '/blog' },
-              { label: 'Syllabus', color: '#F3E8FF', iconColor: '#7C3AED', icon: <Clipboard size={18} />, path: '/blog' },
-              { label: 'Mock Tests', color: '#FFF1F2', iconColor: '#F43F5E', icon: <HelpCircle size={18} />, path: '/quiz' },
-              { label: 'Previous Papers', color: '#E0F2FE', iconColor: '#0369A1', icon: <BookOpen size={18} />, path: '/blog' },
-              { label: 'Study Material', color: '#E0F2FE', iconColor: '#0284C7', icon: <FileText size={18} />, path: '/blog' },
-              { label: 'Career Guide', color: '#E6F4EA', iconColor: '#10B981', icon: <Monitor size={18} />, path: '/blog' }
-            ].map((btn, idx) => (
-              <div 
-                key={idx} 
-                onClick={() => navigate(btn.path)}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                  padding: '12px 6px', border: '1px solid #F1F5F9', borderRadius: '10px',
-                  backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = btn.iconColor;
-                  e.currentTarget.style.backgroundColor = '#F8FAFC';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#F1F5F9';
-                  e.currentTarget.style.backgroundColor = '#FFFFFF';
-                }}
-              >
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '50%', backgroundColor: btn.color,
-                  color: btn.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                {/* Right: Posts count */}
+                <div style={{ 
+                  backgroundColor: '#E8F5E3', color: '#1B8C0A', padding: '4px 8px', borderRadius: '6px', 
+                  fontSize: '10px', fontWeight: '800', flexShrink: 0, textAlign: 'center', whiteSpace: 'nowrap' 
                 }}>
-                  {btn.icon}
+                  {(job.vacancies || 45).toLocaleString()} Posts
                 </div>
-                <span style={{ fontSize: '10.5px', color: '#334155', fontWeight: '750', lineHeight: '1.2' }}>{btn.label}</span>
               </div>
             ))}
+            {latestJobs.length === 0 && (
+              <p style={{ fontSize: '12.5px', color: '#94A3B8', textAlign: 'center', padding: '20px 0' }}>No job alerts available.</p>
+            )}
           </div>
         </div>
 
-        {/* Column 2: Your Progress */}
+        {/* Column 2: Admit Cards */}
         <div style={{
           backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
           display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <TrendingUp size={18} style={{ color: '#1B8C0A' }} />
-              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Your Progress</h3>
+              <FileText size={18} style={{ color: '#2563EB' }} />
+              <h3 style={{ fontSize: '14.5px', fontWeight: '850', color: '#0F172A', margin: 0 }}>Admit Cards</h3>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#1B8C0A', cursor: 'pointer' }}>View Details</span>
+            <Link to="/exams?category=Admit%20Card" style={{ fontSize: '11.5px', fontWeight: '700', color: '#2563EB', textDecoration: 'none' }}>View All</Link>
           </div>
 
-          {/* Progress Rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            {/* Profile Completeness */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', fontWeight: '700', color: '#334155' }}>
-                <span>Profile Completeness</span>
-                <span>85%</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {admitCards.map((exam) => (
+              <div 
+                key={exam._id}
+                onClick={() => navigate(`/exams/${exam._id}`)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px',
+                  border: '1px solid #F1F5F9', borderRadius: '10px', backgroundColor: '#F8FAFC', cursor: 'pointer',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563EB'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#F1F5F9'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '50%', 
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: '800', flexShrink: 0
+                  }}>
+                    <FileText size={16} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flex: 1 }}>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: '800', color: '#0F172A', margin: 0, lineHeight: '1.2' }}>{formatJobTitle(exam.title)}</h4>
+                    <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500' }}>{exam.organization}</span>
+                  </div>
+                </div>
               </div>
-              <div style={{ width: '100%', height: '8px', backgroundColor: '#F1F5F9', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '85%', height: '100%', backgroundColor: '#10B981', borderRadius: '10px' }} />
-              </div>
-            </div>
-
-            {/* Daily Goal */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', fontWeight: '700', color: '#334155' }}>
-                <span>Daily Goal</span>
-                <span>40%</span>
-              </div>
-              <div style={{ width: '100%', height: '8px', backgroundColor: '#F1F5F9', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '40%', height: '100%', backgroundColor: '#10B981', borderRadius: '10px' }} />
-              </div>
-              <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '600' }}>2/5 tasks completed</span>
-            </div>
-
-            {/* Weekly Goal */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', fontWeight: '700', color: '#334155' }}>
-                <span>Weekly Goal</span>
-                <span>30%</span>
-              </div>
-              <div style={{ width: '100%', height: '8px', backgroundColor: '#F1F5F9', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '30%', height: '100%', backgroundColor: '#10B981', borderRadius: '10px' }} />
-              </div>
-              <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '600' }}>3/10 tasks completed</span>
-            </div>
+            ))}
+            {admitCards.length === 0 && (
+              <p style={{ fontSize: '12.5px', color: '#94A3B8', textAlign: 'center', padding: '20px 0' }}>No admit cards available.</p>
+            )}
           </div>
         </div>
 
-        {/* Column 3: Premium Deep-Green Welcome Rohit Banner Card */}
+        {/* Column 3: Results */}
         <div style={{
-          background: 'linear-gradient(135deg, #0C402B 0%, #062E1E 100%)',
-          borderRadius: '16px', padding: '24px', position: 'relative', overflow: 'hidden',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          boxShadow: '0 8px 30px rgba(6,46,30,0.15)', border: '1px solid rgba(16,185,129,0.15)'
+          backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
+          display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
         }}>
-          {/* Text block */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', zIndex: 2, maxWidth: '60%' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '850', color: '#FFFFFF', margin: 0 }}>Keep Going, Rohit!</h3>
-            <p style={{ fontSize: '12px', color: '#A7F3D0', lineHeight: '1.5', margin: 0, fontWeight: '500' }}>
-              Success is the sum of small efforts, repeated day in and day out.
-            </p>
-            <button 
-              onClick={() => navigate('/jobs')}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Award size={18} style={{ color: '#EA580C' }} />
+              <h3 style={{ fontSize: '14.5px', fontWeight: '850', color: '#0F172A', margin: 0 }}>Results</h3>
+            </div>
+            <Link to="/exams?category=Results" style={{ fontSize: '11.5px', fontWeight: '700', color: '#EA580C', textDecoration: 'none' }}>View All</Link>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {examResults.map((exam) => (
+              <div 
+                key={exam._id}
+                onClick={() => navigate(`/exams/${exam._id}`)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px',
+                  border: '1px solid #F1F5F9', borderRadius: '10px', backgroundColor: '#F8FAFC', cursor: 'pointer',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#EA580C'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#F1F5F9'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '50%', 
+                    backgroundColor: '#FFF7ED',
+                    color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: '800', flexShrink: 0
+                  }}>
+                    <Award size={16} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flex: 1 }}>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: '800', color: '#0F172A', margin: 0, lineHeight: '1.2' }}>{formatJobTitle(exam.title)}</h4>
+                    <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500' }}>{exam.organization}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {examResults.length === 0 && (
+              <p style={{ fontSize: '12.5px', color: '#94A3B8', textAlign: 'center', padding: '20px 0' }}>No results available.</p>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* ==================== FOOTER: QUICK ACCESS LINKS ==================== */}
+      <div style={{
+        backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0',
+        display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
+        width: '100%', boxSizing: 'border-box'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Clipboard size={18} style={{ color: '#1B8C0A' }} />
+          <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Quick Access Links</h3>
+        </div>
+
+        <div className="quick-access-row">
+          {[
+            { label: 'Admit Cards', color: '#E8F5E3', iconColor: '#1B8C0A', icon: <FileText size={18} />, path: '/exams?category=Admit%20Card' },
+            { label: 'Results', color: '#EFF6FF', iconColor: '#2563EB', icon: <Award size={18} />, path: '/exams?category=Results' },
+            { label: 'Current Affairs', color: '#FFF7ED', iconColor: '#EA580C', icon: <Sparkles size={18} />, path: '/blog' },
+            { label: 'Syllabus', color: '#F3E8FF', iconColor: '#7C3AED', icon: <Clipboard size={18} />, path: '/blog' },
+            { label: 'Mock Tests', color: '#FFF1F2', iconColor: '#F43F5E', icon: <HelpCircle size={18} />, path: '/quiz' },
+            { label: 'Previous Papers', color: '#E0F2FE', iconColor: '#0369A1', icon: <BookOpen size={18} />, path: '/blog' },
+            { label: 'Study Material', color: '#E0F2FE', iconColor: '#0284C7', icon: <FileText size={18} />, path: '/blog' },
+            { label: 'Career Guide', color: '#E6F4EA', iconColor: '#10B981', icon: <Monitor size={18} />, path: '/blog' }
+          ].map((btn, idx) => (
+            <div 
+              key={idx} 
+              onClick={() => navigate(btn.path)}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                backgroundColor: '#FFFFFF', color: '#0C402B', border: 'none',
-                padding: '9px 18px', borderRadius: '30px', fontSize: '11px', fontWeight: '800',
-                cursor: 'pointer', marginTop: '6px', width: 'fit-content', transition: 'all 0.2s ease'
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                padding: '12px 6px', border: '1px solid #F1F5F9', borderRadius: '10px',
+                backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#E6F4EA';
+                e.currentTarget.style.borderColor = btn.iconColor;
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
               }}
               onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#F1F5F9';
                 e.currentTarget.style.backgroundColor = '#FFFFFF';
               }}
             >
-              <span>Explore Opportunities</span>
-              <ChevronRight size={12} />
-            </button>
-          </div>
-
-          {/* Student Illustration Character */}
-          <div style={{ zIndex: 1, flexShrink: 0, marginRight: '-8px' }}>
-            <img 
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop" 
-              alt="Rohit Profile" 
-              style={{ 
-                width: '74px', height: '94px', objectFit: 'cover', borderRadius: '12px',
-                border: '3px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
-                transform: 'rotate(2deg)'
-              }} 
-            />
-          </div>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%', backgroundColor: btn.color,
+                color: btn.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {btn.icon}
+              </div>
+              <span style={{ fontSize: '10.5px', color: '#334155', fontWeight: '750', lineHeight: '1.2' }}>{btn.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -49,6 +49,13 @@ const mapApplication = async (a) => {
     resumePath: a.resume_path,
     status: a.status || 'pending',
     appliedDate: a.applied_date,
+    save: async function() {
+      await pgDb.query(
+        'UPDATE applications SET status = $1, full_name = $2, email = $3, phone = $4, resume_path = $5 WHERE id = $6',
+        [this.status, this.fullName, this.email, this.phone, this.resumePath, this._id]
+      );
+      return this;
+    },
     deleteOne: async function() {
       await pgDb.query('DELETE FROM applications WHERE id = $1', [this._id]);
       return { success: true };
@@ -115,10 +122,19 @@ const Application = {
     return queryChain;
   },
 
-  findById: async (id) => {
-    const res = await pgDb.query('SELECT * FROM applications WHERE id = $1', [id]);
-    if (res.rows.length === 0) return null;
-    return mapApplication(res.rows[0]);
+  findById: (id) => {
+    const queryChain = {
+      populate: (pathStr, fields) => {
+        return queryChain;
+      },
+      then: async (resolve) => {
+        const res = await pgDb.query('SELECT * FROM applications WHERE id = $1', [id]);
+        if (res.rows.length === 0) return resolve(null);
+        const mapped = await mapApplication(res.rows[0]);
+        return resolve(mapped);
+      }
+    };
+    return queryChain;
   },
 
   create: async (appData) => {

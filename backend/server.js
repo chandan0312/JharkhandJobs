@@ -1,6 +1,9 @@
+import dotenv from 'dotenv';
+// Load environment variables immediately before any static route or model imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,12 +19,31 @@ import examRoutes from './routes/exams.js';
 import blogRoutes from './routes/blog.js';
 import adminRoutes from './routes/admin.js';
 import quizRoutes from './routes/quizzes.js';
-
-// Environment variables
-dotenv.config();
+import forumRoutes from './routes/forums.js';
 
 // Connect to Database
-connectDB();
+import { runCleanup } from './scratch/clean_db_categories.js';
+import { scrapeAndUpsertData } from './services/scraperService.js';
+
+connectDB().then(async () => {
+  // Run category and link cleanup on startup
+  try {
+    await runCleanup();
+  } catch (err) {
+    console.error('Startup cleanup failed:', err.message);
+  }
+
+  // Setup background live scraping (every 12 hours)
+  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  setInterval(async () => {
+    try {
+      await scrapeAndUpsertData();
+    } catch (err) {
+      console.error('Background scraper failed:', err.message);
+    }
+  }, TWELVE_HOURS);
+});
+
 
 const app = express();
 
@@ -45,9 +67,13 @@ if (process.env.ALLOWED_ORIGINS) {
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow local development tools (like Postman or mobile clients)
+    // Allow local development tools (like Postman or mobile clients) and any localhost/127.0.0.1 port
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (
+      /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin) ||
+      allowedOrigins.indexOf(origin) !== -1
+    ) {
       return callback(null, true);
     } else {
       return callback(new Error(`CORS policy blocked access from Origin: ${origin}`), false);
@@ -76,6 +102,7 @@ app.use('/api/exams', examRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/forums', forumRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

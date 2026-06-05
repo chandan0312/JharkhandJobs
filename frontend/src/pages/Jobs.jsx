@@ -3,6 +3,32 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { Briefcase, MapPin, Search, Calendar, Award, BookOpen, SlidersHorizontal } from 'lucide-react';
 
+const getCategoryBadgeStyles = (category) => {
+  const cat = String(category).toUpperCase();
+  if (cat.includes('PRIVATE')) {
+    return { color: '#4B5563' };
+  }
+  if (cat === 'SSC') {
+    return { color: '#16A34A' };
+  }
+  if (cat === 'RAILWAY') {
+    return { color: '#D97706' };
+  }
+  if (cat === 'JHARKHAND') {
+    return { color: '#2563EB' };
+  }
+  if (cat === 'DEFENCE') {
+    return { color: '#0D9488' };
+  }
+  if (cat === 'BANK' || cat === 'BANKING') {
+    return { color: '#4F46E5' };
+  }
+  if (cat === 'OTHER') {
+    return { color: '#7C3AED' };
+  }
+  return { color: '#4338CA' };
+};
+
 const Jobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -19,7 +45,7 @@ const Jobs = () => {
   const [locationFilter, setLocationFilter] = useState('All Locations');
   const [sort, setSort] = useState('Latest First');
 
-  // Load jobs from API
+  // 1. Load jobs from API once on component mount
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true);
@@ -37,14 +63,22 @@ const Jobs = () => {
       }
     };
     fetchJobs();
+  }, []);
+
+  // 2. Synchronize search parameter from URL on changes (resolves clear/back issues)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const searchVal = searchParams.get('search') || '';
+    setSearch(searchVal);
   }, [location.search]);
 
   // Apply filters locally on the fetched database jobs
   const getFilteredJobs = () => {
     return jobs.filter(job => {
-      // 1. Tab selection filter (All, Govt, Private)
-      if (selectedTab === 'Govt' && job.category !== 'Govt Jobs') return false;
-      if (selectedTab === 'Private' && job.category !== 'Private Jobs') return false;
+      // 1. Tab selection filter
+      if (selectedTab !== 'All') {
+        if (String(job.category).toLowerCase() !== selectedTab.toLowerCase()) return false;
+      }
 
       // 2. Search keyword filter
       if (search) {
@@ -59,8 +93,7 @@ const Jobs = () => {
 
       // 3. Category selector filter
       if (categoryFilter !== 'All Categories') {
-        if (categoryFilter === 'Government Jobs' && job.category !== 'Govt Jobs') return false;
-        if (categoryFilter === 'Private Jobs' && job.category !== 'Private Jobs') return false;
+        if (String(job.category).toLowerCase() !== categoryFilter.toLowerCase()) return false;
       }
 
       // 4. Location selector filter
@@ -78,7 +111,7 @@ const Jobs = () => {
         return b.salary.max - a.salary.max;
       }
       // Default: Latest First
-      return new Date(b.postedDate) - new Date(a.postedDate);
+      return new Date(b.updatedAt || b.postedDate || 0) - new Date(a.updatedAt || a.postedDate || 0);
     });
   };
 
@@ -102,8 +135,13 @@ const Jobs = () => {
       }}>
         <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: 'white', fontWeight: '500', outline: 'none' }}>
           <option value="All Categories">All Categories</option>
-          <option value="Government Jobs">Government Jobs</option>
-          <option value="Private Jobs">Private Jobs</option>
+          <option value="Jharkhand">Jharkhand State Job</option>
+          <option value="Railway">Railway Job</option>
+          <option value="SSC">SSC Job</option>
+          <option value="Defence">Defence Job</option>
+          <option value="Bank">Banking Job</option>
+          <option value="Private">Private Job</option>
+          <option value="Other">Other Job</option>
         </select>
         <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: 'white', fontWeight: '500', outline: 'none' }}>
           <option value="All Locations">All Locations</option>
@@ -136,17 +174,26 @@ const Jobs = () => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-        {['All', 'Govt', 'Private'].map(t => (
+        {[
+          { val: 'All', label: 'All Jobs' },
+          { val: 'Jharkhand', label: 'Jharkhand State Job' },
+          { val: 'Railway', label: 'Railway Job' },
+          { val: 'SSC', label: 'SSC Job' },
+          { val: 'Defence', label: 'Defence Job' },
+          { val: 'Bank', label: 'Banking Job' },
+          { val: 'Private', label: 'Private Job' },
+          { val: 'Other', label: 'Other Job' }
+        ].map(t => (
           <button 
-            key={t}
-            onClick={() => setSelectedTab(t)}
+            key={t.val}
+            onClick={() => setSelectedTab(t.val)}
             style={{
               padding: '8px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '20px', cursor: 'pointer', border: 'none',
-              backgroundColor: selectedTab === t ? '#E8F5E3' : 'transparent',
-              color: selectedTab === t ? '#1B8C0A' : '#64748B'
+              backgroundColor: selectedTab === t.val ? '#E8F5E3' : 'transparent',
+              color: selectedTab === t.val ? '#1B8C0A' : '#64748B'
             }}
           >
-            {t === 'All' ? 'All Jobs' : t === 'Govt' ? 'Government Jobs' : 'Private Jobs'}
+            {t.label}
           </button>
         ))}
       </div>
@@ -155,12 +202,13 @@ const Jobs = () => {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #E2E8F0', color: '#64748B', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase' }}>
+             <tr style={{ borderBottom: '1px solid #E2E8F0', color: '#64748B', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase' }}>
               <th style={{ padding: '12px' }}>Job Position</th>
-              <th style={{ padding: '12px' }}>Company</th>
+              <th style={{ padding: '12px' }}>Category</th>
+              <th style={{ padding: '12px' }}>Eligibility</th>
               <th style={{ padding: '12px' }}>Location</th>
               <th style={{ padding: '12px' }}>Last Date</th>
-              <th style={{ padding: '12px' }}>Salary</th>
+              <th style={{ padding: '12px' }}>Vacancies</th>
               <th style={{ padding: '12px' }}>Status</th>
               <th style={{ padding: '12px', textAlign: 'right' }}>Action</th>
             </tr>
@@ -168,22 +216,38 @@ const Jobs = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>Searching active listings...</td>
+                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>Searching active listings...</td>
               </tr>
             ) : filteredJobs.length > 0 ? (
               filteredJobs.map((j) => (
                 <tr key={j._id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                   <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: '700', color: '#0F172A', cursor: 'pointer' }} onClick={() => navigate(`/jobs/${j._id}`)}>{j.title}</div>
-                    <span style={{ fontSize: '10px', color: '#EA580C', fontWeight: '600' }}>{j.category}</span>
+                    <div 
+                      style={{ fontWeight: '700', color: '#0F172A', cursor: 'pointer' }} 
+                      onClick={() => navigate(`/jobs/${j._id}`)}
+                      title={j.title}
+                    >
+                      {j.title.length > 30 ? j.title.substring(0, 28) + '...' : j.title}
+                    </div>
                   </td>
-                  <td style={{ padding: '12px', color: '#475569', fontWeight: '500' }}>{j.company}</td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{ 
+                      fontSize: '13px', fontWeight: '750', textTransform: 'uppercase',
+                      display: 'inline-block',
+                      ...getCategoryBadgeStyles(j.category)
+                    }}>
+                      {j.category}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', color: '#334155', fontWeight: '600' }}>
+                    {j.qualification || 'Graduation'}
+                  </td>
                   <td style={{ padding: '12px', color: '#64748B' }}>{j.location}</td>
                   <td style={{ padding: '12px', color: '#EF4444', fontWeight: '600' }}>
                     {j.lastDate ? new Date(j.lastDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A'}
                   </td>
-                  <td style={{ padding: '12px', color: '#1B8C0A', fontWeight: '700' }}>
-                    {j.salary ? `${j.salary.currency}${j.salary.min} - ${j.salary.max} ${j.salary.period}` : 'N/A'}
+                  <td style={{ padding: '12px', color: '#10B981', fontWeight: '700' }}>
+                    {j.vacancies || 45} Posts
                   </td>
                   <td style={{ padding: '12px' }}>
                     <span style={{
@@ -197,14 +261,14 @@ const Jobs = () => {
                       onClick={() => navigate(`/jobs/${j._id}`)}
                       style={{ padding: '6px 14px', backgroundColor: '#1B8C0A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
                     >
-                      Apply Online
+                      View Details
                     </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>No vacancies matching your selections.</td>
+                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>No vacancies matching your selections.</td>
               </tr>
             )}
           </tbody>

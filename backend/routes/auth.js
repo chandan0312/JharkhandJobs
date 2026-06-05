@@ -1,11 +1,13 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import { protect, admin } from '../middleware/auth.js';
 import mockDb from '../config/mockDb.js';
 
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT token helper
 const generateToken = (id) => {
@@ -19,6 +21,15 @@ const generateToken = (id) => {
 // @access  Public
 router.post('/register', async (req, res) => {
   const { name, email, password, phone } = req.body;
+
+  // Enforce strong password requirement (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!strongPasswordRegex.test(password)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Password must be at least 8 characters long, and contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. @$!%*?&).' 
+    });
+  }
 
   try {
     if (global.useMockDb) {
@@ -52,6 +63,8 @@ router.post('/register', async (req, res) => {
           email: newUser.email,
           phone: newUser.phone,
           role: newUser.role,
+          savedJobs: newUser.savedJobs || [],
+          profileData: newUser.profileData || {},
         },
       });
     }
@@ -72,6 +85,8 @@ router.post('/register', async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        savedJobs: user.savedJobs || [],
+        profileData: user.profileData || {},
       },
     });
   } catch (error) {
@@ -98,6 +113,8 @@ router.post('/login', async (req, res) => {
             email: user.email,
             phone: user.phone,
             role: user.role,
+            savedJobs: user.savedJobs || [],
+            profileData: user.profileData || {},
           },
         });
       }
@@ -115,6 +132,8 @@ router.post('/login', async (req, res) => {
           email: user.email,
           phone: user.phone,
           role: user.role,
+          savedJobs: user.savedJobs || [],
+          profileData: user.profileData || {},
         },
       });
     } else {
@@ -133,13 +152,79 @@ router.get('/me', protect, async (req, res) => {
     if (global.useMockDb) {
       const user = mockDb.users.find(u => u._id === req.user._id);
       if (user) {
-        return res.json({ success: true, user });
+        return res.json({
+          success: true,
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            role: user.role,
+            savedJobs: user.savedJobs || [],
+            profileData: user.profileData || {},
+          }
+        });
       }
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     const user = await User.findById(req.user._id);
     if (user) {
+      res.json({
+        success: true,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+          role: user.role,
+          savedJobs: user.savedJobs || [],
+          profileData: user.profileData || {},
+        }
+      });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @desc    Update current user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { name, phone, profileData } = req.body;
+
+    if (global.useMockDb) {
+      const userIdx = mockDb.users.findIndex(u => u._id === req.user._id);
+      if (userIdx !== -1) {
+        if (name) mockDb.users[userIdx].name = name;
+        if (phone) mockDb.users[userIdx].phone = phone;
+        if (profileData) {
+          mockDb.users[userIdx].profileData = {
+            ...(mockDb.users[userIdx].profileData || {}),
+            ...profileData
+          };
+        }
+        return res.json({ success: true, user: mockDb.users[userIdx] });
+      }
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (user) {
+      if (name) user.name = name;
+      if (phone) user.phone = phone;
+      if (profileData) {
+        user.profileData = {
+          ...(user.profileData || {}),
+          ...profileData
+        };
+      }
+      
+      await user.save();
       res.json({ success: true, user });
     } else {
       res.status(404).json({ success: false, message: 'User not found' });
@@ -160,21 +245,44 @@ router.post('/google', async (req, res) => {
     let userName = name;
     let userGoogleId = googleId;
 
+    // Verify token securely using the official Google Identity Services library
     if (credential) {
-      const decoded = jwt.decode(credential);
-      if (decoded) {
-        userEmail = decoded.email;
-        userName = decoded.name;
-        userGoogleId = decoded.sub;
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: credential,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        userEmail = payload.email;
+        userName = payload.name;
+        userGoogleId = payload.sub;
+      } catch (err) {
+        console.error('Google token verification failed:', err.message);
+        return res.status(401).json({ 
+          success: false, 
+          message: `Google token verification failed: ${err.message}` 
+        });
+      }
+    } else {
+      // In production, require secure token verification
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Google authentication requires a secure token credential' 
+        });
+      }
+      
+      // Local development mock fallback
+      if (!userEmail) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Google authentication failed: Email is missing' 
+        });
       }
     }
 
-    if (!userEmail) {
-      return res.status(400).json({ success: false, message: 'Google authentication failed: Email is missing' });
-    }
-
     const lowerEmail = userEmail.toLowerCase();
-    const isAdmin = lowerEmail === 'admin.google@jharkhandjobs.com' || lowerEmail === 'admin@jharkhandjobs.com';
+    const isAdmin = lowerEmail === 'admin.google@jharkhandjobs.com' || lowerEmail === 'admin@jharkhandjobs.com' || lowerEmail === 'jharkhandjobs03@gmail.com';
     const assignedRole = isAdmin ? 'admin' : 'user';
 
     if (global.useMockDb) {
@@ -209,6 +317,8 @@ router.post('/google', async (req, res) => {
           email: user.email,
           phone: user.phone || '',
           role: user.role,
+          savedJobs: user.savedJobs || [],
+          profileData: user.profileData || {},
         },
       });
     }
@@ -245,6 +355,8 @@ router.post('/google', async (req, res) => {
         email: user.email,
         phone: user.phone || '',
         role: user.role,
+        savedJobs: user.savedJobs || [],
+        profileData: user.profileData || {},
       },
     });
   } catch (error) {
@@ -301,6 +413,135 @@ router.delete('/users/:id', protect, admin, async (req, res) => {
 
     await user.deleteOne();
     res.json({ success: true, message: 'User account deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @desc    Update a user's role (Admin only)
+// @route   PUT /api/auth/users/:id/role
+// @access  Private/Admin
+router.put('/users/:id/role', protect, admin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { role } = req.body;
+
+    if (!role || (role !== 'admin' && role !== 'user')) {
+      return res.status(400).json({ success: false, message: 'Invalid role provided' });
+    }
+
+    if (global.useMockDb) {
+      const user = mockDb.users.find(u => u._id === userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      user.role = role;
+      return res.json({ success: true, message: `User role updated to ${role} successfully` });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    user.role = role;
+    await user.save();
+
+    res.json({ success: true, message: `User role updated to ${role} successfully` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @desc    Save a job
+// @route   POST /api/auth/save-job/:jobId
+// @access  Private
+router.post('/save-job/:jobId', protect, async (req, res) => {
+  try {
+    const jobId = req.params.jobId;
+    if (global.useMockDb) {
+      const user = mockDb.users.find(u => u._id === req.user._id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      if (!user.savedJobs) user.savedJobs = [];
+      if (!user.savedJobs.includes(jobId)) {
+        user.savedJobs.push(jobId);
+      }
+      return res.json({ success: true, user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role,
+        savedJobs: user.savedJobs,
+        profileData: user.profileData || {}
+      }});
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (!user.savedJobs.includes(jobId)) {
+      const arr = Array.isArray(user.savedJobs) ? [...user.savedJobs] : [];
+      arr.push(jobId);
+      user.savedJobs = arr;
+      await user.save();
+    }
+    res.json({ success: true, user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role,
+      savedJobs: user.savedJobs,
+      profileData: user.profileData || {}
+    }});
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @desc    Unsave a job
+// @route   DELETE /api/auth/save-job/:jobId
+// @access  Private
+router.delete('/save-job/:jobId', protect, async (req, res) => {
+  try {
+    const jobId = req.params.jobId;
+    if (global.useMockDb) {
+      const user = mockDb.users.find(u => u._id === req.user._id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      if (!user.savedJobs) user.savedJobs = [];
+      user.savedJobs = user.savedJobs.filter(id => id !== jobId);
+      return res.json({ success: true, user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role,
+        savedJobs: user.savedJobs,
+        profileData: user.profileData || {}
+      }});
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const arr = Array.isArray(user.savedJobs) ? [...user.savedJobs] : [];
+    user.savedJobs = arr.filter(id => id !== jobId);
+    await user.save();
+    res.json({ success: true, user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role,
+      savedJobs: user.savedJobs,
+      profileData: user.profileData || {}
+    }});
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, Award, Send, Star, TrendingUp, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react';
+import api from '../services/api';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -9,24 +10,54 @@ const Contact = () => {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [subscribeEmail, setSubscribeEmail] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || formData.message === '') {
       alert('Please fill out all required fields.');
       return;
     }
-    setSubmitted(true);
-    setTimeout(() => {
+    
+    try {
+      setSubmitted(true);
+      const response = await api.post('/admin/enquiries', formData);
+      if (response.data.success) {
+        setFormData({
+          name: '',
+          email: '',
+          subject: 'Select a subject',
+          message: ''
+        });
+        alert("Thank you! Your enquiry has been sent successfully. We will get back to you soon.");
+      } else {
+        alert(response.data.message || 'Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting enquiry:', error);
+      alert('Failed to send message. Please try again later.');
+    } finally {
       setSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        subject: 'Select a subject',
-        message: ''
-      });
-      alert("Thank you! Your enquiry has been sent successfully. We will get back to you soon.");
-    }, 1200);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!subscribeEmail) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    try {
+      const response = await api.post('/admin/subscribe', { email: subscribeEmail });
+      if (response.data.success) {
+        alert('Thank you for subscribing to our newsletter!');
+        setSubscribeEmail('');
+      } else {
+        alert(response.data.message || 'Subscription failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Newsletter error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
   };
 
   return (
@@ -225,7 +256,7 @@ const Contact = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>Email Us</span>
-                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '800', marginTop: '2px' }}>support@jharkhandjobs.in</span>
+                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '800', marginTop: '2px' }}>jharkhandjobs03@gmail.com</span>
               </div>
             </div>
 
@@ -239,7 +270,7 @@ const Contact = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>Call Us</span>
-                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '800', marginTop: '2px' }}>+91 70000 12345</span>
+                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '800', marginTop: '2px' }}>+91 87898 62771</span>
               </div>
             </div>
 
@@ -253,7 +284,7 @@ const Contact = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '700' }}>WhatsApp</span>
-                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '800', marginTop: '2px' }}>+91 70000 12345</span>
+                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '800', marginTop: '2px' }}>+91 87898 62771</span>
               </div>
             </div>
 
@@ -302,7 +333,7 @@ const Contact = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
             {[
               { label: 'Facebook', desc: '@jharkhandjobs.in', bg: '#EFF6FF', color: '#2563EB', icon: '👤', btn: 'Follow' },
-              { label: 'Instagram', desc: '@jharkhand_jobs', bg: '#FDF2F8', color: '#DB2777', icon: '📸', btn: 'Follow' },
+              { label: 'Instagram', desc: '@jharkhandjobs03', bg: '#FDF2F8', color: '#DB2777', icon: '📸', btn: 'Follow' },
               { label: 'Telegram', desc: '@jharkhandjobs', bg: '#F0F9FF', color: '#0284C7', icon: '✈️', btn: 'Follow' },
               { label: 'YouTube', desc: '@jharkhandjobs', bg: '#FEF2F2', color: '#DC2626', icon: '📺', btn: 'Subscribe' },
               { label: 'Twitter / X', desc: '@jharkhand_jobs', bg: '#F8FAFC', color: '#0F172A', icon: '✖️', btn: 'Follow' }
@@ -422,7 +453,7 @@ const Contact = () => {
                       <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
                     </svg>
                   ),
-                  url: 'https://instagram.com'
+                  url: 'https://instagram.com/jharkhandjobs03'
                 },
                 {
                   icon: (
@@ -540,6 +571,8 @@ const Contact = () => {
               <input 
                 type="email" 
                 placeholder="Enter your email" 
+                value={subscribeEmail}
+                onChange={(e) => setSubscribeEmail(e.target.value)}
                 style={{
                   width: '100%', padding: '12px 16px', fontSize: '13px',
                   backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
@@ -550,6 +583,7 @@ const Contact = () => {
                 onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
               />
               <button 
+                onClick={handleSubscribe}
                 style={{
                   backgroundColor: '#0F764E', color: '#FFFFFF', border: 'none', padding: '11px',
                   borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',

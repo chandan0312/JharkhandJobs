@@ -53,7 +53,7 @@ const Footer = () => {
             <h4>{t('footer.forJobSeekers')}</h4>
             <ul>
               <li><Link to="/jobs">{t('footer.browseJobs')}</Link></li>
-              <li><Link to="/govt-jobs">{t('footer.browseGovtJobs')}</Link></li>
+              <li><Link to="/jobs">{t('footer.browseGovtJobs')}</Link></li>
               <li><Link to="/exams">{t('footer.examSyllabus')}</Link></li>
               <li><Link to="/quiz">{t('footer.practiceQuizzes')}</Link></li>
               <li><Link to="/companies">{t('footer.topCompanies')}</Link></li>
