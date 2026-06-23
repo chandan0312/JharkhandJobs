@@ -9,6 +9,7 @@ import mockDb from '../config/mockDb.js';
 import * as pgDb from '../config/pgDb.js';
 import { scrapeAndUpsertData } from '../services/scraperService.js';
 import { scrapeLandingPages } from '../services/landingScraperService.js';
+import { extractContentWithAi } from '../services/aiImporterService.js';
 
 const router = express.Router();
 
@@ -377,6 +378,25 @@ router.post('/scrape-landing', protect, admin, async (req, res) => {
     const stats = await scrapeLandingPages();
     res.json({ success: true, ...stats });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @desc    Scrape a single custom URL and extract structured information using AI
+// @route   POST /api/admin/scrape-url
+// @access  Private/Admin
+router.post('/scrape-url', protect, admin, async (req, res) => {
+  try {
+    const { url, category, examName } = req.body;
+    if (!url || !category || !examName) {
+      return res.status(400).json({ success: false, message: 'URL, Category, and Exam Name are required' });
+    }
+
+    console.log(`🤖 Single AI Importer triggered for URL: ${url}, Category: ${category}, Exam Name: ${examName}`);
+    const data = await extractContentWithAi(url, category, examName);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ AI Importer Error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 });

@@ -26,11 +26,11 @@ export const initPgDb = async () => {
     // Run Schema DDL scripts
     await runDDL();
     
-    // Seed default records if empty
-    await seedTables();
+    // Seed default records if empty (Disabled for production)
+    // await seedTables();
 
-    // Migrate existing job categories to specific classifications
-    await runCategoryMigrations();
+    // Migrate existing job categories to specific classifications (Disabled for production)
+    // await runCategoryMigrations();
     
     return true;
   } catch (error) {

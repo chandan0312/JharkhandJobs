@@ -1,12 +1,15 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 // Load environment variables immediately before any static route or model imports
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 import connectDB from './config/db.js';
 
@@ -47,9 +50,7 @@ connectDB().then(async () => {
 
 const app = express();
 
-// ES Modules __dirname fix
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ES Modules __dirname fix is handled at the top of the file
 
 // Middlewares
 const allowedOrigins = [

@@ -6,10 +6,11 @@ import {
   LayoutDashboard, Plus, Briefcase, Calendar, FileText, Award, BookOpen, 
   Users, MessageSquare, HelpCircle, FolderOpen, Settings, TrendingUp, LogOut, 
   ChevronDown, ChevronRight, Download, X, CheckCircle, AlertCircle, Trash2, 
-  Clock, ArrowUpRight, Bookmark, SlidersHorizontal, Filter, Check, Search, Bell, Mail, Star, Send, Menu, RefreshCw 
+  Clock, ArrowUpRight, Bookmark, SlidersHorizontal, Filter, Check, Search, Bell, Mail, Star, Send, Menu, RefreshCw, Sparkles 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Contact from './Contact';
+import AiImporter from '../components/AiImporter';
 
 const getCategoryBadgeStyles = (category) => {
   const cat = String(category).toUpperCase();
@@ -1104,6 +1105,33 @@ const Admin = () => {
               >
                 <Mail size={17} style={{ color: activeMenu === 'Newsletter' ? '#FFFFFF' : '#6A8074' }} />
                 {!sidebarCollapsed && <span>Newsletter</span>}
+              </button>
+            </li>
+
+            {/* AI Importer */}
+            <li>
+              <button
+                onClick={() => setActiveMenu('AI Importer')}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', 
+                  justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+                  padding: sidebarCollapsed ? '12px 0' : '11px 14px', fontSize: '13px', fontWeight: activeMenu === 'AI Importer' ? '700' : '600',
+                  color: activeMenu === 'AI Importer' ? '#FFFFFF' : '#A3B3AB',
+                  backgroundColor: activeMenu === 'AI Importer' ? '#085435' : 'transparent',
+                  borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease',
+                  border: 'none', textAlign: 'left', position: 'relative'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}>
+                  <Sparkles size={17} style={{ color: activeMenu === 'AI Importer' ? '#FFFFFF' : '#6A8074' }} />
+                  {!sidebarCollapsed && <span>AI Importer</span>}
+                </div>
+                {!sidebarCollapsed && (
+                  <span style={{
+                    backgroundColor: '#10B981', color: 'white', fontSize: '9px', fontWeight: '800',
+                    padding: '2px 6px', borderRadius: '10px', textTransform: 'uppercase'
+                  }}>New</span>
+                )}
               </button>
             </li>
 
@@ -3001,8 +3029,12 @@ const Admin = () => {
             <Contact />
           )}
 
+          {activeMenu === 'AI Importer' && (
+            <AiImporter />
+          )}
+
           {/* ==================== OTHER UNIMPLEMENTED FALLBACK SUBVIEWS ==================== */}
-          {!['Dashboard', 'Jobs', 'Exams', 'Admit Cards', 'Results', 'Answer Keys', 'Career Guide', 'Articles & Blogs', 'Discussion Forum', 'Quizzes', 'Profile', 'Contacts / Enquiries', 'Newsletter'].includes(activeMenu) && (
+          {!['Dashboard', 'Jobs', 'Exams', 'Admit Cards', 'Results', 'Answer Keys', 'Career Guide', 'Articles & Blogs', 'Discussion Forum', 'Quizzes', 'Profile', 'Contacts / Enquiries', 'Newsletter', 'AI Importer'].includes(activeMenu) && (
             <div style={{ 
               backgroundColor: 'white', padding: '60px 40px', borderRadius: '16px', border: '1px solid #E2E8F0',
               textAlign: 'center', maxWidth: '500px', margin: '40px auto'

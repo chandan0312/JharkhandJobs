@@ -2,6 +2,7 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as pgDb from '../config/pgDb.js';
 import mockDb from '../config/mockDb.js';
 
@@ -47,6 +48,28 @@ const cleanUrl = (url) => {
   return url;
 };
 
+const extractLink = (str) => {
+  if (!str) return '';
+  const m = str.match(/href="([^"]*)"/i);
+  const rawLink = m ? m[1] : '';
+  return cleanUrl(rawLink);
+};
+
+const parseDateString = (dateStr) => {
+  if (!dateStr) return null;
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const d = new Date(parts[2], parts[1] - 1, parts[0]);
+    if (!isNaN(d.getTime())) return d;
+  }
+  const partsSlash = dateStr.split('/');
+  if (partsSlash.length === 3) {
+    const d = new Date(partsSlash[2], partsSlash[1] - 1, partsSlash[0]);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+};
+
 const otherStateKeywords = [
   'other state',
   'bihar', 'up ', 'uttar pradesh', 'rajasthan', 'mp ', 'madhya pradesh', 'haryana', 
@@ -71,7 +94,6 @@ const isOtherState = (boardName, titleText) => {
     return otherStateKeywords.some(keyword => {
       const kw = keyword.trim();
       if (kw.length <= 3) {
-        // Use word boundaries to avoid matching substrings like 'up' in 'group' or 'ap' in 'apply'
         const regex = new RegExp(`\\b${kw}\\b`, 'i');
         return regex.test(str);
       }
@@ -154,137 +176,246 @@ const fetchUrl = (url) => {
   });
 };
 
-// Generates a deterministic, URL-friendly slug ID to prevent duplicate listings
 const generateDeterministicId = (prefix, board, title) => {
-  const normalized = `${board}-${title}`
+  const normalized = `${board || ''}-${title || ''}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
   return `${prefix}-${normalized}`;
 };
 
-// Elegant parser helper to extract board, vacancies, and clean titles
-const commonPrefixes = [
-  'railway recruitment board', 'railway', 'rrb', 'ssc', 'upsc', 'ibps', 'sbi', 'rbi', 
-  'ssb', 'bsf', 'cisf', 'itbp', 'lic', 'gref', 'bro', 'dsssb', 'jssc', 'jpsc', 'jac', 
-  'indian navy', 'indian army', 'indian air force', 'iaf', 'ncl', 'cil'
-];
-
-const parseTitleText = (rawText) => {
-  const text = cleanText(rawText);
-  const lowerText = text.toLowerCase();
-  
-  let board = '';
-  for (const prefix of commonPrefixes) {
-    if (lowerText.startsWith(prefix)) {
-      board = text.substring(0, prefix.length);
-      break;
-    }
-  }
-  
-  const words = text.split(/\s+/);
-  if (!board) {
-    if (words[0] && (words[0] === words[0].toUpperCase() || /^[A-Z0-9&]+$/.test(words[0]))) {
-      board = words[0];
-      if (words[1] && /^[A-Z0-9]+$/.test(words[1]) && words[1].length <= 5) {
-        board += ' ' + words[1];
-      }
-    } else {
-      board = words[0] || 'Govt';
-    }
-  }
-  
-  let vacancies = 45; // default
-  const vacMatch = text.match(/\b(\d{1,3}(?:,\d{3})*|\d+)\s*(?:Posts|Vacancies|Post)?\b/i);
-  if (vacMatch) {
-    vacancies = parseInt(vacMatch[1].replace(/,/g, ''), 10);
-  }
-  
-  let cleanTitle = text
-    .replace(new RegExp(`^${board}`, 'i'), '')
-    .replace(/\b(\d{1,3}(?:,\d{3})*|\d+)\s*(?:Posts|Vacancies|Post)?\b/i, '')
-    .replace(/Online Form/gi, '')
-    .replace(/Offline Form/gi, '')
-    .replace(/Recruitment/gi, '')
-    .replace(/Notification/gi, '')
-    .replace(/\(Out\)|\bOut\b/gi, '')
-    .replace(/\(Short Notice\)/gi, '')
-    .replace(/\b2025\b|\b2026\b/g, '')
+// Optimizes HTML payload by stripping script/style tags for token savings
+const cleanHtmlForAi = (html) => {
+  if (!html) return '';
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<head[\s\S]*?<\/head>/gi, '')
+    .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-
-  if (cleanTitle.startsWith('-') || cleanTitle.startsWith('–')) {
-    cleanTitle = cleanTitle.substring(1).trim();
-  }
-  if (!cleanTitle) {
-    cleanTitle = text;
-  }
-  
-  // Title-case the clean title
-  cleanTitle = cleanTitle.split(' ').map(w => w ? w[0].toUpperCase() + w.substring(1) : '').join(' ');
-  
-  return { board, vacancies, cleanTitle };
 };
 
-// Extract sections of HTML by heading tags in FreeJobAlert style
-const getSectionHtml = (html, headingText) => {
-  const regex = new RegExp(
-    `<(?:div|h[1-6]|p) class="[^"]*?nutitle[^"]*?">\\s*${headingText}\\s*<\\/(?:div|h[1-6]|p)>([\\s\\S]*?)(?:class="[^"]*?nutitle[^"]*?"|<h[1-6]|<p|$)`, 
-    'i'
-  );
-  const match = html.match(regex);
-  return match ? match[1] : '';
+// AI Model Parser Engine
+const parseHtmlWithGemini = async (rawHtml, isJharkhandPage) => {
+  const cleanedHtml = cleanHtmlForAi(rawHtml);
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+
+  const prompt = `
+Analyze the following HTML from a FreeJobAlert listing page:
+---
+${cleanedHtml}
+---
+
+Identify all active job listings and exam updates (admit cards, results, answer keys). Extract the data and return it as a JSON object with two keys:
+1. "jobs": An array of job objects.
+2. "exams": An array of exam objects.
+
+Each job object in "jobs" must have:
+- "title": Clean title of the post (e.g. "Excise Constable", "Assistant Manager"). Do not include vacancy counts in the title itself.
+- "company": Organization or board name offering the job (e.g. "JSSC", "IBPS").
+- "vacancies": Total number of vacancies as an integer. If not specified, default to 45.
+- "qualification": Educational qualification required.
+- "lastDate": Last date to apply in 'YYYY-MM-DD' format (or null if none).
+- "applyLink": Application/Notification URL (omit any links pointing to freejobalert.com or containing freejobalert).
+- "category": One of: "Jharkhand" (if it is a Jharkhand state body or isJharkhandPage is true), "Railway", "SSC", "Defence", "Bank", or "Other".
+- "description": 1-2 sentence description of the recruitment.
+
+Each exam object in "exams" must have:
+- "title": Clean exam title (e.g. "Excise Constable Admit Card", "CGL Result").
+- "organization": Organization name (e.g. "JSSC", "SSC").
+- "category": One of: "Admit Card", "Results", or "Answer Key".
+- "status": E.g. "Admit Card Out", "Result Out", "Answer Key Out".
+- "description": 1-2 sentence description of the exam update.
+- "applyLink": URL to view updates (omit freejobalert.com links).
+
+Return ONLY a valid JSON object. Do not wrap it in markdown code block syntax.
+`;
+
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
+
+  let responseText = result.response.text().trim();
+  if (responseText.startsWith('```')) {
+    responseText = responseText.replace(/^```json\s*/i, '').replace(/```\s*$/g, '').trim();
+  }
+
+  const parsed = JSON.parse(responseText);
+  return {
+    jobs: parsed.jobs || [],
+    exams: parsed.exams || []
+  };
 };
 
-// Extract links from a block of HTML
-const extractLinks = (htmlBlock) => {
-  const aRegex = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+// Fallback Table & link parser matching class="latcpb"
+const parseHtmlWithRegex = (html, isJharkhandPage) => {
+  const jobs = [];
+  const exams = [];
+
+  // Parse Jobs
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let match;
-  const links = [];
-  while ((match = aRegex.exec(htmlBlock)) !== null) {
-    links.push({
-      url: match[1].trim(),
-      text: cleanText(match[2])
-    });
+  while ((match = trRegex.exec(html)) !== null) {
+    const trContent = match[1];
+    if (trContent.includes('class="latcpb"') || trContent.includes('class=latcpb')) {
+      const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+      let tdMatch;
+      const tds = [];
+      while ((tdMatch = tdRegex.exec(trContent)) !== null) {
+        tds.push(tdMatch[1].trim());
+      }
+      
+      if (tds.length >= 5) {
+        const dateStr = cleanText(tds[0]);
+        const board = cleanText(tds[1]);
+        const postName = cleanText(tds[2]);
+        const qual = cleanText(tds[3]);
+        const lastDateStr = tds[5] ? cleanText(tds[5]) : '';
+        
+        const link = extractLink(tds[2]) || extractLink(tds[6]) || extractLink(tds[1]) || '';
+        
+        let title = postName;
+        let vacancies = 45;
+        const vacMatch = postName.match(/-\s*(\d+)\s*Posts/i);
+        if (vacMatch) {
+          vacancies = parseInt(vacMatch[1], 10);
+          title = postName.replace(/-\s*\d+\s*Posts/i, '').trim();
+        }
+        
+        const category = determineCategory(board, isJharkhandPage ? 'Jharkhand' : '');
+        const lastDate = parseDateString(lastDateStr);
+
+        jobs.push({
+          title,
+          company: board,
+          vacancies,
+          qualification: qual || 'Graduation',
+          lastDate: lastDate ? lastDate.toISOString().slice(0, 10) : null,
+          applyLink: link,
+          category,
+          description: `Recruitment of ${title} by ${board}. Selection Process: Written Exam / Interview.`
+        });
+      }
+    }
   }
-  return links;
+
+  // Parse Exams
+  const aRegex = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let aMatch;
+  while ((aMatch = aRegex.exec(html)) !== null) {
+    const href = aMatch[1];
+    const text = cleanText(aMatch[2]);
+    
+    if (!href.includes('/articles/') || text.length < 5 || text.includes('Sarkari') || text.includes('Exam Results')) continue;
+    
+    const isAdmitCard = href.includes('admit-card') || text.toLowerCase().includes('admit card') || text.toLowerCase().includes('hall ticket');
+    const isResult = href.includes('result') || text.toLowerCase().includes('result') || text.toLowerCase().includes('rejection list') || text.toLowerCase().includes('marks');
+    const isAnswerKey = href.includes('answer-key') || text.toLowerCase().includes('answer key') || text.toLowerCase().includes('keys');
+    
+    if (isAdmitCard || isResult || isAnswerKey) {
+      const category = isAdmitCard ? 'Admit Card' : (isResult ? 'Results' : 'Answer Key');
+      const textUpper = text.toUpperCase();
+      let orgShort = 'Govt';
+      let organization = 'Government Department';
+      
+      if (textUpper.includes('JSSC')) {
+        orgShort = 'JSSC';
+        organization = 'Jharkhand Staff Selection Commission';
+      } else if (textUpper.includes('JPSC')) {
+        orgShort = 'JPSC';
+        organization = 'Jharkhand Public Service Commission';
+      } else if (textUpper.includes('UPSC')) {
+        orgShort = 'UPSC';
+        organization = 'Union Public Service Commission';
+      } else if (textUpper.includes('SSC')) {
+        orgShort = 'SSC';
+        organization = 'Staff Selection Commission';
+      } else if (textUpper.includes('RRB') || textUpper.includes('RAILWAY')) {
+        orgShort = 'Railway';
+        organization = 'Railway Recruitment Board';
+      }
+      
+      let title = text
+        .replace(/JSSC|JPSC|UPSC|SSC|BPSC|UPPSC/gi, '')
+        .replace(/Admit Card|Result|Answer Key|Rejection List/gi, '')
+        .replace(/OUT|\(Out\)|2026|2025/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (title.startsWith('-') || title.startsWith('–')) title = title.substring(1).trim();
+      if (!title) title = text;
+      
+      title = title.split(' ').map(w => w ? w[0].toUpperCase() + w.substring(1) : '').join(' ');
+      const link = extractLink(href);
+
+      exams.push({
+        title,
+        organization,
+        category,
+        status: isAdmitCard ? 'Admit Card Out' : (isResult ? 'Result Out' : 'Answer Key Out'),
+        description: `${text}.`,
+        applyLink: link
+      });
+    }
+  }
+
+  return { jobs, exams };
 };
 
 export const scrapeLandingPages = async () => {
-  console.log('🤖 Starting Landing Scraper Agent...');
+  console.log('🤖 Starting Landing Scraper Agent (AI-Powered)...');
   
   const jobsToInsert = [];
   const examsToInsert = [];
-  
-  // ================= 1. SCRAPE FREEJOBALERT HOMEPAGE =================
-  try {
-    console.log('Fetching FreeJobAlert home page...');
-    const fjaHtml = await fetchUrl('https://www.freejobalert.com/');
-    
-    // Parse Jobs from FJA
-    const jobHeadings = ['New Updates', 'Job Notifications', 'State Job Notifications'];
-    for (const heading of jobHeadings) {
-      const sectionHtml = getSectionHtml(fjaHtml, heading);
-      if (sectionHtml) {
-        const links = extractLinks(sectionHtml);
-        for (const link of links) {
-          // If the link itself is not redirecting, clean it
-          const cleanLinkVal = cleanUrl(link.url);
-          const { board, vacancies, cleanTitle } = parseTitleText(link.text);
+
+  const targets = [
+    { url: 'https://www.freejobalert.com/jharkhand-government-jobs/', isJharkhand: true },
+    { url: 'https://www.freejobalert.com/government-jobs/', isJharkhand: false },
+    { url: 'https://www.freejobalert.com/bank-jobs/', isJharkhand: false }
+  ];
+
+  for (const target of targets) {
+    try {
+      console.log(`Fetching page: ${target.url}...`);
+      const html = await fetchUrl(target.url);
+      
+      let data = null;
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          console.log(`🤖 Using AI model (Gemini) to parse: ${target.url}`);
+          data = await parseHtmlWithGemini(html, target.isJharkhand);
+        } catch (err) {
+          console.error(`⚠️ Gemini API parsing failed for ${target.url}, falling back to regex:`, err.message);
+        }
+      }
+
+      if (!data) {
+        console.log(`🔌 Running regex fallback parser for: ${target.url}`);
+        data = parseHtmlWithRegex(html, target.isJharkhand);
+      }
+
+      // Format and push extracted Jobs
+      if (data.jobs && Array.isArray(data.jobs)) {
+        for (const job of data.jobs) {
+          const board = job.company || 'Govt';
+          const title = job.title || 'Job Listing';
           
-          if (isOtherState(board, cleanTitle)) continue;
-          
-          // Exclude exams/admit cards that leak into New Updates
-          const textUpper = link.text.toUpperCase();
-          if (textUpper.includes('ADMIT CARD') || textUpper.includes('RESULT') || textUpper.includes('ANSWER KEY')) {
-            continue;
-          }
-          
-          const category = determineCategory(board, heading === 'State Job Notifications' ? 'Jharkhand' : '');
-          const id = generateDeterministicId('job', board, cleanTitle);
-          
-          let salaryMin = 21700;
-          let salaryMax = 69100;
+          if (isOtherState(board, title)) continue;
+
+          const category = determineCategory(board, target.isJharkhand ? 'Jharkhand' : (job.category || ''));
+          const id = job.applyLink ? (
+            (job.applyLink.match(/-(\d+)(?:\.html)?$/) || job.applyLink.match(/-(\d+)\/?$/))?.[1] ? 
+            `job-${(job.applyLink.match(/-(\d+)(?:\.html)?$/) || job.applyLink.match(/-(\d+)\/?$/))[1]}` : 
+            generateDeterministicId('job', board, title)
+          ) : generateDeterministicId('job', board, title);
+
+          let salaryMin = job.salaryMin || 21700;
+          let salaryMax = job.salaryMax || 69100;
           if (category === 'Jharkhand' || category === 'SSC' || category === 'Railway' || category === 'Defence') {
             salaryMin = 35400;
             salaryMax = 112400;
@@ -292,23 +423,21 @@ export const scrapeLandingPages = async () => {
             salaryMin = 25000;
             salaryMax = 60000;
           }
-          
+
           let companyInitial = board.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
           if (category === 'Jharkhand' && board.toUpperCase().includes('JSSC')) companyInitial = 'JSSC';
           if (category === 'Jharkhand' && board.toUpperCase().includes('JPSC')) companyInitial = 'JPSC';
-          
+
           let companyColor = '#4B5563';
           if (category === 'Jharkhand') companyColor = '#1B8C0A';
           else if (category === 'SSC') companyColor = '#1A73E8';
           else if (category === 'Railway') companyColor = '#D97706';
-          
-          const cleanBoard = cleanReferenceText(board);
-          const cleanTitleStr = cleanReferenceText(cleanTitle);
+          else if (category === 'Bank') companyColor = '#2563EB';
 
           jobsToInsert.push({
             id,
-            title: cleanTitleStr,
-            company: cleanBoard,
+            title: cleanReferenceText(title),
+            company: cleanReferenceText(board),
             companyInitial,
             companyColor,
             location: category === 'Jharkhand' ? 'Jharkhand, India' : 'All India',
@@ -318,239 +447,134 @@ export const scrapeLandingPages = async () => {
             salaryCurrency: '₹',
             salaryPeriod: 'monthly',
             experience: 'Fresher / Experienced',
-            qualification: 'Graduation / Relevant Qualification',
+            qualification: job.qualification || 'Graduation / Relevant Qualification',
             badgeText: 'Apply Online',
             category,
             industry: 'Govt Jobs',
-            description: cleanReferenceText(`Recruitment of ${cleanTitleStr} vacancies by ${cleanBoard}. Selection process involves a written examination and/or interview. Please check official guidelines.`),
+            description: cleanReferenceText(job.description || `Recruitment of ${title} vacancies by ${board}.`),
             responsibilities: ['Review work deliverables.', 'Maintain records and files.'],
-            requirements: [`Possess qualification relevant to ${cleanTitleStr}.`, `Satisfy eligibility criteria set by ${cleanBoard}.`],
+            requirements: [`Possess qualification relevant to ${title}.`, `Satisfy eligibility criteria set by ${board}.`],
             status: 'active',
             postedDate: new Date().toISOString(),
-            lastDate: null,
-            vacancies,
+            lastDate: job.lastDate ? new Date(job.lastDate).toISOString().slice(0, 10) : null,
+            vacancies: job.vacancies || 45,
             postedBy: 'mock-user-admin-id',
-            applyLink: cleanLinkVal,
-            pdfUrl: cleanLinkVal
+            applyLink: cleanUrl(job.applyLink),
+            pdfUrl: cleanUrl(job.applyLink)
           });
         }
       }
-    }
-    
-    // Parse Exams from FJA
-    const examHeadings = [
-      { name: 'Admit Card', category: 'Admit Card', status: 'Admit Card Out' },
-      { name: 'Results', category: 'Results', status: 'Result Out' },
-      { name: 'Answer Keys', category: 'Answer Key', status: 'Answer Key Out' }
-    ];
-    for (const heading of examHeadings) {
-      const sectionHtml = getSectionHtml(fjaHtml, heading.name);
-      if (sectionHtml) {
-        const links = extractLinks(sectionHtml);
-        for (const link of links) {
-          const cleanLinkVal = cleanUrl(link.url);
-          const { board, cleanTitle } = parseTitleText(link.text);
+
+      // Format and push extracted Exams
+      if (data.exams && Array.isArray(data.exams)) {
+        for (const exam of data.exams) {
+          const org = exam.organization || 'Government Department';
+          const title = exam.title || 'Exam Notice';
           
-          if (isOtherState(board, cleanTitle)) continue;
-          
-          const id = generateDeterministicId('exam', board, cleanTitle);
-          const cleanOrg = cleanReferenceText(board);
-          const cleanTitleStr = cleanReferenceText(cleanTitle);
+          if (isOtherState(org, title)) continue;
+
+          const id = exam.applyLink ? (
+            (exam.applyLink.match(/-(\d+)(?:\.html)?$/) || exam.applyLink.match(/-(\d+)\/?$/))?.[1] ? 
+            `exam-${(exam.applyLink.match(/-(\d+)(?:\.html)?$/) || exam.applyLink.match(/-(\d+)\/?$/))[1]}` : 
+            generateDeterministicId('exam', org, title)
+          ) : generateDeterministicId('exam', org, title);
 
           examsToInsert.push({
             id,
-            title: cleanTitleStr,
-            organization: cleanOrg,
-            orgShort: board.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase(),
-            category: heading.category,
+            title: cleanReferenceText(title),
+            organization: cleanReferenceText(org),
+            orgShort: org.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase(),
+            category: exam.category || 'Admit Card',
             lastDate: 'Ongoing',
             posts: 'See Notification',
-            status: heading.status,
-            description: cleanReferenceText(`${cleanTitleStr} notification released by ${cleanOrg}. Check latest updates.`),
+            status: exam.status || 'Admit Card Out',
+            description: cleanReferenceText(exam.description || `${title} notice by ${org}.`),
             isNew: true,
-            applyLink: cleanLinkVal,
-            pdfUrl: cleanLinkVal,
+            applyLink: cleanUrl(exam.applyLink),
+            pdfUrl: cleanUrl(exam.applyLink),
             examDate: '2026'
           });
         }
       }
+
+    } catch (err) {
+      console.error(`❌ Error processing target page ${target.url}:`, err.message);
     }
-  } catch (err) {
-    console.error('Error fetching/parsing FreeJobAlert homepage:', err.message);
   }
 
-  // ================= 2. SCRAPE SARKARIRESULT HOMEPAGE =================
-  try {
-    console.log('Fetching SarkariResult home page...');
-    const srHtml = await fetchUrl('https://sarkariresult.com.cm/');
-    
-    const parseSRSection = (html, headingText) => {
-      // e.g. <p class="gb-headline gb-headline-e0e3e801 gb-headline-text">Results</p>
-      const regex = new RegExp(
-        `<(?:div|h[1-6]|p) class="[^"]*?gb-headline[^"]*?">\\s*${headingText}\\s*<\\/(?:div|h[1-6]|p)>([\\s\\S]*?)<\/ul>`, 
-        'i'
-      );
-      const match = html.match(regex);
-      return match ? match[1] : '';
-    };
-
-    // Parse Latest Jobs from SR
-    const srJobsHtml = parseSRSection(srHtml, 'Latest Jobs');
-    if (srJobsHtml) {
-      const links = extractLinks(srJobsHtml);
-      for (const link of links) {
-        const cleanLinkVal = cleanUrl(link.url);
-        const { board, vacancies, cleanTitle } = parseTitleText(link.text);
-        
-        if (isOtherState(board, cleanTitle)) continue;
-        
-        const category = determineCategory(board, '');
-        const id = generateDeterministicId('job', board, cleanTitle);
-        
-        let salaryMin = 21700;
-        let salaryMax = 69100;
-        if (category === 'Jharkhand' || category === 'SSC' || category === 'Railway' || category === 'Defence') {
-          salaryMin = 35400;
-          salaryMax = 112400;
-        }
-        
-        let companyInitial = board.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
-        let companyColor = '#4B5563';
-        if (category === 'SSC') companyColor = '#1A73E8';
-        else if (category === 'Railway') companyColor = '#D97706';
-        
-        const cleanBoard = cleanReferenceText(board);
-        const cleanTitleStr = cleanReferenceText(cleanTitle);
-
-        jobsToInsert.push({
-          id,
-          title: cleanTitleStr,
-          company: cleanBoard,
-          companyInitial,
-          companyColor,
-          location: 'All India',
-          type: 'Full Time',
-          salaryMin,
-          salaryMax,
-          salaryCurrency: '₹',
-          salaryPeriod: 'monthly',
-          experience: 'Fresher / Experienced',
-          qualification: 'Graduation / Relevant Qualification',
-          badgeText: 'Apply Online',
-          category,
-          industry: 'Govt Jobs',
-          description: cleanReferenceText(`Recruitment of ${cleanTitleStr} vacancies by ${cleanBoard}. Selection process involves a written examination and/or interview. Please check official guidelines.`),
-          responsibilities: ['Review work deliverables.', 'Maintain records and files.'],
-          requirements: [`Possess qualification relevant to ${cleanTitleStr}.`, `Satisfy eligibility criteria set by ${cleanBoard}.`],
-          status: 'active',
-          postedDate: new Date().toISOString(),
-          lastDate: null,
-          vacancies,
-          postedBy: 'mock-user-admin-id',
-          applyLink: cleanLinkVal,
-          pdfUrl: cleanLinkVal
-        });
-      }
-    }
-
-    // Parse Exams from SR
-    const srExams = [
-      { name: 'Admit Cards', category: 'Admit Card', status: 'Admit Card Out' },
-      { name: 'Results', category: 'Results', status: 'Result Out' },
-      { name: 'Answer Key', category: 'Answer Key', status: 'Answer Key Out' }
-    ];
-    for (const block of srExams) {
-      const srExamsHtml = parseSRSection(srHtml, block.name);
-      if (srExamsHtml) {
-        const links = extractLinks(srExamsHtml);
-        for (const link of links) {
-          const cleanLinkVal = cleanUrl(link.url);
-          const { board, cleanTitle } = parseTitleText(link.text);
-          
-          if (isOtherState(board, cleanTitle)) continue;
-          
-          const id = generateDeterministicId('exam', board, cleanTitle);
-          const cleanOrg = cleanReferenceText(board);
-          const cleanTitleStr = cleanReferenceText(cleanTitle);
-
-          examsToInsert.push({
-            id,
-            title: cleanTitleStr,
-            organization: cleanOrg,
-            orgShort: board.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase(),
-            category: block.category,
-            lastDate: 'Ongoing',
-            posts: 'See Notification',
-            status: block.status,
-            description: cleanReferenceText(`${cleanTitleStr} notification released by ${cleanOrg}. Check latest updates.`),
-            isNew: true,
-            applyLink: cleanLinkVal,
-            pdfUrl: cleanLinkVal,
-            examDate: '2026'
-          });
-        }
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching/parsing SarkariResult homepage:', err.message);
-  }
-
-  // ================= 3. DATABASE DEDUPLICATION & UPSERT =================
+  // ================= Deduplication & Upsert =================
   let addedJobs = 0;
   let addedExams = 0;
   
-  // Deduplicate array values fetched
   const uniqueJobs = Array.from(new Map(jobsToInsert.map(j => [j.id, j])).values());
   const uniqueExams = Array.from(new Map(examsToInsert.map(e => [e.id, e])).values());
-  
-  console.log(`Deduplicated: ${uniqueJobs.length} jobs, ${uniqueExams.length} exams. Starting check and insert...`);
 
-  // A. PostgreSQL Mode
+  console.log(`Deduplicated: ${uniqueJobs.length} jobs, ${uniqueExams.length} exams. Updating DB...`);
+
+  // A. PostgreSQL Upsert Mode
   if (global.usePgDb && pgDb.getPool()) {
-    console.log('PostgreSQL database active. Inserting new records...');
+    console.log('PostgreSQL active. Upserting landing scraper results...');
     
-    // Check & Insert Jobs
+    // Upsert Jobs
     for (const job of uniqueJobs) {
       try {
-        const checkRes = await pgDb.query('SELECT 1 FROM jobs WHERE id = $1', [job.id]);
-        if (checkRes.rows.length === 0) {
-          await pgDb.query(`
-            INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, vacancies, posted_by, apply_link, pdf_url)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
-          `, [
-            job.id, job.title, job.company, job.companyInitial, job.companyColor, job.location, job.type,
-            job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod, job.experience, job.qualification,
-            job.badgeText, job.category, job.industry, job.description, job.responsibilities, job.requirements,
-            job.status, new Date(job.postedDate), job.vacancies, job.postedBy, job.applyLink, job.pdfUrl
-          ]);
-          addedJobs++;
-        }
+        const lastDate = job.lastDate ? new Date(job.lastDate) : null;
+        await pgDb.query(`
+          INSERT INTO jobs (id, title, company, company_initial, company_color, location, type, salary_min, salary_max, salary_currency, salary_period, experience, qualification, badge_text, category, industry, description, responsibilities, requirements, status, posted_date, last_date, vacancies, posted_by, apply_link, pdf_url)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+          ON CONFLICT (id) DO UPDATE SET
+            title = EXCLUDED.title,
+            company = EXCLUDED.company,
+            company_initial = EXCLUDED.company_initial,
+            company_color = EXCLUDED.company_color,
+            location = EXCLUDED.location,
+            qualification = EXCLUDED.qualification,
+            category = EXCLUDED.category,
+            last_date = EXCLUDED.last_date,
+            vacancies = EXCLUDED.vacancies,
+            apply_link = EXCLUDED.apply_link,
+            pdf_url = EXCLUDED.pdf_url,
+            updated_at = NOW()
+        `, [
+          job.id, job.title, job.company, job.companyInitial, job.companyColor, job.location, job.type,
+          job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod, job.experience, job.qualification,
+          job.badgeText, job.category, job.industry, job.description, job.responsibilities, job.requirements,
+          job.status, new Date(job.postedDate), lastDate, job.vacancies, job.postedBy, job.applyLink, job.pdfUrl
+        ]);
+        addedJobs++;
       } catch (err) {
         console.error(`Error inserting job ${job.id}:`, err.message);
       }
     }
     
-    // Check & Insert Exams
+    // Upsert Exams
     for (const exam of uniqueExams) {
       try {
-        const checkRes = await pgDb.query('SELECT 1 FROM exams WHERE id = $1', [exam.id]);
-        if (checkRes.rows.length === 0) {
-          await pgDb.query(`
-            INSERT INTO exams (id, title, organization, org_short, category, last_date, posts, status, description, is_new, apply_link, pdf_url, exam_date)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-          `, [
-            exam.id, exam.title, exam.organization, exam.orgShort, exam.category, exam.lastDate, exam.posts,
-            exam.status, exam.description, exam.isNew, exam.applyLink, exam.pdfUrl, exam.examDate
-          ]);
-          addedExams++;
-        }
+        await pgDb.query(`
+          INSERT INTO exams (id, title, organization, org_short, category, last_date, posts, status, description, is_new, apply_link, pdf_url, exam_date)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          ON CONFLICT (id) DO UPDATE SET
+            title = EXCLUDED.title,
+            organization = EXCLUDED.organization,
+            org_short = EXCLUDED.org_short,
+            category = EXCLUDED.category,
+            status = EXCLUDED.status,
+            description = EXCLUDED.description,
+            apply_link = EXCLUDED.apply_link,
+            pdf_url = EXCLUDED.pdf_url,
+            updated_at = NOW()
+        `, [
+          exam.id, exam.title, exam.organization, exam.orgShort, exam.category, exam.lastDate, exam.posts,
+          exam.status, exam.description, exam.isNew, exam.applyLink, exam.pdfUrl, exam.examDate
+        ]);
+        addedExams++;
       } catch (err) {
         console.error(`Error inserting exam ${exam.id}:`, err.message);
       }
     }
   }
 
-  // B. JSON Fallback & Mock Database Mode
+  // B. Fallback JSON File & Mock DB Sync
   const scrapedPath = path.join(__dirname, '..', 'config', 'scraped_data.json');
   let existingData = { jobs: [], exams: [] };
   if (fs.existsSync(scrapedPath)) {
@@ -562,43 +586,78 @@ export const scrapeLandingPages = async () => {
   if (!existingData.jobs) existingData.jobs = [];
   if (!existingData.exams) existingData.exams = [];
   
-  // Merge jobs into config JSON if not present
+  // Merge jobs into config JSON if not present or update if present
   for (const job of uniqueJobs) {
-    const exists = existingData.jobs.some(j => j._id === job.id);
-    if (!exists) {
-      existingData.jobs.push({
-        _id: job.id,
-        ...job,
-        salary: { min: job.salaryMin, max: job.salaryMax, currency: job.salaryCurrency, period: job.salaryPeriod }
-      });
-      if (!global.usePgDb) addedJobs++; // if mock is active, count this towards added
+    const idx = existingData.jobs.findIndex(j => j._id === job.id);
+    const mockJob = {
+      _id: job.id,
+      title: job.title,
+      company: job.company,
+      companyInitial: job.companyInitial,
+      companyColor: job.companyColor,
+      location: job.location,
+      type: job.type,
+      salary: { min: job.salaryMin, max: job.salaryMax, currency: job.salaryCurrency, period: job.salaryPeriod },
+      experience: job.experience,
+      qualification: job.qualification,
+      badgeText: job.badgeText,
+      category: job.category,
+      industry: job.industry,
+      description: job.description,
+      responsibilities: job.responsibilities,
+      requirements: job.requirements,
+      status: job.status,
+      postedDate: job.postedDate,
+      lastDate: job.lastDate,
+      vacancies: job.vacancies,
+      applyLink: job.applyLink,
+      pdfUrl: job.pdfUrl
+    };
+    if (idx !== -1) {
+      existingData.jobs[idx] = { ...existingData.jobs[idx], ...mockJob };
+    } else {
+      existingData.jobs.push(mockJob);
+      if (!global.usePgDb) addedJobs++;
     }
   }
   
-  // Merge exams into config JSON if not present
+  // Merge exams into config JSON if not present or update if present
   for (const exam of uniqueExams) {
-    const exists = existingData.exams.some(e => e._id === exam.id);
-    if (!exists) {
-      existingData.exams.push({
-        _id: exam.id,
-        ...exam
-      });
+    const idx = existingData.exams.findIndex(e => e._id === exam.id);
+    const mockExam = {
+      _id: exam.id,
+      title: exam.title,
+      organization: exam.organization,
+      orgShort: exam.orgShort,
+      category: exam.category,
+      lastDate: exam.lastDate,
+      posts: exam.posts,
+      status: exam.status,
+      description: exam.description,
+      isNew: exam.isNew,
+      applyLink: exam.applyLink,
+      pdfUrl: exam.pdfUrl,
+      examDate: exam.examDate
+    };
+    if (idx !== -1) {
+      existingData.exams[idx] = { ...existingData.exams[idx], ...mockExam };
+    } else {
+      existingData.exams.push(mockExam);
       if (!global.usePgDb) addedExams++;
     }
   }
   
   fs.writeFileSync(scrapedPath, JSON.stringify(existingData, null, 2), 'utf-8');
-  console.log(`✅ scraped_data.json updated on disk.`);
+  console.log(`✅ scraped_data.json updated with landing scraper results.`);
   
   if (global.useMockDb) {
-    // Reload mock DB in memory
     mockDb.jobs = existingData.jobs.map(job => ({
       ...job,
       postedDate: job.postedDate ? new Date(job.postedDate) : new Date(),
       lastDate: job.lastDate ? new Date(job.lastDate) : null
     }));
     mockDb.exams = existingData.exams;
-    console.log('✅ Mock In-Memory Database synchronized.');
+    console.log('✅ Mock In-Memory Database synchronized with landing scraper.');
   }
   
   return { success: true, jobsCount: addedJobs, examsCount: addedExams };
