@@ -1,4 +1,4 @@
-import * as pgDb from '../config/pgDb.js';
+import * as pgDb from '../db/pgDb.js';
 
 const mapJob = (j) => {
   if (!j) return null;
@@ -22,8 +22,8 @@ const mapJob = (j) => {
     category: j.category,
     industry: j.industry,
     description: j.description,
-    responsibilities: j.responsibilities || [],
-    requirements: j.requirements || [],
+    responsibilities: Array.isArray(j.responsibilities) ? j.responsibilities : (typeof j.responsibilities === 'string' ? JSON.parse(j.responsibilities || '[]') : []),
+    requirements: Array.isArray(j.requirements) ? j.requirements : (typeof j.requirements === 'string' ? JSON.parse(j.requirements || '[]') : []),
     status: j.status || 'active',
     postedDate: j.posted_date,
     lastDate: j.last_date,

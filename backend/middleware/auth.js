@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import mockDb from '../config/mockDb.js';
+import mockDb from '../db/mockDb.js';
 
 export const protect = async (req, res, next) => {
   let token;

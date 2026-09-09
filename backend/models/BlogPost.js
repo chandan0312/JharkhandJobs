@@ -1,4 +1,4 @@
-import * as pgDb from '../config/pgDb.js';
+import * as pgDb from '../db/pgDb.js';
 
 const mapBlogPost = (b) => {
   if (!b) return null;
@@ -11,7 +11,7 @@ const mapBlogPost = (b) => {
     category: b.category,
     author: b.author,
     coverImage: b.cover_image,
-    tags: b.tags || [],
+    tags: Array.isArray(b.tags) ? b.tags : (typeof b.tags === 'string' ? JSON.parse(b.tags || '[]') : []),
     views: b.views || 0,
     publishedDate: b.published_date,
     save: async function() {

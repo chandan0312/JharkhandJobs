@@ -860,91 +860,42 @@ const Admin = () => {
               </button>
             </li>
 
-            {/* 5. Career Guide Folder (Collapsible) */}
+            {/* Discussions */}
             <li>
               <button
-                onClick={() => !sidebarCollapsed && setCareerGuideExpanded(!careerGuideExpanded)}
+                onClick={() => setActiveMenu('Discussion Forum')}
                 style={{
-                  width: '100%', display: 'flex', alignItems: 'center', 
-                  justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-                  padding: sidebarCollapsed ? '12px 0' : '11px 14px', fontSize: '13px', fontWeight: '600',
-                  color: '#A3B3AB', backgroundColor: 'transparent',
-                  borderRadius: '8px', cursor: sidebarCollapsed ? 'default' : 'pointer', border: 'none', textAlign: 'left'
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  padding: sidebarCollapsed ? '12px 0' : '11px 14px', fontSize: '13px', fontWeight: activeMenu === 'Discussion Forum' ? '700' : '600',
+                  color: activeMenu === 'Discussion Forum' ? '#FFFFFF' : '#A3B3AB',
+                  backgroundColor: activeMenu === 'Discussion Forum' ? '#085435' : 'transparent',
+                  borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease',
+                  border: 'none', textAlign: 'left'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}>
-                  <FolderOpen size={17} style={{ color: '#6A8074' }} />
-                  {!sidebarCollapsed && <span>Career Guide</span>}
-                </div>
-                {!sidebarCollapsed && (
-                  careerGuideExpanded ? <ChevronDown size={15} style={{ color: '#6A8074' }} /> : <ChevronRight size={15} style={{ color: '#6A8074' }} />
-                )}
+                <MessageSquare size={17} style={{ color: activeMenu === 'Discussion Forum' ? '#FFFFFF' : '#6A8074' }} />
+                {!sidebarCollapsed && <span>Discussions</span>}
               </button>
-              
-              {!sidebarCollapsed && careerGuideExpanded && (
-                <ul style={{ listStyle: 'none', paddingLeft: '28px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <li>
-                    <button
-                      onClick={() => setActiveMenu('Discussion Forum')}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '8px 12px', fontSize: '12px', fontWeight: activeMenu === 'Discussion Forum' ? '700' : '500',
-                        color: activeMenu === 'Discussion Forum' ? '#FFFFFF' : '#8DA297',
-                        backgroundColor: activeMenu === 'Discussion Forum' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        borderRadius: '6px', cursor: 'pointer', border: 'none', textAlign: 'left'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', color: '#6A8074' }}>◇</span>
-                      <span>Discussions</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveMenu('Articles & Blogs')}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '8px 12px', fontSize: '12px', fontWeight: activeMenu === 'Articles & Blogs' ? '700' : '500',
-                        color: activeMenu === 'Articles & Blogs' ? '#FFFFFF' : '#8DA297',
-                        backgroundColor: activeMenu === 'Articles & Blogs' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        borderRadius: '6px', cursor: 'pointer', border: 'none', textAlign: 'left'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', color: '#6A8074' }}>◇</span>
-                      <span>Articles & Blogs</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveMenu('Success Stories')}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '8px 12px', fontSize: '12px', fontWeight: activeMenu === 'Success Stories' ? '700' : '500',
-                        color: activeMenu === 'Success Stories' ? '#FFFFFF' : '#8DA297',
-                        backgroundColor: activeMenu === 'Success Stories' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        borderRadius: '6px', cursor: 'pointer', border: 'none', textAlign: 'left'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', color: '#6A8074' }}>◇</span>
-                      <span>Success Stories</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveMenu('Career Tools')}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '8px 12px', fontSize: '12px', fontWeight: activeMenu === 'Career Tools' ? '700' : '500',
-                        color: activeMenu === 'Career Tools' ? '#FFFFFF' : '#8DA297',
-                        backgroundColor: activeMenu === 'Career Tools' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        borderRadius: '6px', cursor: 'pointer', border: 'none', textAlign: 'left'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', color: '#6A8074' }}>◇</span>
-                      <span>Career Tools</span>
-                    </button>
-                  </li>
-                </ul>
-              )}
+            </li>
+
+            {/* Articles & Blogs */}
+            <li>
+              <button
+                onClick={() => setActiveMenu('Articles & Blogs')}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  padding: sidebarCollapsed ? '12px 0' : '11px 14px', fontSize: '13px', fontWeight: activeMenu === 'Articles & Blogs' ? '700' : '600',
+                  color: activeMenu === 'Articles & Blogs' ? '#FFFFFF' : '#A3B3AB',
+                  backgroundColor: activeMenu === 'Articles & Blogs' ? '#085435' : 'transparent',
+                  borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease',
+                  border: 'none', textAlign: 'left'
+                }}
+              >
+                <BookOpen size={17} style={{ color: activeMenu === 'Articles & Blogs' ? '#FFFFFF' : '#6A8074' }} />
+                {!sidebarCollapsed && <span>Articles & Blogs</span>}
+              </button>
             </li>
 
             {/* 6. Quizzes Folder (Collapsible) */}

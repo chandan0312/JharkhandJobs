@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import * as pgDb from '../config/pgDb.js';
-import mockDb from '../config/mockDb.js';
+import * as pgDb from '../db/pgDb.js';
+import mockDb from '../db/mockDb.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

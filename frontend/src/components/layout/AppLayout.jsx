@@ -44,17 +44,21 @@ const AppLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Unified global sidebar items list (Excluding the collapsible sub-menus)
+  // Unified global sidebar items list
   const sidebarItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Home', path: '/', icon: LayoutDashboard },
     { name: 'Jobs', path: '/jobs', icon: Briefcase },
     { name: 'Exams', path: '/exams', icon: Calendar },
     { name: 'Admit Cards', path: '/exams?category=Admit%20Card', icon: FileText },
-    { name: 'Results', path: '/exams?category=Results', icon: Award }
+    { name: 'Results', path: '/exams?category=Results', icon: Award },
+    { name: 'Discussions', path: '/discussions', icon: MessageSquare },
+    { name: 'Articles & Blogs', path: '/blog', icon: BookOpen }
   ];
 
   if (user) {
+    sidebarItems.unshift({ name: 'My Dashboard', path: '/dashboard', icon: LayoutDashboard });
     sidebarItems.push({ name: 'Saved Jobs', path: '/saved-jobs', icon: Bookmark });
+    sidebarItems.push({ name: 'My Profile', path: '/profile', icon: Users });
   }
 
   // Admin specific lists
@@ -202,75 +206,7 @@ const AppLayout = () => {
               );
             })}
 
-            {/* Collapsible Career Guide for Aspirant */}
-            <li>
-              <button
-                onClick={() => !sidebarCollapsed && setCareerGuideExpanded(!careerGuideExpanded)}
-                style={{
-                  width: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-                  padding: sidebarCollapsed ? '12px 0' : '10px 16px', 
-                  fontSize: '13px', 
-                  fontWeight: '500',
-                  color: '#94A3B8', 
-                  backgroundColor: 'transparent',
-                  borderRadius: '8px', 
-                  cursor: sidebarCollapsed ? 'default' : 'pointer', 
-                  border: 'none', 
-                  textAlign: 'left',
-                  outline: 'none'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}>
-                  <FolderOpen size={18} style={{ color: '#64748B' }} />
-                  {!sidebarCollapsed && <span>Career Guide</span>}
-                </div>
-                {!sidebarCollapsed && (
-                  careerGuideExpanded ? <ChevronDown size={14} style={{ color: '#64748B' }} /> : <ChevronRight size={14} style={{ color: '#64748B' }} />
-                )}
-              </button>
-              
-              {!sidebarCollapsed && careerGuideExpanded && (
-                <ul style={{ listStyle: 'none', paddingLeft: '28px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <li>
-                    <Link
-                      to="/discussions"
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '8px 12px', fontSize: '12px', 
-                        fontWeight: location.pathname === '/discussions' ? '600' : '500',
-                        color: location.pathname === '/discussions' ? '#FFFFFF' : '#94A3B8',
-                        backgroundColor: location.pathname === '/discussions' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease',
-                        borderLeft: location.pathname === '/discussions' ? '3px solid #1B8C0A' : '3px solid transparent'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', color: '#64748B' }}>◇</span>
-                      <span>Discussions</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/blog"
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '8px 12px', fontSize: '12px', 
-                        fontWeight: location.pathname === '/blog' ? '600' : '500',
-                        color: location.pathname === '/blog' ? '#FFFFFF' : '#94A3B8',
-                        backgroundColor: location.pathname === '/blog' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease',
-                        borderLeft: location.pathname === '/blog' ? '3px solid #1B8C0A' : '3px solid transparent'
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', color: '#64748B' }}>◇</span>
-                      <span>Articles & Blogs</span>
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
+
 
             {/* Quizzes */}
             <li>

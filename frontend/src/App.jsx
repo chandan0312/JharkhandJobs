@@ -11,6 +11,10 @@ import Companies from './pages/Companies';
 import JobDetails from './pages/JobDetails';
 import ExamDetails from './pages/ExamDetails';
 import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import UserDashboard from './pages/UserDashboard';
 import Blog from './pages/Blog';
 import Discussions from './pages/Discussions';
 import Admin from './pages/Admin';
@@ -42,17 +46,22 @@ function App() {
               <Route path="/discussions" element={<Discussions />} />
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/contact" element={<Contact />} />
+              
+              {/* Auth Guest Routes */}
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ForgotPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               
-              {/* Protected Candidate Profile */}
+              {/* Protected Candidate Profile & Dashboard */}
               <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<UserDashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/saved-jobs" element={<SavedJobs />} />
               </Route>
             </Route>
-
-
 
             {/* Protected Admin Console */}
             <Route element={<AdminRoute />}>

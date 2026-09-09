@@ -1,4 +1,4 @@
-import * as pgDb from '../config/pgDb.js';
+import * as pgDb from '../db/pgDb.js';
 
 const mapExam = (e) => {
   if (!e) return null;

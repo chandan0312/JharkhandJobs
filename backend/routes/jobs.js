@@ -1,7 +1,7 @@
 import express from 'express';
 import Job from '../models/Job.js';
 import { protect, admin } from '../middleware/auth.js';
-import mockDb from '../config/mockDb.js';
+import mockDb from '../db/mockDb.js';
 import { uploadNotificationDoc } from '../middleware/upload.js';
 
 const router = express.Router();
