@@ -1,1251 +1,691 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { 
-  MapPin, 
-  Clock, 
-  Briefcase, 
-  DollarSign, 
-  Globe, 
-  Share2, 
-  X, 
-  CheckCircle, 
-  AlertCircle, 
-  Check, 
-  Copy,
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import {
+  ArrowLeft,
+  Eye,
+  Users,
+  Briefcase,
+  CalendarDays,
   Download,
-  Users
-} from 'lucide-react';
+  ExternalLink,
+  ChevronRight,
+  Globe,
+  FileText,
+  BookOpen,
+  Ticket,
+  BarChart2,
+  ClipboardList,
+  HelpCircle,
+  Clock,
+  RefreshCw,
+} from 'lucide-react'
+import BrandIcon from '../components/BrandIcon.jsx'
+import CategoryBox from '../components/CategoryBox.jsx'
+import TableView from '../components/TableView.jsx'
+import SEOHead from '../components/SEOHead.jsx'
+import RichContentRenderer from '../components/RichContentRenderer.jsx'
+import { getJobById, getJobsByCategory, getKindLabel, getCategories, getJobs } from '../services/api.js'
 
-const JobDetails = () => {
-  const { t, language } = useLanguage();
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { user, setUser } = useAuth();
+/** Safely parse a date string; returns null if invalid. */
+function safeDate(val) {
+  if (!val) return null
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? null : d
+}
 
-  const [job, setJob] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('description');
-  
-  // Apply Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [coverLetter, setCoverLetter] = useState('');
-  const [resume, setResume] = useState(null);
-  const [resumeName, setResumeName] = useState('');
-  
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
+/** Format ISO date string to human-readable DD Mon YYYY */
+function formatDate(isoOrString) {
+  if (!isoOrString) return null
+  const d = safeDate(isoOrString)
+  if (!d) return isoOrString
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
-  // Custom Toast/Interactive State
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [isSaved, setIsSaved] = useState(false);
+const KIND_CONFIG = {
+  job: {
+    actionLabel: 'Apply Online',
+    pdfLabel: 'Download Notification (PDF)',
+    pdfSubtitle: 'Official Recruitment Notification & Guidelines',
+  },
+  'admit-card': {
+    actionLabel: 'Download Admit Card',
+    pdfLabel: 'Exam Instructions (PDF)',
+    pdfSubtitle: 'Official Examination Instructions & Notice',
+  },
+  result: {
+    actionLabel: 'Check Result',
+    pdfLabel: 'Download Merit List / Cutoff (PDF)',
+    pdfSubtitle: 'Official Selection & Cutoff List',
+  },
+  'answer-key': {
+    actionLabel: 'Download Answer Key',
+    pdfLabel: 'Official Key Notice (PDF)',
+    pdfSubtitle: 'Official Answer Key & Objection Guidelines',
+  },
+  syllabus: {
+    actionLabel: 'View Exam Pattern',
+    pdfLabel: 'Download Syllabus (PDF)',
+    pdfSubtitle: 'Official Examination Scheme & Detailed Syllabus',
+  },
+}
 
-  // Pre-fill user data if logged in
+function Stat({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-xl border border-hairline bg-surface px-3.5 py-2.5">
+      <Icon size={17} className="text-brand-600" />
+      <div className="leading-tight">
+        <p className="text-[13px] font-bold text-ink">{value}</p>
+        <p className="text-[11px] text-ink-faint">{label}</p>
+      </div>
+    </div>
+  )
+}
+
+export default function JobDetails() {
+  const { id } = useParams()
+  const [job, setJob] = useState(undefined) // undefined = loading, null = not found
+  const [related, setRelated] = useState([])
+  const [crossKindLinks, setCrossKindLinks] = useState([]) // same exam, different kinds
+  const [categories, setCategories] = useState([])
+
+  // Load categories for metadata (name, icon, color)
   useEffect(() => {
-    if (user) {
-      setFullName(user.name);
-      setEmail(user.email);
-      setPhone(user.phone || '');
-    }
-  }, [user]);
+    let active = true
+    getCategories()
+      .then((data) => active && setCategories(data || []))
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
 
-  // Sync isSaved status
   useEffect(() => {
-    if (user && user.savedJobs) {
-      setIsSaved(user.savedJobs.includes(id));
-    } else {
-      setIsSaved(false);
-    }
-  }, [user, id]);
+    let active = true
+    setJob(undefined)
+    setCrossKindLinks([])
+    getJobById(id)
+      .then((data) => {
+        if (!active) return
+        setJob(data || null)
+        if (data) {
+          // Load related posts in the same category
+          getJobsByCategory(data.category)
+            .then((list) => {
+              if (active) setRelated((list || []).filter((j) => j.id !== data.id).slice(0, 6))
+            })
+            .catch(() => {})
 
-  // Fetch single job details
-  useEffect(() => {
-    const fetchJobDetails = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await api.get(`/jobs/${id}`);
-        if (response.data.success) {
-          setJob(response.data.job);
+          // Find cross-kind pages for same category (admit cards, results, answer keys, syllabus)
+          // We load ALL kinds from this category to find related content types
+          const ALL_KINDS = ['job', 'admit-card', 'result', 'answer-key', 'syllabus']
+          const otherKinds = ALL_KINDS.filter((k) => k !== data.kind)
+          Promise.all(
+            otherKinds.map((k) =>
+              getJobs({ category: data.category, kind: k, limit: 1 })
+                .then((list) => (list && list.length ? { kind: k, post: list[0] } : null))
+                .catch(() => null)
+            )
+          ).then((results) => {
+            if (active) setCrossKindLinks(results.filter(Boolean))
+          })
         }
-      } catch (err) {
-        console.error(err);
-        setError(t('jobDetails.notFoundErr'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchJobDetails();
-  }, [id]);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const allowed = ['.pdf', '.doc', '.docx'];
-      const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-      if (!allowed.includes(ext)) {
-        setSubmitError(t('jobDetails.invalidTypeErr'));
-        setResume(null);
-        setResumeName('');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setSubmitError(t('jobDetails.fileTooLargeErr'));
-        setResume(null);
-        setResumeName('');
-        return;
-      }
-      setSubmitError(null);
-      setResume(file);
-      setResumeName(file.name);
+      })
+      .catch(() => active && setJob(null))
+    return () => {
+      active = false
     }
-  };
+  }, [id])
 
-  const handleApplySubmit = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      setModalOpen(false);
-      navigate('/login');
-      return;
-    }
-    if (!resume) {
-      setSubmitError(t('jobDetails.selectResumeErr'));
-      return;
-    }
+  if (job === undefined) {
+    return (
+      <div className="flex h-64 items-center justify-center text-[14px] text-ink-muted">
+        Loading post…
+      </div>
+    )
+  }
 
-    setSubmitting(true);
-    setSubmitError(null);
+  if (job === null) {
+    return (
+      <div className="card mx-auto max-w-md p-10 text-center">
+        <h1 className="text-lg font-bold text-ink">Post not found</h1>
+        <p className="mt-2 text-[13px] text-ink-muted">
+          The post you’re looking for doesn’t exist or may have been removed.
+        </p>
+        <Link to="/" className="btn-primary mt-5">
+          <ArrowLeft size={16} /> Back to Discover
+        </Link>
+      </div>
+    )
+  }
 
-    // Form data for multipart upload
-    const formData = new FormData();
-    formData.append('jobId', id);
-    formData.append('fullName', fullName);
-    formData.append('email', email);
-    formData.append('phone', phone);
-    formData.append('coverLetter', coverLetter);
-    formData.append('resume', resume);
+  const category = categories.find((c) => c.slug === job.category)
+  const actionCfg = KIND_CONFIG[job.kind] || KIND_CONFIG.job
 
-    try {
-      const res = await api.post('/applications', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+  // Determine primary action URL (either applyUrl or the primary link)
+  const primaryActionUrl = job.applyUrl || job.links?.find((l) => l.primary && l.href && l.href !== '#')?.href
+
+  // Find expiration date from important dates if present
+  const lastDateEntry = job.importantDates?.find(
+    (d) => d.label?.toLowerCase().includes('last') || d.label?.toLowerCase().includes('close')
+  )
+  const parsedLastDate = lastDateEntry?.value ? safeDate(lastDateEntry.value) : null
+  const validThroughDate = parsedLastDate
+    ? parsedLastDate.toISOString().split('T')[0]
+    : new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0]
+
+  // ── Structured Data ────────────────────────────────────────────────────────
+  // JobPosting schema is ONLY valid for actual job recruitment posts.
+  // Admit cards, results, answer keys, and syllabus use Article schema instead.
+  const pageUrl = `https://jobalertx.com/job/${job.id}`
+  const pageDescription = job.detailedDescription || job.shortInfo || job.tagline || job.title
+  const datePostedIso = job.postedOn
+    ? (safeDate(job.postedOn)?.toISOString() || new Date().toISOString())
+    : new Date().toISOString()
+  const updatedAtIso = job.updatedAt
+    ? (safeDate(job.updatedAt)?.toISOString() || datePostedIso)
+    : datePostedIso
+
+  const mainSchema = job.kind === 'job'
+    ? {
+        '@type': 'JobPosting',
+        title: job.title,
+        description: pageDescription,
+        identifier: {
+          '@type': 'PropertyValue',
+          name: job.org,
+          value: job.id,
         },
-      });
-
-      if (res.data.success) {
-        setSuccess(true);
-        // Reset form
-        setCoverLetter('');
-        setResume(null);
-        setResumeName('');
+        hiringOrganization: {
+          '@type': 'Organization',
+          name: job.org,
+          sameAs: job.officialWebsiteUrl || undefined,
+        },
+        datePosted: datePostedIso,
+        validThrough: validThroughDate,
+        employmentType: 'FULL_TIME',
+        directApply: Boolean(primaryActionUrl),
+        applicantLocationRequirements: {
+          '@type': 'Country',
+          name: 'India',
+        },
+        jobLocation: {
+          '@type': 'Place',
+          address: {
+            '@type': 'PostalAddress',
+            addressCountry: 'IN',
+          },
+        },
+        totalJobOpenings: Number(job.vacancies) || undefined,
       }
-    } catch (err) {
-      console.error(err);
-      setSubmitError(err.response?.data?.message || t('jobDetails.failedSubmitErr'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Clipboard Copier for Sharing Link
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setToastMessage(t('jobDetails.copiedSuccess'));
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-  };
-
-  const handleApplyClick = () => {
-    if (job && job.applyLink) {
-      const url = job.applyLink.startsWith('http') ? job.applyLink : `https://${job.applyLink}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } else {
-      setModalOpen(true);
-    }
-  };
-
-  // Save Job interaction
-  const handleToggleSave = async () => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      if (!isSaved) {
-        const res = await api.post(`/auth/save-job/${id}`);
-        if (res.data.success) {
-          setUser(res.data.user);
-          setIsSaved(true);
-          setToastMessage(t('jobDetails.savedSuccess'));
-        }
-      } else {
-        const res = await api.delete(`/auth/save-job/${id}`);
-        if (res.data.success) {
-          setUser(res.data.user);
-          setIsSaved(false);
-          setToastMessage(t('jobDetails.removedSuccess'));
-        }
+    : {
+        // For admit-card, result, answer-key, syllabus — use Article
+        '@type': 'Article',
+        headline: job.title,
+        description: pageDescription,
+        author: {
+          '@type': 'Organization',
+          name: 'Job Alert X',
+          url: 'https://jobalertx.com/',
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Job Alert X',
+          url: 'https://jobalertx.com/',
+          logo: {
+            '@type': 'ImageObject',
+            url: 'https://jobalertx.com/favicon.svg',
+          },
+        },
+        datePublished: datePostedIso,
+        dateModified: updatedAtIso,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
       }
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    } catch (err) {
-      console.error(err);
-      setToastMessage(language === 'HI' ? 'सहेजने में विफल' : 'Failed to toggle save status');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    }
-  };
 
-  // Download official recruitment notification dynamically
-  const handleDownloadNotification = () => {
-    if (job && job.pdfUrl) {
-      const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
-      const url = job.pdfUrl.startsWith('http') ? job.pdfUrl : `${baseUrl}${job.pdfUrl}`;
-      window.open(url, '_blank');
-      return;
-    }
-    const fileContent = `==================================================
-GOVERNMENT OF JHARKHAND
-RECRUITMENT AND VACANCY NOTIFICATION
-==================================================
-
-Job Title: ${job.title}
-Company/Organization: ${job.company}
-Location: ${job.location}, Jharkhand
-Job Category: ${job.category}
-Job Type: ${job.type}
-Total Vacancies: ${job.vacancies || 45} Posts
-Salary Details: ₹${job.salary?.min} - ${job.salary?.max} ${job.salary?.period || 'LPA'}
-Last Date to Apply: ${job.lastDate ? new Date(job.lastDate).toLocaleDateString() : 'N/A'}
-Experience Requirement: ${job.experience || '0-2 Years'}
-
---------------------------------------------------
-JOB DESCRIPTION & ELIGIBILITY:
---------------------------------------------------
-${job.description}
-
---------------------------------------------------
-KEY RESPONSIBILITIES:
---------------------------------------------------
-${(job.responsibilities && job.responsibilities.length > 0) 
-  ? job.responsibilities.map((r, idx) => `${idx + 1}. ${r}`).join('\n')
-  : '1. Deliver assigned duties efficiently.\n2. Coordinate with team members and report daily progress.'}
-
---------------------------------------------------
-REQUIREMENTS:
---------------------------------------------------
-${(job.requirements && job.requirements.length > 0)
-  ? job.requirements.map((req, idx) => `${idx + 1}. ${req}`).join('\n')
-  : '1. Relevant education background.\n2. Good communication and interpersonal skills.'}
-
-==================================================
-This is an official computer-generated notification.
-Jharkhand Jobs Portal - Empowering local youth.
-==================================================`;
-
-    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    
-    const sanitizedTitle = job.title.replace(/[^a-zA-Z0-9]/g, '_');
-    const sanitizedCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
-    link.download = `${sanitizedCompany}_Recruitment_Notification_${sanitizedTitle}.txt`;
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    setToastMessage(t('jobDetails.downloadSuccess'));
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3500);
-  };
-
-  // Helper: Calculate days ago nicely
-  const getDaysAgo = (dateString) => {
-    const today = new Date();
-    const posted = new Date(dateString);
-    const diffTime = Math.abs(today - posted);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (language === 'HI') {
-      if (diffDays <= 1) return 'आज';
-      if (diffDays === 2) return '1 दिन पहले';
-      return `${diffDays - 1} दिन पहले`;
-    } else {
-      if (diffDays <= 1) return 'today';
-      if (diffDays === 2) return '1 day ago';
-      return `${diffDays - 1} days ago`;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', flexDirection: 'column' }} className="page-content">
-        <div style={{ border: '4px solid #f3f4f6', borderTop: '4px solid #1B8C0A', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite' }} />
-        <p style={{ marginTop: '16px', color: '#6B7280', fontSize: '14px' }}>{t('jobDetails.loadingDetails')}</p>
-      </div>
-    );
+  const breadcrumbSchema = {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://jobalertx.com/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: category?.name || 'Govt Jobs',
+        item: `https://jobalertx.com/category/${job.category}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: job.title,
+        item: pageUrl,
+      },
+    ],
   }
 
-  if (error || !job) {
-    return (
-      <div className="container page-content text-center" style={{ padding: '80px 0' }}>
-        <AlertCircle size={40} style={{ color: '#DC2626', margin: '0 auto 16px' }} />
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1A1A2E' }}>{t('jobDetails.failedLoad')}</h2>
-        <p style={{ color: '#6B7280', margin: '8px 0 24px' }}>{error || (language === 'HI' ? 'वह नौकरी मौजूद नहीं है जिसे आप ढूंढ रहे हैं।' : 'The job you are looking for does not exist.')}</p>
-        <Link to="/jobs" className="btn btn-primary">{t('jobDetails.backAllJobs')}</Link>
-      </div>
-    );
-  }
+  // Build FAQ schema from importantDates & key fields for job posts
+  const faqItems = job.kind === 'job' ? [
+    job.vacancies && {
+      q: `How many vacancies are there in ${job.title}?`,
+      a: `There are a total of ${Number(job.vacancies).toLocaleString('en-IN')} vacancies in ${job.title}.`,
+    },
+    job.eligibilityShort && {
+      q: `What is the educational qualification for ${job.title}?`,
+      a: `The required educational qualification for ${job.title} is: ${job.eligibilityShort}.`,
+    },
+    job.ageLimit && {
+      q: `What is the age limit for ${job.title}?`,
+      a: `The age limit for ${job.title} is Minimum ${job.ageLimit.min} years and Maximum ${job.ageLimit.max} years. ${job.ageLimit.note || 'Age relaxation is applicable as per government rules.'}`,
+    },
+    (() => {
+      const feeRow = job.fee?.find((f) => f.label?.toLowerCase().includes('general'))
+      return feeRow ? {
+        q: `What is the application fee for ${job.title}?`,
+        a: `The application fee for General/OBC/EWS category candidates is ${feeRow.value}. SC/ST/PwD candidates may be exempt or have reduced fees as per the official notification.`,
+      } : null
+    })(),
+    (() => {
+      const lastDate = job.importantDates?.find((d) => d.label?.toLowerCase().includes('last'))
+      return lastDate ? {
+        q: `What is the last date to apply for ${job.title}?`,
+        a: `The last date to apply for ${job.title} is ${lastDate.value}. Candidates must submit the online application before this date.`,
+      } : null
+    })(),
+    primaryActionUrl && {
+      q: `How to apply for ${job.title}?`,
+      a: `To apply for ${job.title}: 1. Visit the official website at ${job.officialWebsiteUrl || 'the official recruitment portal'}. 2. Click on the Apply Online link. 3. Register with your email and mobile number. 4. Fill in the application form with correct details. 5. Upload required documents and pay the application fee. 6. Submit and download the confirmation page.`,
+    },
+  ].filter(Boolean) : []
+
+  const faqSchema = faqItems.length > 0 ? {
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  } : null
+
+  const allSchemas = [mainSchema, breadcrumbSchema, ...(faqSchema ? [faqSchema] : [])]
+
+  const keywords = `${job.title}, ${job.org}, ${job.orgShort || ''}, ${category?.name || ''} recruitment 2026, free job alert 2026, government job vacancy 2026, new vacancy 2026, govt job notification 2026, online application form, sarkari result, admit card, latest notification, sarkari naukri, latest govt jobs, job alert x`
 
   return (
-    <div className="page-content animate-fade-in" style={{ backgroundColor: '#F8F9FA', paddingBottom: '80px', minHeight: '100vh' }}>
-      
-      {/* Toast Notification Popup */}
-      {showToast && (
-        <div style={{
-          position: 'fixed',
-          top: '90px',
-          right: '24px',
-          backgroundColor: '#1E293B',
-          color: 'white',
-          padding: '12px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          zIndex: 9999,
-          fontSize: '14px',
-          fontWeight: '500',
-          animation: 'scaleIn 0.25s ease-out forwards',
-          borderLeft: '4px solid #1B8C0A'
-        }}>
-          <CheckCircle size={16} style={{ color: '#86EFAC' }} />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+    <div className="animate-fade-in">
+      <SEOHead
+        title={`${job.title} — ${job.org}`}
+        description={`${job.title} ${job.kind === 'job' ? 'recruitment' : ''} by ${job.org}. ${job.vacancies ? `Total vacancies: ${Number(job.vacancies).toLocaleString('en-IN')}. ` : ''}Eligibility: ${job.eligibilityShort || 'Check Details'}. Download notification PDF, admit card, results and answer keys on Job Alert X.`}
+        keywords={keywords}
+        canonical={pageUrl}
+        ogType={job.kind === 'job' ? 'website' : 'article'}
+        jsonLd={allSchemas}
+        datePublished={datePostedIso}
+        dateModified={updatedAtIso}
+      />
 
-      <div className="container">
-        
-        {/* Breadcrumb - Matches Mockup Exactly */}
-        <div className="breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6B7280', padding: '24px 0 16px' }}>
-          <Link to="/" style={{ color: '#9CA3AF' }}>{t('jobs.breadcrumbHome')}</Link>
-          <span style={{ color: '#D1D5DB' }}>&gt;</span>
-          <Link to="/jobs" style={{ color: '#9CA3AF' }}>{t('jobs.breadcrumbAll')}</Link>
-          <span style={{ color: '#D1D5DB' }}>&gt;</span>
-          <span style={{ color: '#374151', fontWeight: '500' }}>{t('jobDetails.breadcrumbDetails')}</span>
-        </div>
+      {/* Breadcrumb */}
+      <nav className="mb-4 flex flex-wrap items-center gap-1 text-[12.5px] text-ink-faint">
+        <Link to="/" className="hover:text-brand-600">Discover</Link>
+        <ChevronRight size={13} />
+        <Link to={`/category/${job.category}`} className="hover:text-brand-600">
+          {category?.name || 'Category'}
+        </Link>
+        <ChevronRight size={13} />
+        <span className="text-ink-muted">{job.title}</span>
+      </nav>
 
-        {/* 1. Job Header Card - High Fidelity Matches Mockup */}
-        <div className="card" style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '12px', 
-          border: '1px solid #E5E7EB', 
-          padding: '32px', 
-          marginBottom: '30px', 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            
-            {/* Circular Company Initials Bubble */}
-            <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              backgroundColor: job.companyColor || '#073B4C',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: '700',
-              fontSize: '28px',
-              boxShadow: 'inset 0 -4px 10px rgba(0,0,0,0.1)',
-              flexShrink: 0
-            }}>
-              {job.companyInitial || 'TS'}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_330px]">
+        {/* Main Content Column */}
+        <main className="min-w-0 space-y-5">
+          {/* Header card */}
+          <header className="card p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <BrandIcon
+                icon={job.logo?.icon || 'landmark'}
+                color={job.logo?.color || '#5558e6'}
+                size={60}
+              />
+              <div className="min-w-0 flex-1">
+                <span className="inline-block rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700 dark:bg-brand-600/15 dark:text-brand-200">
+                  {getKindLabel(job.kind)}
+                </span>
+                <h1 className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-ink">
+                  {job.title}
+                </h1>
+                <p className="mt-1 text-[14px] text-ink-muted">{job.org}</p>
+              </div>
             </div>
 
-            {/* Info details column */}
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              <h1 style={{ 
-                fontSize: '26px', 
-                fontWeight: '800', 
-                color: '#111827', 
-                marginBottom: '6px',
-                letterSpacing: '-0.02em',
-                lineHeight: '1.2'
-              }}>
-                {job.title}
-              </h1>
-              
-              <p style={{ 
-                fontSize: '16px', 
-                color: '#4B5563', 
-                fontWeight: '600', 
-                marginBottom: '16px' 
-              }}>
-                {job.company}
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat icon={Eye} label="Views" value={job.views?.toLocaleString('en-IN')} />
+              {job.applications ? (
+                <Stat icon={Users} label="Applications" value={job.applications.toLocaleString('en-IN')} />
+              ) : null}
+              {job.vacancies ? (
+                <Stat icon={Briefcase} label="Total Posts" value={job.vacancies.toLocaleString('en-IN')} />
+              ) : null}
+              <Stat
+                icon={CalendarDays}
+                label="Posted"
+                value={
+                  job.postedOn || job.postedAt
+                    ? <time dateTime={safeDate(job.postedOn || job.postedAt)?.toISOString() || undefined}>{job.postedOn || job.postedAt}</time>
+                    : 'Recent'
+                }
+              />
+            </div>
+            {/* Last updated timestamp — important for E-E-A-T */}
+            {job.updatedAt && (
+              <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
+                <RefreshCw size={11} />
+                Last updated:{' '}
+                <time dateTime={safeDate(job.updatedAt)?.toISOString()}>
+                  {formatDate(job.updatedAt)}
+                </time>
               </p>
-              
-              {/* Metadata Sub-Row */}
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {/* Location */}
-                <span style={{ fontSize: '13px', color: '#6B7280', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <MapPin size={16} style={{ color: '#9CA3AF' }} /> 
-                  <span style={{ fontWeight: '500' }}>{job.location}, Jharkhand</span>
-                </span>
-                
-                {/* Post age */}
-                <span style={{ fontSize: '13px', color: '#6B7280', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Clock size={16} style={{ color: '#9CA3AF' }} /> 
-                  <span>{t('jobDetails.posted')} {getDaysAgo(job.postedDate)}</span>
-                </span>
-                
-                {/* Job Type Green Outline Badge */}
-                <span style={{ 
-                  fontSize: '12px', 
-                  color: '#1B8C0A', 
-                  backgroundColor: '#E8F5E3',
-                  border: '1px solid #C2E7B9',
-                  borderRadius: '6px',
-                  padding: '3px 8px',
-                  fontWeight: '600',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <Briefcase size={13} />
-                  {job.type}
-                </span>
-
-                {/* Vacancies Blue Outline Badge */}
-                <span style={{ 
-                  fontSize: '12px', 
-                  color: '#2563EB', 
-                  backgroundColor: '#EFF6FF',
-                  border: '1px solid #BFDBFE',
-                  borderRadius: '6px',
-                  padding: '3px 8px',
-                  fontWeight: '600',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <Users size={13} />
-                  {job.vacancies || 45} {t('jobDetails.posts')}
-                </span>
-
-                {/* Salary Green Bold Text */}
-                <span style={{ 
-                  fontSize: '14px', 
-                  color: '#1B8C0A', 
-                  fontWeight: '700',
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '6px' 
-                }}>
-                  ₹{job.salary?.min} - {job.salary?.max} {job.salary?.period || 'LPA'}
-                  <Globe size={14} style={{ color: '#86EFAC' }} />
-                </span>
-              </div>
-
-              {/* CTAs Placed inside Card under details exactly like mockup */}
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
-                {job.applyLink ? (
-                  <button 
-                    onClick={handleApplyClick}
-                    className="btn" 
-                    style={{ 
-                      padding: '12px 32px', 
-                      fontSize: '15px',
-                      fontWeight: '700',
-                      backgroundColor: '#1B8C0A',
-                      color: 'white',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 10px rgba(27, 140, 10, 0.15)'
-                    }}
-                  >
-                    {t('jobDetails.applyNow')}
-                  </button>
-                ) : (
-                  <button 
-                    disabled
-                    className="btn" 
-                    style={{ 
-                      padding: '12px 32px', 
-                      fontSize: '15px',
-                      fontWeight: '700',
-                      backgroundColor: '#94A3B8',
-                      color: 'white',
-                      borderRadius: '8px',
-                      cursor: 'not-allowed'
-                    }}
-                    title="Official application details will be uploaded soon"
-                  >
-                    {language === 'HI' ? 'विवरण जल्द ही अपलोड होगा' : 'Details will be uploaded soon'}
-                  </button>
-                )}
-                <button 
-                  onClick={handleToggleSave}
-                  className="btn" 
-                  style={{ 
-                    padding: '12px 28px', 
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    backgroundColor: 'white',
-                    color: isSaved ? '#1B8C0A' : '#374151',
-                    border: isSaved ? '1.5px solid #1B8C0A' : '1.5px solid #D1D5DB',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  {isSaved ? <Check size={16} /> : null}
-                  {isSaved ? t('jobDetails.saved') : t('jobDetails.saveJob')}
-                </button>
-                {job.pdfUrl ? (
-                  <button 
-                    onClick={handleDownloadNotification}
-                    className="btn" 
-                    style={{ 
-                      padding: '12px 24px', 
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      backgroundColor: '#EFF6FF',
-                      color: '#2563EB',
-                      border: '1.5px solid #BFDBFE',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      transition: 'all 0.2s ease',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#DBEAFE';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#EFF6FF';
-                    }}
-                  >
-                    <Download size={16} />
-                    {t('jobDetails.downloadNotification')}
-                  </button>
-                ) : (
-                  <button 
-                    disabled
-                    className="btn" 
-                    style={{ 
-                      padding: '12px 24px', 
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      backgroundColor: '#F1F5F9',
-                      color: '#94A3B8',
-                      border: '1.5px solid #E2E8F0',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'not-allowed'
-                    }}
-                    title="Official document will be uploaded shortly"
-                  >
-                    <Download size={16} />
-                    {language === 'HI' ? 'दस्तावेज़ जल्द ही अपलोड होगा' : 'Notification will be uploaded soon'}
-                  </button>
-                )}
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        {/* 2. Main Two Column Layout */}
-        <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          
-          {/* Left Column: Interactive Tabs & Information */}
-          <main style={{ flex: '1 1 600px', minWidth: '320px' }}>
-            
-            {/* Interactive Tab row - Prominent green bottom indicator */}
-            <div style={{ 
-              display: 'flex', 
-              borderBottom: '1px solid #E5E7EB', 
-              marginBottom: '20px',
-              overflowX: 'auto',
-              whiteSpace: 'nowrap'
-            }}>
-              {[
-                { id: 'description', label: t('jobDetails.tabDesc') },
-                { id: 'about', label: t('jobDetails.tabAbout') },
-                { id: 'requirements', label: t('jobDetails.tabRequirements') },
-                { id: 'reviews', label: t('jobDetails.tabReviews') }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: '12px 24px',
-                    fontSize: '15px',
-                    fontWeight: activeTab === tab.id ? '700' : '500',
-                    color: activeTab === tab.id ? '#1B8C0A' : '#6B7280',
-                    borderBottom: activeTab === tab.id ? '3px solid #1B8C0A' : '3px solid transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    marginBottom: '-1px'
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab content card */}
-            <div className="card" style={{ backgroundColor: 'white', borderRadius: '12px', padding: '36px', border: '1px solid #E5E7EB' }}>
-              
-              {/* Tab: Job Description */}
-              {activeTab === 'description' && (
-                <div className="animate-fade-in">
-                  <p style={{ 
-                    color: '#4B5563', 
-                    lineHeight: '1.8', 
-                    marginBottom: '32px', 
-                    fontSize: '15px',
-                    whiteSpace: 'pre-line' 
-                  }}>
-                    {job.description}
-                  </p>
-                  
-                  {job.responsibilities && job.responsibilities.length > 0 && (
-                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '28px' }}>
-                      <h3 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: '800', 
-                        color: '#111827', 
-                        marginBottom: '20px',
-                        letterSpacing: '-0.01em'
-                      }}>
-                        {t('jobDetails.keyResponsibilities')}
-                      </h3>
-                      <ul style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        gap: '14px', 
-                        paddingLeft: '20px', 
-                        listStyleType: 'disc' 
-                      }}>
-                        {job.responsibilities.map((resp, i) => (
-                          <li key={i} style={{ color: '#4B5563', fontSize: '14.5px', lineHeight: '1.6' }}>
-                            {resp}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Fallback to make sure Key Responsibilities exist for mockup similarity */}
-                  {(!job.responsibilities || job.responsibilities.length === 0) && (
-                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '28px' }}>
-                      <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', marginBottom: '20px' }}>
-                        {t('jobDetails.keyResponsibilities')}
-                      </h3>
-                      <ul style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingLeft: '20px', listStyleType: 'disc' }}>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Write clean, efficient and maintainable code</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Collaborate with cross-functional teams</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Troubleshoot and debug software issues</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Participate in code reviews</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Learn and adapt to new technologies</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tab: About Company */}
-              {activeTab === 'about' && (
-                <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', letterSpacing: '-0.01em' }}>
-                    {t('jobDetails.tabAbout')} {job.company}
-                  </h3>
-                  <p style={{ color: '#4B5563', lineHeight: '1.8', fontSize: '15px' }}>
-                    {job.company} is a highly respected regional industry leader headquartered in Jharkhand. They focus strongly on professional development, work-life balance, and regional socioeconomic improvement. They specialize in the {job.industry || 'technology sector'} with multiple local support networks.
-                  </p>
-                  
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                    gap: '20px', 
-                    marginTop: '16px', 
-                    backgroundColor: '#F9FAFB', 
-                    padding: '24px', 
-                    borderRadius: '8px',
-                    border: '1px solid #F3F4F6'
-                  }}>
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('jobDetails.industrySector')}</span>
-                      <strong style={{ fontSize: '15px', fontWeight: '700', color: '#374151' }}>{job.industry || 'IT / Software'}</strong>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('jobDetails.localBranches')}</span>
-                      <strong style={{ fontSize: '15px', fontWeight: '700', color: '#374151' }}>{job.location || 'Ranchi'}, Jharkhand</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Requirements */}
-              {activeTab === 'requirements' && (
-                <div className="animate-fade-in">
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', marginBottom: '20px', letterSpacing: '-0.01em' }}>
-                    {t('jobDetails.tabRequirements')}
-                  </h3>
-                  <ul style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '14px', 
-                    paddingLeft: '20px', 
-                    listStyleType: 'disc' 
-                  }}>
-                    {job.requirements && job.requirements.length > 0 ? (
-                      job.requirements.map((reqItem, i) => (
-                        <li key={i} style={{ color: '#4B5563', fontSize: '14.5px', lineHeight: '1.6' }}>
-                          {reqItem}
-                        </li>
-                      ))
-                    ) : (
-                      <>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Bachelor's degree in Computer Science or related field</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>0-2 years of experience in software development</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Good knowledge of HTML, CSS, JavaScript</li>
-                        <li style={{ color: '#4B5563', fontSize: '14.5px' }}>Basic knowledge of React or any backend tech is a plus</li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-              )}
-
-              {/* Tab: Reviews */}
-              {activeTab === 'reviews' && (
-                <div className="animate-fade-in" style={{ textAlign: 'center', padding: '24px 0' }}>
-                  <Globe size={48} style={{ color: '#9CA3AF', margin: '0 auto 16px' }} />
-                  <h4 style={{ fontSize: '18px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>{t('jobDetails.noReviews')}</h4>
-                  <p style={{ color: '#6B7280', fontSize: '14px', maxWidth: '400px', margin: '0 auto 20px', lineHeight: '1.5' }}>
-                    {t('jobDetails.noReviewsDesc')}
-                  </p>
-                  <button 
-                    onClick={() => {
-                      setToastMessage('Reviews system is currently in read-only mode.');
-                      setShowToast(true);
-                      setTimeout(() => setShowToast(false), 3000);
-                    }}
-                    className="btn"
-                    style={{ 
-                      padding: '10px 24px', 
-                      fontSize: '14px', 
-                      fontWeight: '600', 
-                      backgroundColor: '#F3F4F6', 
-                      color: '#4B5563', 
-                      borderRadius: '6px',
-                      border: '1px solid #E5E7EB'
-                    }}
-                  >
-                    {t('jobDetails.writeReview')}
-                  </button>
-                </div>
-              )}
-
-            </div>
-          </main>
-
-          {/* Right Column: Sidebar */}
-          <aside style={{ flex: '1 1 300px', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            
-            {/* Sidebar 1: Job Overview Card - Clean label-on-top, value-on-bottom list (Mockup Fidelity) */}
-            <div className="card" style={{ 
-              backgroundColor: 'white', 
-              padding: '28px', 
-              borderRadius: '12px', 
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
-            }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: '800', 
-                color: '#111827', 
-                marginBottom: '24px', 
-                borderBottom: '1px solid #F3F4F6', 
-                paddingBottom: '12px',
-                letterSpacing: '-0.01em'
-              }}>
-                {t('jobDetails.overview')}
-              </h2>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                
-                {/* Job Type */}
-                <div>
-                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
-                    {t('jobs.jobType')}
-                  </span>
-                  <strong style={{ fontSize: '15px', color: '#374151', fontWeight: '700' }}>
-                    {job.type}
-                  </strong>
-                </div>
-
-                {/* Experience */}
-                <div>
-                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
-                    {t('jobs.experience')}
-                  </span>
-                  <strong style={{ fontSize: '15px', color: '#374151', fontWeight: '700' }}>
-                    {job.experience || '0 - 2 Years'}
-                  </strong>
-                </div>
-
-                {/* Salary */}
-                <div>
-                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
-                    {t('jobs.salaryRange')}
-                  </span>
-                  <strong style={{ fontSize: '15px', color: '#1B8C0A', fontWeight: '700' }}>
-                    ₹{job.salary?.min} - {job.salary?.max} {job.salary?.period || 'LPA'}
-                  </strong>
-                </div>
-
-                {/* Vacancies */}
-                <div>
-                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
-                    {t('jobDetails.vacancies')}
-                  </span>
-                  <strong style={{ fontSize: '15px', color: '#2563EB', fontWeight: '700' }}>
-                    {job.vacancies || 45} {t('jobDetails.posts')}
-                  </strong>
-                </div>
-
-                {/* Location */}
-                <div>
-                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
-                    {t('jobDetails.localBranches')}
-                  </span>
-                  <strong style={{ fontSize: '15px', color: '#374151', fontWeight: '700' }}>
-                    {job.location}, Jharkhand
-                  </strong>
-                </div>
-
-                {/* Industry */}
-                <div>
-                  <span style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', fontWeight: '500', marginBottom: '4px' }}>
-                    {t('jobDetails.industrySector')}
-                  </span>
-                  <strong style={{ fontSize: '15px', color: '#374151', fontWeight: '700' }}>
-                    {job.industry || 'IT / Software'}
-                  </strong>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Sidebar 2: Share Section - Custom Styled Social Circles */}
-            <div className="card text-center" style={{ 
-              backgroundColor: 'white', 
-              padding: '24px', 
-              borderRadius: '12px', 
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.01)'
-            }}>
-              <h4 style={{ 
-                fontSize: '15px', 
-                fontWeight: '700', 
-                color: '#111827', 
-                marginBottom: '16px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '8px'
-              }}>
-                <Share2 size={16} style={{ color: '#1B8C0A' }} /> {t('jobDetails.shareJob')}
-              </h4>
-              
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
-                {/* Whatsapp */}
-                <a 
-                  href={`https://api.whatsapp.com/send?text=Check%20out%20this%20job:%20${encodeURIComponent(job.title)}%20at%20${encodeURIComponent(job.company)}%20-%20${encodeURIComponent(window.location.href)}`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  style={{ 
-                    width: '36px', 
-                    height: '36px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#25D366', 
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    transition: 'transform 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(37, 211, 102, 0.2)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
-                >
-                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.59 2.016 14.11 1.01 11.99 1.01c-5.444 0-9.866 4.372-9.87 9.802 0 1.714.47 3.387 1.357 4.847L2.457 21.65l6.19-1.496zm9.382-7.013c-.27-.135-1.597-.788-1.846-.878-.25-.09-.432-.135-.613.135-.18.27-.7.878-.858 1.058-.158.18-.316.202-.586.067-.27-.135-1.14-.42-2.172-1.341-.803-.715-1.346-1.6-1.503-1.87-.158-.27-.017-.417.118-.552.122-.122.27-.315.405-.473.135-.158.18-.27.27-.45.09-.18.045-.338-.022-.473-.068-.135-.613-1.478-.84-2.023-.22-.53-.443-.46-.613-.468-.158-.008-.338-.01-.518-.01a1.002 1.002 0 0 0-.723.338c-.25.27-.95.928-.95 2.261 0 1.333.977 2.62 1.113 2.8.136.18 1.92 2.92 4.654 4.1c.65.28 1.157.447 1.554.573.654.208 1.25.178 1.72.108.524-.078 1.597-.653 1.822-1.283.226-.63.226-1.17.158-1.283-.068-.112-.248-.18-.518-.315z"/>
-                  </svg>
-                </a>
-
-                {/* Facebook */}
-                <a 
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  style={{ 
-                    width: '36px', 
-                    height: '36px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#1877F2', 
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    transition: 'transform 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(24, 119, 242, 0.2)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
-                >
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                </a>
-
-                {/* Linkedin */}
-                <a 
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  style={{ 
-                    width: '36px', 
-                    height: '36px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#0A66C2', 
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    transition: 'transform 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(10, 102, 194, 0.2)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
-                >
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                </a>
-
-                {/* Twitter */}
-                <a 
-                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20job%20opportunity%20at%20${encodeURIComponent(job.company)}!&url=${encodeURIComponent(window.location.href)}`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  style={{ 
-                    width: '36px', 
-                    height: '36px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#1DA1F2', 
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    transition: 'transform 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(29, 161, 242, 0.2)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
-                >
-                  <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                  </svg>
-                </a>
-
-                {/* Copy Link Button */}
-                <button 
-                  onClick={handleCopyLink}
-                  style={{ 
-                    width: '36px', 
-                    height: '36px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#E5E7EB', 
-                    color: '#4B5563', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease, background-color 0.2s ease',
-                    border: 'none',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.1)';
-                    e.currentTarget.style.backgroundColor = '#D1D5DB';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.0)';
-                    e.currentTarget.style.backgroundColor = '#E5E7EB';
-                  }}
-                  title="Copy job link"
-                  aria-label="Copy job details link"
-                >
-                  <Copy size={16} />
-                </button>
-              </div>
-            </div>
-
-          </aside>
-
-        </div>
-
-      </div>
-
-      {/* 3. Apply Modal Form Overlay - Intact & Preserved functionality */}
-      {modalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 2000,
-          padding: '20px',
-          backdropFilter: 'blur(4px)'
-        }}>
-          
-          <div className="card animate-scale-in" style={{ 
-            backgroundColor: 'white', 
-            maxWidth: '520px', 
-            width: '100%', 
-            padding: '32px', 
-            position: 'relative', 
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            border: 'none',
-            borderRadius: '16px'
-          }}>
-            
-            <button 
-              onClick={() => { setModalOpen(false); setSuccess(false); setSubmitError(null); }} 
-              style={{ 
-                position: 'absolute', 
-                top: '20px', 
-                right: '20px', 
-                cursor: 'pointer', 
-                color: '#9CA3AF',
-                padding: '4px',
-                borderRadius: '50%',
-                backgroundColor: '#F3F4F6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#374151'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
-              aria-label="Close modal"
-            >
-              <X size={18} />
-            </button>
-
-            {success ? (
-              <div className="text-center animate-fade-in" style={{ padding: '24px 0 12px' }}>
-                <div style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '50%',
-                  backgroundColor: '#E8F5E3',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 20px'
-                }}>
-                  <CheckCircle size={36} style={{ color: '#1B8C0A' }} />
-                </div>
-                <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '8px' }}>{t('jobDetails.appSentTitle')}</h3>
-                <p style={{ fontSize: '14.5px', color: '#6B7280', marginBottom: '28px', lineHeight: '1.6' }}>
-                  {t('jobDetails.appSentDesc')}<strong>{email}</strong>{t('jobDetails.appSentDescSuffix')}
-                </p>
-                <button 
-                  onClick={() => { setModalOpen(false); setSuccess(false); }} 
-                  className="btn btn-primary"
-                  style={{ 
-                    padding: '10px 32px',
-                    fontWeight: '700',
-                    backgroundColor: '#1B8C0A',
-                    borderRadius: '8px'
-                  }}
-                >
-                  {t('jobDetails.gotItBtn')}
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleApplySubmit}>
-                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>{t('jobDetails.applyTitle')}</h3>
-                <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '24px' }}>
-                  {job.title} <span style={{ color: '#D1D5DB' }}>•</span> {job.company}
-                </p>
-
-                {submitError && (
-                  <div style={{ 
-                    backgroundColor: '#FEF2F2', 
-                    borderLeft: '4px solid #DC2626', 
-                    color: '#DC2626', 
-                    padding: '12px 16px', 
-                    fontSize: '13px', 
-                    borderRadius: '6px', 
-                    marginBottom: '20px', 
-                    display: 'flex', 
-                    gap: '10px', 
-                    alignItems: 'center' 
-                  }}>
-                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                    <span>{submitError}</span>
-                  </div>
-                )}
-
-                {!user && (
-                  <div style={{ 
-                    backgroundColor: '#EFF6FF', 
-                    borderLeft: '4px solid #2563EB', 
-                    color: '#2563EB', 
-                    padding: '12px 16px', 
-                    fontSize: '13.5px', 
-                    borderRadius: '6px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <span>{t('jobDetails.notSignedIn')}</span>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                  
-                  {/* Name */}
-                  <div>
-                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('jobDetails.fullNameLabel')}</label>
-                    <input 
-                      type="text" 
-                      required 
-                      disabled={!user}
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="form-input" 
-                      placeholder={t('jobDetails.fullNamePlaceholder')}
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('jobDetails.emailLabel')}</label>
-                    <input 
-                      type="email" 
-                      required 
-                      disabled={!user}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="form-input" 
-                      placeholder={t('jobDetails.emailPlaceholder')}
-                    />
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('jobDetails.phoneLabel')}</label>
-                    <input 
-                      type="text" 
-                      required 
-                      disabled={!user}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="form-input" 
-                      placeholder={t('jobDetails.phonePlaceholder')}
-                    />
-                  </div>
-
-                  {/* Resume Upload */}
-                  <div>
-                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('jobDetails.resumeLabel')}</label>
-                    <div style={{ position: 'relative', border: '2px dashed #D1D5DB', borderRadius: '8px', padding: '20px', textAlign: 'center', backgroundColor: '#F9FAFB' }}>
-                      <input 
-                        type="file" 
-                        required 
-                        disabled={!user}
-                        onChange={handleFileChange}
-                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0, cursor: 'pointer', width: '100%' }} 
-                      />
-                      <span style={{ fontSize: '13.5px', color: '#4B5563', display: 'block', fontWeight: '600' }}>
-                        {resumeName ? `${t('jobDetails.resumeSelected')}${resumeName}` : t('jobDetails.resumePlaceholder')}
-                      </span>
-                      <span style={{ fontSize: '11px', color: '#9CA3AF', display: 'block', marginTop: '4px' }}>{t('jobDetails.maxSizeLimit')}</span>
-                    </div>
-                  </div>
-
-                  {/* Cover Letter */}
-                  <div>
-                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('jobDetails.coverLetterLabel')}</label>
-                    <textarea 
-                      rows="3" 
-                      disabled={!user}
-                      value={coverLetter}
-                      onChange={(e) => setCoverLetter(e.target.value)}
-                      className="form-input" 
-                      placeholder={t('jobDetails.coverLetterPlaceholder')}
-                      style={{ resize: 'none' }}
-                    />
-                  </div>
-
-                </div>
-
-                {/* Submission Button */}
-                <button 
-                  type="submit" 
-                  disabled={submitting}
-                  className="btn" 
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px 0', 
-                    fontSize: '15px',
-                    fontWeight: '700',
-                    backgroundColor: '#1B8C0A',
-                    color: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 10px rgba(27, 140, 10, 0.15)'
-                  }}
-                >
-                  {submitting ? t('jobDetails.submittingBtn') : user ? t('jobDetails.submitBtn') : t('jobDetails.proceedSignInBtn')}
-                </button>
-              </form>
             )}
 
+            {/* Quick Action Header Bar */}
+            {(primaryActionUrl || job.notificationPdfUrl || job.officialWebsiteUrl) && (
+              <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-hairline pt-4">
+                {primaryActionUrl && (
+                  <a
+                    href={primaryActionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all hover:brightness-110 active:scale-[0.98]"
+                  >
+                    <span>{actionCfg.actionLabel}</span>
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+
+                {job.notificationPdfUrl && (
+                  <a
+                    href={job.notificationPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 shadow-xs transition-colors hover:bg-red-500/20 active:scale-[0.98]"
+                  >
+                    <Download size={15} />
+                    <span>{actionCfg.pdfLabel}</span>
+                  </a>
+                )}
+
+                {job.officialWebsiteUrl && (
+                  <a
+                    href={job.officialWebsiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-hairline bg-surface px-4 py-2.5 text-xs font-semibold text-ink-soft shadow-xs transition-colors hover:bg-subtle hover:text-ink active:scale-[0.98]"
+                  >
+                    <Globe size={14} className="text-blue-500" />
+                    <span>Official Website</span>
+                  </a>
+                )}
+              </div>
+            )}
+          </header>
+
+          {/* Overview */}
+          {job.shortInfo && (
+            <section className="card p-5 sm:p-6">
+              <div className="mb-3 flex items-center gap-2 border-b border-hairline pb-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+                  <FileText size={15} />
+                </span>
+                <h2 className="text-[15px] font-bold text-ink">Notification Overview</h2>
+              </div>
+              <p className="text-[14px] leading-relaxed text-ink-soft">{job.shortInfo}</p>
+            </section>
+          )}
+
+          {/* Detailed Description / Full Blog Article */}
+          {job.detailedDescription && (
+            <section className="card p-5 sm:p-7">
+              <div className="mb-4 flex items-center justify-between border-b border-hairline pb-3.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                    <BookOpen size={17} />
+                  </span>
+                  <div>
+                    <h2 className="text-[16px] font-extrabold text-ink">Full Notification &amp; Detailed Guide</h2>
+                    <p className="text-[11px] text-ink-faint">Complete eligibility, vacancy breakdown, syllabus, &amp; application instructions</p>
+                  </div>
+                </div>
+                {job.notificationPdfUrl && (
+                  <a
+                    href={job.notificationPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
+                  >
+                    <Download size={13} /> Official PDF
+                  </a>
+                )}
+              </div>
+              <RichContentRenderer content={job.detailedDescription} />
+            </section>
+          )}
+
+          {/* Dates + fee */}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {job.importantDates?.length ? (
+              <TableView title="Important Dates" rows={job.importantDates} />
+            ) : null}
+            {job.fee?.length ? <TableView title="Application Fee" rows={job.fee} /> : null}
           </div>
 
-        </div>
-      )}
+          {/* Age limit */}
+          {job.ageLimit && (
+            <TableView
+              title="Age Limit"
+              rows={[
+                { label: 'Minimum Age', value: `${job.ageLimit.min} years` },
+                { label: 'Maximum Age', value: `${job.ageLimit.max} years` },
+                { label: 'Note', value: job.ageLimit.note },
+              ]}
+            />
+          )}
 
+          {/* Vacancy / posts */}
+          {job.posts?.length ? (
+            <TableView
+              title="Vacancy Details"
+              columns={[
+                { key: 'name', label: 'Post Name' },
+                { key: 'total', label: 'Total Posts' },
+                { key: 'eligibility', label: 'Eligibility' },
+              ]}
+              rows={job.posts}
+            />
+          ) : null}
+
+          {/* Eligibility */}
+          {job.eligibility && (
+            <section className="card p-5 sm:p-6">
+              <h2 className="mb-2 text-[15px] font-bold text-ink">Eligibility Criteria</h2>
+              <p className="text-[14px] leading-relaxed text-ink-soft">{job.eligibility}</p>
+            </section>
+          )}
+
+          {/* FAQ Section — auto-generated for job posts */}
+          {faqItems.length > 0 && (
+            <section className="card p-5 sm:p-6">
+              <div className="mb-4 flex items-center gap-2 border-b border-hairline pb-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600">
+                  <HelpCircle size={15} />
+                </span>
+                <h2 className="text-[15px] font-bold text-ink">Frequently Asked Questions</h2>
+              </div>
+              <div className="space-y-4">
+                {faqItems.map(({ q, a }, idx) => (
+                  <details key={idx} className="group rounded-xl border border-hairline bg-subtle/40 p-4 open:bg-brand-500/5 open:border-brand-500/20 transition-all">
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-2 text-[13.5px] font-semibold text-ink">
+                      <span>{q}</span>
+                      <ChevronRight size={15} className="mt-0.5 shrink-0 text-ink-faint transition-transform group-open:rotate-90" />
+                    </summary>
+                    <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">{a}</p>
+                  </details>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-ink-faint">
+                ⚠️ Always verify information on the{' '}
+                {job.officialWebsiteUrl ? (
+                  <a href={job.officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 underline">official website</a>
+                ) : 'official website'}
+                {' '}before applying.
+              </p>
+            </section>
+          )}
+        </main>
+
+        {/* Sidebar */}
+        <aside className="min-w-0 space-y-5">
+          {/* Important links & Official Downloads Card */}
+          <section className="card p-5 space-y-4">
+            <div className="border-b border-hairline pb-3">
+              <h2 className="text-[14px] font-bold text-ink flex items-center gap-2">
+                <Download size={16} className="text-orange-500" />
+                Important Links &amp; Actions
+              </h2>
+              <p className="mt-0.5 text-[11.5px] text-ink-muted">
+                Official online portal links and downloadable notification files.
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              {/* Prominent Apply / Action button */}
+              {primaryActionUrl && (
+                <a
+                  href={primaryActionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary w-full justify-center text-xs font-bold gap-2 py-3 shadow-md shadow-brand-500/15"
+                >
+                  <span>{actionCfg.actionLabel}</span>
+                  <ExternalLink size={15} />
+                </a>
+              )}
+
+              {/* Dedicated Notification PDF Download Card / Button */}
+              {job.notificationPdfUrl && (
+                <a
+                  href={job.notificationPdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="group flex w-full items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-left transition-all hover:bg-red-500/20 active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white shadow-xs">
+                      <Download size={15} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-red-600 dark:text-red-300 truncate">
+                        {actionCfg.pdfLabel}
+                      </p>
+                      <p className="text-[10.5px] text-ink-muted truncate">Official PDF Attachment</p>
+                    </div>
+                  </div>
+                  <ExternalLink size={14} className="text-red-500 shrink-0 ml-1.5 transition-transform group-hover:translate-x-0.5" />
+                </a>
+              )}
+
+              {/* Official Authority Website Link */}
+              {job.officialWebsiteUrl && (
+                <a
+                  href={job.officialWebsiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-ghost w-full justify-between text-xs py-2.5 font-semibold"
+                >
+                  <span className="flex items-center gap-2">
+                    <Globe size={15} className="text-blue-500" />
+                    Official Website
+                  </span>
+                  <ExternalLink size={14} className="text-ink-faint" />
+                </a>
+              )}
+
+              {/* Additional custom links configured in post */}
+              {job.links?.filter((l) => l.href && l.href !== '#' && l.href !== primaryActionUrl && l.href !== job.notificationPdfUrl && l.href !== job.officialWebsiteUrl).map((link, idx) => {
+                const isDownload = link.label.toLowerCase().includes('download') || link.label.toLowerCase().includes('pdf')
+                const Icon = isDownload ? Download : ExternalLink
+                return (
+                  <a
+                    key={`${link.label}-${idx}`}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-ghost w-full justify-between text-xs py-2.5 font-semibold"
+                  >
+                    <span className="truncate">{link.label}</span>
+                    <Icon size={14} className="text-ink-faint shrink-0" />
+                  </a>
+                )
+              })}
+            </div>
+
+            <div className="rounded-xl border border-hairline bg-subtle/50 p-3 text-[11px] leading-relaxed text-ink-muted">
+              <span className="font-semibold text-ink">Official Verification Notice:</span> Always cross-check dates, vacancy distribution, and eligibility criteria on the official notification PDF before submitting applications.
+            </div>
+          </section>
+
+          {/* Cross-kind links: Admit Card, Result, Answer Key, Syllabus for same category */}
+          {crossKindLinks.length > 0 && (
+            <section className="card p-5 space-y-3">
+              <div className="border-b border-hairline pb-2.5">
+                <h2 className="text-[13.5px] font-bold text-ink flex items-center gap-2">
+                  <ClipboardList size={15} className="text-brand-600" />
+                  Related {category?.name || 'Exam'} Resources
+                </h2>
+              </div>
+              <div className="space-y-1.5">
+                {crossKindLinks.map(({ kind, post }) => {
+                  const kindIcons = {
+                    'admit-card': <Ticket size={14} className="text-purple-500" />,
+                    result: <BarChart2 size={14} className="text-green-500" />,
+                    'answer-key': <FileText size={14} className="text-orange-500" />,
+                    syllabus: <BookOpen size={14} className="text-blue-500" />,
+                    job: <Briefcase size={14} className="text-brand-500" />,
+                  }
+                  const kindLabels = {
+                    'admit-card': 'Admit Card',
+                    result: 'Result',
+                    'answer-key': 'Answer Key',
+                    syllabus: 'Syllabus',
+                    job: 'Recruitment',
+                  }
+                  return (
+                    <Link
+                      key={kind}
+                      to={`/job/${post.id}`}
+                      className="flex items-center gap-2.5 rounded-lg border border-hairline bg-surface px-3 py-2 text-[12.5px] text-ink-soft hover:border-brand-500/30 hover:text-ink hover:bg-subtle transition-all"
+                    >
+                      {kindIcons[kind]}
+                      <span className="font-medium">{kindLabels[kind]}</span>
+                      <ChevronRight size={12} className="ml-auto text-ink-faint" />
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Related posts in same category */}
+          {related.length > 0 && (
+            <CategoryBox
+              title={`More in ${category?.name || 'this category'}`}
+              icon={category?.icon}
+              color={category?.color}
+              items={related}
+              viewAllTo={`/category/${job.category}`}
+            />
+          )}
+        </aside>
+      </div>
     </div>
-  );
-};
-
-export default JobDetails;
+  )
+}

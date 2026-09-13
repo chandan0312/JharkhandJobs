@@ -1,228 +1,133 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import api from '../services/api';
+// ---------------------------------------------------------------------------
+// AuthContext — manages user authentication state across the app.
+// ---------------------------------------------------------------------------
+// Supports: email/password login, email/password registration, Google OAuth,
+// and admin authentication. Stores JWT in localStorage and auto-validates
+// on mount.
+// ---------------------------------------------------------------------------
 
-const AuthContext = createContext();
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import {
+  loginAdmin as loginApi,
+  registerUser as registerApi,
+  googleAuth as googleAuthApi,
+  getMe,
+} from '../services/api.js'
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const AuthContext = createContext(null)
 
-  // Fetch current profile on app load
+const TOKEN_KEY = 'sarkarifynx-token'
+
+function getStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || null
+  } catch {
+    return null
+  }
+}
+
+function storeToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(getStoredToken)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(!!getStoredToken())
+
+  // On mount, validate stored token
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await api.get('/auth/me');
-        if (response.data.success) {
-          setUser(response.data.user);
-        } else {
-          localStorage.removeItem('token');
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Error loading profile:', err.message);
-        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          localStorage.removeItem('token');
-          setUser(null);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
-  // Standard Login
-  const login = async (emailOrMobile, password) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.post('/auth/login', { emailOrMobile, password });
-      if (response.data.success) {
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-        }
-        setUser(response.data.user);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid email/mobile or password';
-      setError(msg);
-      throw new Error(msg);
-    } finally {
-      setLoading(false);
+    const stored = getStoredToken()
+    if (!stored) {
+      setLoading(false)
+      return
     }
-  };
+    getMe(stored)
+      .then((u) => {
+        setUser(u)
+        setToken(stored)
+      })
+      .catch(() => {
+        // Token expired or invalid
+        storeToken(null)
+        setToken(null)
+        setUser(null)
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
-  // Standard Register
-  const register = async ({ name, email, mobile, phone, password, confirmPassword }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.post('/auth/register', { 
-        name, 
-        email, 
-        mobile: mobile || phone, 
-        password, 
-        confirmPassword 
-      });
-      if (response.data.success) {
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-        }
-        setUser(response.data.user);
-        return response.data;
-      }
-      return false;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed';
-      setError(msg);
-      throw new Error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /** Helper to set auth state from an API response { token, user } */
+  const setAuth = useCallback((data) => {
+    storeToken(data.token)
+    setToken(data.token)
+    setUser(data.user)
+  }, [])
 
-  // Google Login Integration
-  const loginWithGoogle = async (googleData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.post('/auth/google', googleData);
-      if (response.data.success) {
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-        }
-        setUser(response.data.user);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Google login failed';
-      setError(msg);
-      throw new Error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /** Email/password login (works for both admin and regular users) */
+  const login = useCallback(
+    async (email, password) => {
+      const data = await loginApi(email, password)
+      setAuth(data)
+      return data
+    },
+    [setAuth]
+  )
 
-  // Forgot Password
-  const forgotPassword = async (email) => {
-    setError(null);
-    try {
-      const response = await api.post('/auth/forgot-password', { email });
-      return response.data;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to send password reset email';
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+  /** Register a new regular user account */
+  const register = useCallback(
+    async (name, email, password) => {
+      const data = await registerApi(name, email, password)
+      setAuth(data)
+      return data
+    },
+    [setAuth]
+  )
 
-  // Reset Password
-  const resetPassword = async (token, password, confirmPassword) => {
-    setError(null);
-    try {
-      const response = await api.post('/auth/reset-password', { token, password, confirmPassword });
-      return response.data;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Password reset failed';
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+  /** Google OAuth login/signup */
+  const googleLogin = useCallback(
+    async (credential) => {
+      const data = await googleAuthApi(credential)
+      setAuth(data)
+      return data
+    },
+    [setAuth]
+  )
 
-  // Verify Email
-  const verifyEmail = async (token) => {
-    setError(null);
-    try {
-      const response = await api.post('/auth/verify-email', { token });
-      if (response.data.success && user) {
-        setUser({ ...user, emailVerified: true });
-      }
-      return response.data;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Email verification failed';
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+  const logout = useCallback(() => {
+    storeToken(null)
+    setToken(null)
+    setUser(null)
+  }, [])
 
-  // Change Password
-  const changePassword = async (oldPassword, newPassword, confirmPassword) => {
-    setError(null);
-    try {
-      const response = await api.post('/auth/change-password', { oldPassword, newPassword, confirmPassword });
-      return response.data;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Change password failed';
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+  const isAdmin = user?.role === 'admin' || user?.role === 'editor'
 
-  // Update Profile
-  const updateProfile = async (profileData) => {
-    setError(null);
-    try {
-      const response = await api.put('/auth/profile', profileData);
-      if (response.data.success) {
-        setUser(response.data.user);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Profile update failed';
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      login,
+      register,
+      googleLogin,
+      logout,
+      loading,
+      isAuthenticated: !!token && !!user,
+      isAdmin,
+    }),
+    [user, token, login, register, googleLogin, logout, loading, isAdmin]
+  )
 
-  // Logout
-  const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (err) {
-      console.error('Logout error:', err.message);
-    } finally {
-      localStorage.removeItem('token');
-      setUser(null);
-      
-      /* global google */
-      if (typeof google !== 'undefined') {
-        try {
-          google.accounts.id.disableAutoSelect();
-        } catch (err) {
-          console.error('Failed to disable Google auto-select on logout:', err);
-        }
-      }
-    }
-  };
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        loading,
-        error,
-        login,
-        register,
-        loginWithGoogle,
-        forgotPassword,
-        resetPassword,
-        verifyEmail,
-        changePassword,
-        updateProfile,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider')
+  return ctx
+}
 
-export const useAuth = () => useContext(AuthContext);
+export default AuthContext

@@ -1,0 +1,21 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Block user account and authenticated pages
+Disallow: /admin/
+Disallow: /admin
+Disallow: /profile
+Disallow: /settings
+Disallow: /bookmarked
+Disallow: /saved
+Disallow: /recent
+Disallow: /login
+Disallow: /signup
+
+# Block search/filter pages (dynamic, thin content)
+Disallow: /search
+Disallow: /search?
+
+# Sitemap index
+Sitemap: https://jobalertx.com/sitemap.xml

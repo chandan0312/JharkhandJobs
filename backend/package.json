@@ -1,32 +1,37 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "Backend server for Jharkhand Jobs",
-  "main": "server.js",
+  "name": "sarkari-fynx-server",
+  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon --ignore config/scraped_data.json --ignore \"scratch/*\" --ignore \"uploads/*\" server.js"
+  "description": "SarkariFynx — Government Jobs Portal (backend). Node + Express + MySQL (Sequelize).",
+  "engines": {
+    "node": ">=18"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/seed/seed.js",
+    "seed:reset": "node src/seed/seed.js --force",
+    "import:excel": "node scripts/import_excel.js",
+    "sitemap:generate": "node scripts/generate-sitemaps.js"
+  },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "bcryptjs": "^3.0.3",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "google-auth-library": "^10.6.2",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^2.1.1",
-    "mysql2": "^3.24.4",
-    "nodemailer": "^8.0.9",
-    "pg": "^8.21.0",
-    "postgres": "^3.4.9"
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "geoip-lite": "^2.0.3",
+    "google-auth-library": "^11.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.3.0",
+    "mysql2": "^3.24.2",
+    "sequelize": "^6.37.3",
+    "sqlite3": "^6.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.7"
   }
 }
