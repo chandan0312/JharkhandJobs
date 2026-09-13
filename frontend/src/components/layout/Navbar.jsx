@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, Briefcase, User as UserIcon } from 'lucide-react';
+import UserAvatar from '../UserAvatar';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -117,8 +118,11 @@ const Navbar = () => {
           {isOpen && (
             <li style={{ marginTop: '20px', width: '100%' }}>
               {user ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <p style={{ fontSize: '14px', color: '#374151', padding: '0 14px' }}>Hi, <strong>{user.name}</strong></p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <UserAvatar user={user} size={36} />
+                    <p style={{ fontSize: '14px', color: '#374151', margin: 0 }}>Hi, <strong>{user.name}</strong></p>
+                  </div>
                   <button onClick={handleLogout} className="btn btn-primary btn-sm" style={{ width: '100%' }}>
                     <LogOut size={16} /> {t('nav.logout')}
                   </button>
@@ -144,13 +148,34 @@ const Navbar = () => {
           {/* User Auth Section */}
           {!isOpen && (
             user ? (
-              <div style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+                {/* Notification Bell */}
+                <Link 
+                  to="/dashboard" 
+                  title="Notifications & Job Alerts"
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '50%', 
+                    backgroundColor: '#F1F5F9', 
+                    color: '#475569', 
+                    textDecoration: 'none',
+                    position: 'relative'
+                  }}
+                >
+                  <Bell size={18} />
+                  <span style={{ position: 'absolute', top: '2px', right: '2px', width: '8px', height: '8px', backgroundColor: '#10B981', borderRadius: '50%' }} />
+                </Link>
+
                 <button 
                   onClick={() => setDropdownOpen(!dropdownOpen)} 
                   className="btn btn-secondary btn-sm btn-login" 
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px' }}
                 >
-                  <UserIcon size={14} />
+                  <UserAvatar user={user} size={28} />
                   <span>{user.name.split(' ')[0]}</span>
                   <ChevronDown size={14} />
                 </button>
@@ -164,32 +189,47 @@ const Navbar = () => {
                     marginTop: '8px',
                     backgroundColor: 'white',
                     border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    width: '180px',
+                    borderRadius: '10px',
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
+                    width: '200px',
                     zIndex: 1100,
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '6px'
+                    padding: '8px 6px'
                   }}>
+                    <Link to="/dashboard" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', fontSize: '13px', color: '#1E293B', textDecoration: 'none', borderRadius: '6px', fontWeight: '600' }}>
+                      <LayoutDashboard size={16} style={{ color: '#1B8C0A' }} /> My Dashboard
+                    </Link>
+                    <Link to="/profile" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', fontSize: '13px', color: '#1E293B', textDecoration: 'none', borderRadius: '6px', fontWeight: '500' }}>
+                      <UserIcon size={16} style={{ color: '#64748B' }} /> My Profile
+                    </Link>
+                    <Link to="/saved-jobs" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', fontSize: '13px', color: '#1E293B', textDecoration: 'none', borderRadius: '6px', fontWeight: '500' }}>
+                      <Bookmark size={16} style={{ color: '#64748B' }} /> Saved Jobs
+                    </Link>
                     {user.role === 'admin' && (
-                      <Link to="/admin" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: '#374151', borderRadius: '4px', hover: { backgroundColor: '#F3F4F6' } }}>
-                        <LayoutDashboard size={14} /> Admin Dashboard
+                      <Link to="/admin" onClick={() => setDropdownOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', fontSize: '13px', color: '#157008', textDecoration: 'none', borderRadius: '6px', fontWeight: '700' }}>
+                        <ShieldCheck size={16} /> Admin Console
                       </Link>
                     )}
+                    <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '4px 0' }} />
                     <button 
                       onClick={handleLogout} 
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: '#DC2626', borderRadius: '4px', textAlign: 'left', width: '100%', cursor: 'pointer' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', fontSize: '13px', color: '#DC2626', borderRadius: '6px', textAlign: 'left', width: '100%', cursor: 'pointer', border: 'none', backgroundColor: 'transparent', fontWeight: '600' }}
                     >
-                      <LogOut size={14} /> Sign Out
+                      <LogOut size={16} /> Logout
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <Link to="/login" className="btn btn-primary btn-sm btn-login">
-                Login / Register
-              </Link>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/login" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none', padding: '6px 14px', fontSize: '13px', fontWeight: '600', borderRadius: '6px' }}>
+                  Sign In
+                </Link>
+                <Link to="/signup" className="btn btn-primary btn-sm" style={{ textDecoration: 'none', padding: '6px 14px', fontSize: '13px', fontWeight: '600', borderRadius: '6px', backgroundColor: '#1B8C0A', color: '#FFFFFF' }}>
+                  Register
+                </Link>
+              </div>
             )
           )}
 

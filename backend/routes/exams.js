@@ -31,7 +31,11 @@ router.get('/', async (req, res) => {
       }
 
       // Sort newest first
-      filteredExams.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      filteredExams.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
 
       return res.json({ success: true, count: filteredExams.length, exams: filteredExams });
     }
@@ -51,7 +55,7 @@ router.get('/', async (req, res) => {
       ];
     }
 
-    const exams = await Exam.find(query).sort({ createdAt: -1 });
+    const exams = await Exam.find(query);
     res.json({ success: true, count: exams.length, exams });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -170,6 +174,23 @@ router.put('/:id', protect, admin, async (req, res) => {
     res.json({ success: true, exam });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+import { uploadNotificationDoc } from '../middleware/upload.js';
+
+// @desc    Upload notification file (PDF/Doc/Image)
+// @route   POST /api/exams/upload
+// @access  Private/Admin
+router.post('/upload', protect, admin, uploadNotificationDoc.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload a file' });
+    }
+    const fileUrl = `/uploads/notifications/${req.file.filename}`;
+    res.json({ success: true, fileUrl });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import Quiz from '../models/Quiz.js';
 import { protect, admin } from '../middleware/auth.js';
-import mockDb from '../config/mockDb.js';
+import mockDb from '../db/mockDb.js';
 
 const router = express.Router();
 

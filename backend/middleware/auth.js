@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import mockDb from '../config/mockDb.js';
+import mockDb from '../db/mockDb.js';
 
 export const protect = async (req, res, next) => {
   let token;
@@ -16,9 +16,14 @@ export const protect = async (req, res, next) => {
     return res.status(401).json({ success: false, message: 'Not authorized, no token provided' });
   }
 
+  let decoded;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjharkhandjobskey12345');
-    
+    decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjharkhandjobskey12345');
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
+  }
+
+  try {
     if (global.useMockDb) {
       const user = mockDb.users.find(u => u._id === decoded.id);
       if (!user) {
@@ -34,15 +39,17 @@ export const protect = async (req, res, next) => {
       };
     } else {
       // Get user from database (excluding password)
-      req.user = await User.findById(decoded.id).select('-password');
-      if (!req.user) {
+      const user = await User.findById(decoded.id);
+      if (!user) {
         return res.status(401).json({ success: false, message: 'User not found' });
       }
+      req.user = user;
     }
     
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
+    console.error('Database query error in protect middleware:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error during authentication' });
   }
 };
 

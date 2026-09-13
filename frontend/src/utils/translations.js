@@ -231,7 +231,11 @@ export const translations = {
       notFoundErr: 'Job not found or failed to load job details.',
       savedSuccess: 'Job saved successfully!',
       removedSuccess: 'Job removed from saved list.',
-      copiedSuccess: 'Link copied to clipboard successfully!'
+      copiedSuccess: 'Link copied to clipboard successfully!',
+      downloadNotification: 'Download Notification',
+      downloadSuccess: 'Recruitment Notification downloaded successfully!',
+      vacancies: 'Vacancies',
+      posts: 'Posts'
     },
     // Exam Details Page
     examDetails: {
@@ -259,6 +263,20 @@ export const translations = {
       connectingPublic: 'Connecting to public notification systems...',
       failedLoad: 'Failed to Load',
       backGovt: 'Back to Government Jobs'
+    },
+    // Saved Jobs Page
+    savedJobs: {
+      title: 'Saved Jobs',
+      subtitle: 'Your Bookmarked Careers',
+      desc: 'Keep track of the private and public sector jobs you have saved. Apply when you are ready.',
+      noSaved: 'No Saved Jobs Yet',
+      noSavedDesc: 'Browse through our latest jobs and bookmark the ones that interest you.',
+      browseJobs: 'Browse Jobs',
+      removeBtn: 'Remove',
+      viewDetails: 'View Details',
+      removedSuccess: 'Job removed from saved list successfully!',
+      loading: 'Loading your saved jobs...',
+      failedLoad: 'Failed to load saved jobs.'
     }
   },
   HI: {
@@ -492,7 +510,11 @@ export const translations = {
       notFoundErr: 'नौकरी नहीं मिली या नौकरी का विवरण लोड करने में विफल।',
       savedSuccess: 'नौकरी सफलतापूर्वक सहेजी गई!',
       removedSuccess: 'नौकरी को सहेजी गई सूची से हटा दिया गया।',
-      copiedSuccess: 'लिंक सफलतापूर्वक क्लिपबोर्ड पर कॉपी हो गया!'
+      copiedSuccess: 'लिंक सफलतापूर्वक क्लिपबोर्ड पर कॉपी हो गया!',
+      downloadNotification: 'अधिसूचना डाउनलोड करें',
+      downloadSuccess: 'भर्ती अधिसूचना सफलतापूर्वक डाउनलोड हो गई!',
+      vacancies: 'रिक्तियां',
+      posts: 'पद'
     },
     // Exam Details Page
     examDetails: {
@@ -518,8 +540,21 @@ export const translations = {
       shareNotif: 'इस अधिसूचना को साझा करें',
       copyNotifLink: 'अधिसूचना लिंक कॉपी करें',
       connectingPublic: 'सार्वजनिक अधिसूचना प्रणालियों से जुड़ रहा है...',
-      failedLoad: 'लोड करने में विफल',
       backGovt: 'सरकारी नौकरियों पर वापस जाएं'
+    },
+    // Saved Jobs Page
+    savedJobs: {
+      title: 'सहेजी गई नौकरियां',
+      subtitle: 'आपके बुकमार्क किए गए करियर',
+      desc: 'आपके द्वारा सहेजी गई निजी और सरकारी क्षेत्र की नौकरियों पर नज़र रखें। तैयार होने पर आवेदन करें।',
+      noSaved: 'अभी तक कोई सहेजी गई नौकरी नहीं है',
+      noSavedDesc: 'हमारी नवीनतम नौकरियों को देखें और अपनी रुचि वाली नौकरियों को बुकमार्क करें।',
+      browseJobs: 'नौकरियां देखें',
+      removeBtn: 'हटाएं',
+      viewDetails: 'विवरण देखें',
+      removedSuccess: 'सहेजी गई सूची से नौकरी सफलतापूर्वक हटा दी गई!',
+      loading: 'आपकी सहेजी गई नौकरियां लोड हो रही हैं...',
+      failedLoad: 'सहेजी गई नौकरियों को लोड करने में विफल।'
     }
   },
 };

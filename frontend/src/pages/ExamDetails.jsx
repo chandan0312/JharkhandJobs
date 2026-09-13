@@ -268,25 +268,91 @@ const ExamDetails = () => {
               </div>
 
               {/* CTAs matching mockup look */}
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
-                <a 
-                  href="https://jssc.nic.in"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn" 
-                  style={{ 
-                    padding: '12px 32px', 
-                    fontSize: '15px',
-                    fontWeight: '700',
-                    backgroundColor: '#1B8C0A',
-                    color: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 10px rgba(27, 140, 10, 0.15)',
-                    textDecoration: 'none'
-                  }}
-                >
-                  {t('examDetails.applyOnline')}
-                </a>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {exam.applyLink ? (
+                  <a 
+                    href={exam.applyLink.startsWith('http') ? exam.applyLink : `https://${exam.applyLink}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 32px', 
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      backgroundColor: '#1B8C0A',
+                      color: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 10px rgba(27, 140, 10, 0.15)',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    {t('examDetails.applyOnline')}
+                  </a>
+                ) : (
+                  <button 
+                    disabled
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 32px', 
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      backgroundColor: '#94A3B8',
+                      color: 'white',
+                      borderRadius: '8px',
+                      cursor: 'not-allowed'
+                    }}
+                    title="Official application link will be uploaded soon"
+                  >
+                    {language === 'HI' ? 'विवरण जल्द ही अपलोड होगा' : 'Details will be uploaded soon'}
+                  </button>
+                )}
+
+                {exam.pdfUrl ? (
+                  <a 
+                    href={exam.pdfUrl.startsWith('http') ? exam.pdfUrl : (api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:5000') + exam.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 28px', 
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      backgroundColor: '#1E293B',
+                      color: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 10px rgba(30, 41, 59, 0.15)',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <FileText size={16} />
+                    {t('examDetails.downloadNotification') || 'Download Notification'}
+                  </a>
+                ) : (
+                  <button 
+                    disabled
+                    className="btn" 
+                    style={{ 
+                      padding: '12px 28px', 
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      backgroundColor: '#F1F5F9',
+                      color: '#94A3B8',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'not-allowed'
+                    }}
+                    title="Official document will be uploaded shortly"
+                  >
+                    <FileText size={16} />
+                    {language === 'HI' ? 'अधिसूचना जल्द ही उपलब्ध होगी' : 'Notification will be uploaded soon'}
+                  </button>
+                )}
                 <button 
                   onClick={handleToggleSave}
                   className="btn" 
