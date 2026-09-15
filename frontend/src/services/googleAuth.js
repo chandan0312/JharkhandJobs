@@ -82,16 +82,20 @@ export function renderGoogleButton(container, { onCredential, text = 'continue_w
     callback: onCredential,
     auto_select: false,
     cancel_on_tap_outside: true,
-    // Keeps sign-in working in Safari/Firefox with tracking protection on.
+    // itp_support keeps sign-in working in Safari/Firefox with tracking protection.
+    // use_fedcm_for_prompt is intentionally omitted — it silently prevents button
+    // rendering on Firefox, Safari, and older Chrome versions.
     itp_support: true,
-    use_fedcm_for_prompt: true,
   })
 
   // Clear first: a re-render (StrictMode, hot reload, navigating back) would
   // otherwise stack a second button iframe on top of the first.
   container.innerHTML = ''
 
-  const width = Math.round(Math.min(400, Math.max(200, container.offsetWidth || 320)))
+  // offsetWidth can be 0 if layout hasn't finished yet; fall back to a safe
+  // default (360) so Google's renderButton doesn't silently refuse to draw.
+  const rawWidth = container.offsetWidth || container.getBoundingClientRect().width || 360
+  const width = Math.round(Math.min(400, Math.max(200, rawWidth)))
 
   const isDark = document.documentElement.classList.contains('dark')
 
