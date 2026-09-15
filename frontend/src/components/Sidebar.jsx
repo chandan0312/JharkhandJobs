@@ -22,11 +22,12 @@ import {
 const MENU = [
   { to: '/', label: 'Discover', icon: Home, end: true, color: '#1B6F81' },
   { to: '/latest/job', label: 'Latest Jobs', icon: Briefcase, color: '#FFFB08' },
-  { to: '/category/jpsc', label: 'JPSC Jobs', icon: ClipboardList, color: '#AED0C9' },
-  { to: '/category/jssc', label: 'JSSC Jobs', icon: Award, color: '#4ade80' },
-  { to: '/rojgar-mela', label: 'Rojgar Mela', icon: Users, color: '#f97316' },
-  { to: '/private-jobs', label: 'Private Jobs', icon: Building2, color: '#a78bfa' },
-  { to: '/category/others', label: 'Other Govt Jobs', icon: MapPin, color: '#38bdf8' },
+  { to: '/category/jpsc', label: 'JPSC', icon: ClipboardList, color: '#AED0C9' },
+  { to: '/category/jssc', label: 'JSSC', icon: Award, color: '#4ade80' },
+  { to: '/category/other-jharkhand', label: 'Other Jharkhand Job', icon: MapPin, color: '#38bdf8' },
+  { to: '/category/rojgar-mela', label: 'Rojgar Mela', icon: Users, color: '#f97316' },
+  { to: '/category/private-job', label: 'Private Job', icon: Building2, color: '#a78bfa' },
+  { to: '/category/central-job', label: 'Central Job', icon: Briefcase, color: '#c084fc' },
 ]
 
 const LATEST = [

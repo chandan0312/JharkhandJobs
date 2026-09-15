@@ -63,12 +63,7 @@ export const list = asyncHandler(async (req, res) => {
   const where = {}
   if (category && category !== 'all') {
     const catLower = String(category).toLowerCase()
-    if (catLower === 'others' || catLower === 'other') {
-      where[Op.or] = [
-        { category: { [Op.in]: ['other', 'others', 'Other', 'Bank', 'Railway', 'Defence', 'SSC', 'banking', 'railway', 'defence', 'ssc', 'upsc'] } },
-        { category: { [Op.notIn]: ['jpsc', 'JPSC', 'jssc', 'JSSC', 'rojgar-mela', 'Rojgar Mela', 'private', 'Private', 'private-jobs'] } }
-      ]
-    } else if (catLower === 'jpsc') {
+    if (catLower === 'jpsc') {
       where[Op.or] = [
         { category: { [Op.in]: ['jpsc', 'JPSC'] } },
         { org: { [Op.like]: '%JPSC%' } },
@@ -80,16 +75,27 @@ export const list = asyncHandler(async (req, res) => {
         { org: { [Op.like]: '%JSSC%' } },
         { title: { [Op.like]: '%JSSC%' } }
       ]
+    } else if (['other-jharkhand', 'other-jharkhand-job', 'other-jharkhand-jobs', 'jharkhand'].includes(catLower)) {
+      where[Op.or] = [
+        { category: { [Op.in]: ['other-jharkhand', 'other-jharkhand-job', 'other-jharkhand-jobs', 'Jharkhand'] } },
+        { title: { [Op.like]: '%Jharkhand%' } },
+        { org: { [Op.like]: '%Jharkhand%' } }
+      ]
     } else if (catLower === 'rojgar-mela' || catLower === 'rojgar_mela') {
       where[Op.or] = [
         { category: { [Op.in]: ['rojgar-mela', 'rojgar_mela', 'Rojgar Mela'] } },
         { title: { [Op.like]: '%Rojgar%' } },
         { tagline: { [Op.like]: '%Rojgar%' } }
       ]
-    } else if (catLower === 'private' || catLower === 'private-jobs') {
+    } else if (['private-job', 'private', 'private-jobs', 'private_job'].includes(catLower)) {
       where[Op.or] = [
-        { category: { [Op.in]: ['private', 'Private', 'private-jobs'] } },
+        { category: { [Op.in]: ['private-job', 'private', 'Private', 'private-jobs'] } },
         { org: { [Op.in]: ['Tata Steel', 'Jindal', 'Wipro', 'TCS', 'Infosys'] } }
+      ]
+    } else if (['central-job', 'central', 'central-jobs', 'others', 'other'].includes(catLower)) {
+      where[Op.or] = [
+        { category: { [Op.in]: ['central-job', 'central', 'other', 'others', 'Other', 'Bank', 'Railway', 'Defence', 'SSC', 'banking', 'railway', 'defence', 'ssc', 'upsc'] } },
+        { category: { [Op.notIn]: ['jpsc', 'JPSC', 'jssc', 'JSSC', 'rojgar-mela', 'Rojgar Mela', 'private-job', 'private', 'Private', 'private-jobs', 'other-jharkhand'] } }
       ]
     } else {
       where.category = { [Op.like]: `%${catLower}%` }

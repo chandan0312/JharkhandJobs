@@ -112,6 +112,11 @@ export default {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        'ping-once': {
+          '0%': { transform: 'scale(1)', opacity: '0.6' },
+          '80%': { transform: 'scale(1.6)', opacity: '0' },
+          '100%': { transform: 'scale(1.6)', opacity: '0' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out both',
@@ -120,6 +125,7 @@ export default {
         'shimmer': 'shimmer 2s linear infinite',
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
         'ticker-scroll': 'ticker-scroll 30s linear infinite',
+        'ping-once': 'ping-once 0.45s ease-out forwards',
       },
       backgroundImage: {
         'jharkhand-gradient': 'linear-gradient(135deg, #FFFB08 0%, #AED0C9 35%, #1B6F81 70%, #09324A 100%)',

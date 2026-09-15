@@ -15,12 +15,12 @@ import {
 import SarkariEmblem from './SarkariEmblem.jsx'
 
 const CATEGORY_LINKS = [
-  { label: 'JPSC Exams', to: '/category/jpsc' },
-  { label: 'JSSC Exams', to: '/category/jssc' },
-  { label: 'Jharkhand Rojgar Mela', to: '/rojgar-mela' },
-  { label: 'Jharkhand Private Jobs', to: '/private-jobs' },
-  { label: 'Others & Central Govt', to: '/category/others' },
-  { label: 'All Exam Categories', to: '/exams' },
+  { label: 'JPSC', to: '/category/jpsc' },
+  { label: 'JSSC', to: '/category/jssc' },
+  { label: 'Other Jharkhand Job', to: '/category/other-jharkhand' },
+  { label: 'Rojgar Mela', to: '/category/rojgar-mela' },
+  { label: 'Private Job', to: '/category/private-job' },
+  { label: 'Central Job', to: '/category/central-job' },
 ]
 
 const QUICK_LINKS = [

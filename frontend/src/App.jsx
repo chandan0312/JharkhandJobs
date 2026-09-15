@@ -84,9 +84,11 @@ function AppRoutes() {
           {/* Content detail pages */}
           <Route path="job/:id"           element={<JobDetails />} />
 
-          {/* Jharkhand-specific routes */}
+          {/* Category & shortcut routes */}
           <Route path="rojgar-mela"       element={<CategoryPage defaultSlug="rojgar-mela" />} />
-          <Route path="private-jobs"      element={<CategoryPage defaultSlug="private" />} />
+          <Route path="private-jobs"      element={<CategoryPage defaultSlug="private-job" />} />
+          <Route path="other-jharkhand"   element={<CategoryPage defaultSlug="other-jharkhand" />} />
+          <Route path="central-jobs"      element={<CategoryPage defaultSlug="central-job" />} />
           <Route path="category/:slug"    element={<CategoryPage />} />
           <Route path="latest/:kind"      element={<CategoryPage />} />
           <Route path="exams"             element={<ExamsPage />} />

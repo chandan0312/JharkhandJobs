@@ -27,9 +27,10 @@ export default function Home() {
   const [recentlyPosted, setRecentlyPosted] = useState(null)
   const [jpscJobs, setJpscJobs] = useState(null)
   const [jsscJobs, setJsscJobs] = useState(null)
+  const [otherJharkhandJobs, setOtherJharkhandJobs] = useState(null)
   const [rojgarMelaJobs, setRojgarMelaJobs] = useState(null)
   const [privateJobs, setPrivateJobs] = useState(null)
-  const [otherJobs, setOtherJobs] = useState(null)
+  const [centralJobs, setCentralJobs] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -39,7 +40,7 @@ export default function Home() {
       .then((data) => active && setTrending(data || []))
       .catch(() => active && setTrending([]))
 
-    // 2. 5 Latest Posted Jobs
+    // 2. 6 Latest Posted Jobs
     getRecentlyPosted(6)
       .then((data) => active && setRecentlyPosted(data || []))
       .catch(() => active && setRecentlyPosted([]))
@@ -54,20 +55,25 @@ export default function Home() {
       .then((data) => active && setJsscJobs(data || []))
       .catch(() => active && setJsscJobs([]))
 
-    // 5. Rojgar Mela
+    // 5. Other Jharkhand Job
+    getJobsByCategory('other-jharkhand', 4, 'all')
+      .then((data) => active && setOtherJharkhandJobs(data || []))
+      .catch(() => active && setOtherJharkhandJobs([]))
+
+    // 6. Rojgar Mela
     getJobsByCategory('rojgar-mela', 4, 'all')
       .then((data) => active && setRojgarMelaJobs(data || []))
       .catch(() => active && setRojgarMelaJobs([]))
 
-    // 6. Private Jobs
-    getJobsByCategory('private', 4, 'all')
+    // 7. Private Job
+    getJobsByCategory('private-job', 4, 'all')
       .then((data) => active && setPrivateJobs(data || []))
       .catch(() => active && setPrivateJobs([]))
 
-    // 7. Others (Central Govt, Railway, Banking, SSC)
-    getJobsByCategory('others', 4, 'all')
-      .then((data) => active && setOtherJobs(data || []))
-      .catch(() => active && setOtherJobs([]))
+    // 8. Central Job
+    getJobsByCategory('central-job', 4, 'all')
+      .then((data) => active && setCentralJobs(data || []))
+      .catch(() => active && setCentralJobs([]))
 
     return () => { active = false }
   }, [])
@@ -205,9 +211,23 @@ export default function Home() {
           )}
         </section>
 
-        {/* 6. Jharkhand Rojgar Mela */}
+        {/* 6. Other Jharkhand Job */}
         <section>
-          <SectionHeader title="Jharkhand Rojgar Mela 2026" viewAllTo="/rojgar-mela" />
+          <SectionHeader title="Other Jharkhand Job 2026" viewAllTo="/category/other-jharkhand" />
+          {otherJharkhandJobs === null ? (
+            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
+              Loading…
+            </div>
+          ) : otherJharkhandJobs.length === 0 ? (
+            <ComingSoonBlock icon={MapPin} label="other Jharkhand state notifications" />
+          ) : (
+            <RecentJobsTable jobs={otherJharkhandJobs} viewAllTo="/category/other-jharkhand" viewAllText="View All Other Jharkhand Jobs" />
+          )}
+        </section>
+
+        {/* 7. Jharkhand Rojgar Mela */}
+        <section>
+          <SectionHeader title="Jharkhand Rojgar Mela 2026" viewAllTo="/category/rojgar-mela" />
           {rojgarMelaJobs === null ? (
             <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
               Loading…
@@ -215,13 +235,13 @@ export default function Home() {
           ) : rojgarMelaJobs.length === 0 ? (
             <ComingSoonBlock icon={Briefcase} label="Rojgar Mela camps" />
           ) : (
-            <RecentJobsTable jobs={rojgarMelaJobs} viewAllTo="/rojgar-mela" viewAllText="View All Rojgar Mela Camps" />
+            <RecentJobsTable jobs={rojgarMelaJobs} viewAllTo="/category/rojgar-mela" viewAllText="View All Rojgar Mela Camps" />
           )}
         </section>
 
-        {/* 7. Jharkhand Private Jobs */}
+        {/* 8. Jharkhand Private Jobs */}
         <section>
-          <SectionHeader title="Jharkhand Private Jobs 2026" viewAllTo="/private-jobs" />
+          <SectionHeader title="Jharkhand Private Jobs 2026" viewAllTo="/category/private-job" />
           {privateJobs === null ? (
             <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
               Loading…
@@ -229,21 +249,21 @@ export default function Home() {
           ) : privateJobs.length === 0 ? (
             <ComingSoonBlock icon={Building2} label="private job openings" />
           ) : (
-            <RecentJobsTable jobs={privateJobs} viewAllTo="/private-jobs" viewAllText="View All Private Jobs" />
+            <RecentJobsTable jobs={privateJobs} viewAllTo="/category/private-job" viewAllText="View All Private Jobs" />
           )}
         </section>
 
-        {/* 8. Other Exams & Central Jobs */}
+        {/* 9. Central Job */}
         <section>
-          <SectionHeader title="Other Exams &amp; Central Govt Jobs" viewAllTo="/category/others" />
-          {otherJobs === null ? (
+          <SectionHeader title="Central Govt Jobs 2026" viewAllTo="/category/central-job" />
+          {centralJobs === null ? (
             <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
               Loading…
             </div>
-          ) : otherJobs.length === 0 ? (
-            <ComingSoonBlock icon={GraduationCap} label="central & other exam notifications" />
+          ) : centralJobs.length === 0 ? (
+            <ComingSoonBlock icon={GraduationCap} label="central job notifications" />
           ) : (
-            <RecentJobsTable jobs={otherJobs} viewAllTo="/category/others" viewAllText="View All Central & Other Jobs" />
+            <RecentJobsTable jobs={centralJobs} viewAllTo="/category/central-job" viewAllText="View All Central Jobs" />
           )}
         </section>
       </main>
