@@ -10,7 +10,12 @@
 // script tag and the library is never torn down.
 // ---------------------------------------------------------------------------
 
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+// Vite bakes VITE_* vars at build time. If .env is absent on the build
+// server the value becomes '' and the Google button is silently hidden.
+// The hardcoded fallback ensures the button always appears in production.
+export const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  '976260447025-u5a4ki77guc06to3f0avpt4nfjphg25j.apps.googleusercontent.com'
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client'
 
