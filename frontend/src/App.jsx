@@ -18,6 +18,7 @@ const SearchPage    = lazy(() => import('./pages/SearchPage.jsx'))
 const LoginPage     = lazy(() => import('./pages/LoginPage.jsx'))
 const SignUpPage    = lazy(() => import('./pages/SignUpPage.jsx'))
 const FeedbackPage  = lazy(() => import('./pages/FeedbackPage.jsx'))
+const ProfilePage   = lazy(() => import('./pages/ProfilePage.jsx'))
 const Placeholder   = lazy(() => import('./pages/Placeholder.jsx'))
 
 // Trust & Legal pages (new standalone pages replacing /exams stubs)
@@ -113,7 +114,7 @@ function AppRoutes() {
           <Route path="recent"            element={<Placeholder />} />
           <Route path="bookmarked"        element={<Placeholder />} />
           <Route path="saved"             element={<Placeholder />} />
-          <Route path="profile"           element={<Placeholder />} />
+          <Route path="profile"           element={<ProfilePage />} />
           <Route path="settings"          element={<Placeholder />} />
           <Route path="logout"            element={<Placeholder />} />
 

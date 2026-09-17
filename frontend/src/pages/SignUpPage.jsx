@@ -177,7 +177,7 @@ export default function SignUpPage() {
             Create Your Account
           </h1>
           <p className="mt-1.5 text-[14px] text-ink-muted dark:text-slate-400">
-            Join India's largest government jobs community
+            Join Jharkhand's #1 government &amp; private jobs community
           </p>
         </div>
 

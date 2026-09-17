@@ -78,15 +78,11 @@ export default function LoginPage() {
     loadGoogleIdentity()
       .then(() => {
         if (cancelled || !googleBtnRef.current) return
-        // rAF guarantees the browser has done layout so offsetWidth is non-zero.
-        requestAnimationFrame(() => {
-          if (cancelled || !googleBtnRef.current) return
-          renderGoogleButton(googleBtnRef.current, {
-            onCredential: (res) => callbackRef.current(res),
-            text: 'continue_with',
-          })
-          setGoogleState('ready')
+        renderGoogleButton(googleBtnRef.current, {
+          onCredential: (res) => callbackRef.current(res),
+          text: 'continue_with',
         })
+        setGoogleState('ready')
       })
       .catch(() => {
         if (!cancelled) setGoogleState('error')
@@ -142,7 +138,7 @@ export default function LoginPage() {
             Welcome Back
           </h1>
           <p className="mt-1 text-[13.5px] font-medium text-slate-500 dark:text-slate-400">
-            Sign in to your <span className="font-bold text-orange-600 dark:text-orange-400">Job Alert X</span> account
+            Sign in to your <span className="font-bold text-teal-600 dark:text-teal-400">Jharkhand JobAlert X</span> account
           </p>
         </div>
 
@@ -163,7 +159,6 @@ export default function LoginPage() {
                 <div
                   ref={googleBtnRef}
                   className="flex w-full justify-center overflow-hidden rounded-xl min-h-[44px]"
-                  style={{ width: '100%' }}
                 />
 
                 {googleState === 'loading' && (

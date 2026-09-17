@@ -10,12 +10,7 @@
 // script tag and the library is never torn down.
 // ---------------------------------------------------------------------------
 
-// Vite bakes VITE_* vars at build time. If .env is absent on the build
-// server the value becomes '' and the Google button is silently hidden.
-// The hardcoded fallback ensures the button always appears in production.
-export const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  '976260447025-u5a4ki77guc06to3f0avpt4nfjphg25j.apps.googleusercontent.com'
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client'
 
@@ -87,20 +82,16 @@ export function renderGoogleButton(container, { onCredential, text = 'continue_w
     callback: onCredential,
     auto_select: false,
     cancel_on_tap_outside: true,
-    // itp_support keeps sign-in working in Safari/Firefox with tracking protection.
-    // use_fedcm_for_prompt is intentionally omitted — it silently prevents button
-    // rendering on Firefox, Safari, and older Chrome versions.
+    // Keeps sign-in working in Safari/Firefox with tracking protection on.
     itp_support: true,
+    use_fedcm_for_prompt: true,
   })
 
   // Clear first: a re-render (StrictMode, hot reload, navigating back) would
   // otherwise stack a second button iframe on top of the first.
   container.innerHTML = ''
 
-  // offsetWidth can be 0 if layout hasn't finished yet; fall back to a safe
-  // default (360) so Google's renderButton doesn't silently refuse to draw.
-  const rawWidth = container.offsetWidth || container.getBoundingClientRect().width || 360
-  const width = Math.round(Math.min(400, Math.max(200, rawWidth)))
+  const width = Math.round(Math.min(400, Math.max(200, container.offsetWidth || 320)))
 
   const isDark = document.documentElement.classList.contains('dark')
 
