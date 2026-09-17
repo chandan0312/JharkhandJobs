@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import ResultsCard from './ResultsCard.jsx'
+import AttentionCard from './AttentionCard.jsx'
 import AdmitCardsCard from './AdmitCardsCard.jsx'
 import AnswerKeysCard from './AnswerKeysCard.jsx'
 import SyllabusCard from './SyllabusCard.jsx'
@@ -47,6 +48,7 @@ export default function RightSidebar() {
   return (
     <div className="space-y-6">
       <QuickSearch />
+      <AttentionCard />
       <ResultsCard />
       <AdmitCardsCard />
       <AnswerKeysCard />
