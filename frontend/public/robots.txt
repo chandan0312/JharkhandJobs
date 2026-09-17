@@ -1,4 +1,4 @@
-# https://www.robotstxt.org/robotstxt.html
+﻿# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
 
@@ -18,4 +18,4 @@ Disallow: /search
 Disallow: /search?
 
 # Sitemap index
-Sitemap: https://jobalertx.com/sitemap.xml
+Sitemap: https://jharkhand.jobalertx.com/sitemap.xml

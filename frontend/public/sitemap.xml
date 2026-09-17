@@ -1,29 +1,29 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Core portal pages (static) -->
   <sitemap>
-    <loc>https://jobalertx.com/sitemap-core.xml</loc>
+    <loc>https://jharkhand.jobalertx.com/sitemap-core.xml</loc>
     <lastmod>2026-09-07</lastmod>
   </sitemap>
   <!-- Dynamic job post sitemaps (server-generated) -->
   <sitemap>
-    <loc>https://jobalertx.com/sitemap-jobs.xml</loc>
+    <loc>https://jharkhand.jobalertx.com/sitemap-jobs.xml</loc>
     <lastmod>2026-09-07</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://jobalertx.com/sitemap-admit-cards.xml</loc>
+    <loc>https://jharkhand.jobalertx.com/sitemap-admit-cards.xml</loc>
     <lastmod>2026-09-07</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://jobalertx.com/sitemap-results.xml</loc>
+    <loc>https://jharkhand.jobalertx.com/sitemap-results.xml</loc>
     <lastmod>2026-09-07</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://jobalertx.com/sitemap-answer-keys.xml</loc>
+    <loc>https://jharkhand.jobalertx.com/sitemap-answer-keys.xml</loc>
     <lastmod>2026-09-07</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://jobalertx.com/sitemap-syllabus.xml</loc>
+    <loc>https://jharkhand.jobalertx.com/sitemap-syllabus.xml</loc>
     <lastmod>2026-09-07</lastmod>
   </sitemap>
 </sitemapindex>

@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <!-- ===== HOMEPAGE ===== -->
   <url>
-    <loc>https://jobalertx.com/</loc>
+    <loc>https://jharkhand.jobalertx.com/</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>hourly</changefreq>
     <priority>1.0</priority>
@@ -11,37 +11,37 @@
 
   <!-- ===== CONTENT-TYPE INDEXES ===== -->
   <url>
-    <loc>https://jobalertx.com/latest/job</loc>
+    <loc>https://jharkhand.jobalertx.com/latest/job</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/latest/admit-card</loc>
+    <loc>https://jharkhand.jobalertx.com/latest/admit-card</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/latest/result</loc>
+    <loc>https://jharkhand.jobalertx.com/latest/result</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/latest/answer-key</loc>
+    <loc>https://jharkhand.jobalertx.com/latest/answer-key</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/latest/syllabus</loc>
+    <loc>https://jharkhand.jobalertx.com/latest/syllabus</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/exams</loc>
+    <loc>https://jharkhand.jobalertx.com/exams</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
@@ -49,158 +49,158 @@
 
   <!-- ===== CATEGORY PAGES ===== -->
   <url>
-    <loc>https://jobalertx.com/category/jpsc</loc>
+    <loc>https://jharkhand.jobalertx.com/category/jpsc</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/jssc</loc>
+    <loc>https://jharkhand.jobalertx.com/category/jssc</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/other-jharkhand</loc>
+    <loc>https://jharkhand.jobalertx.com/category/other-jharkhand</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/rojgar-mela</loc>
+    <loc>https://jharkhand.jobalertx.com/category/rojgar-mela</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/private-job</loc>
+    <loc>https://jharkhand.jobalertx.com/category/private-job</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/central-job</loc>
+    <loc>https://jharkhand.jobalertx.com/category/central-job</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/ssc</loc>
+    <loc>https://jharkhand.jobalertx.com/category/ssc</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/banking</loc>
+    <loc>https://jharkhand.jobalertx.com/category/banking</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/railway</loc>
+    <loc>https://jharkhand.jobalertx.com/category/railway</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/upsc</loc>
+    <loc>https://jharkhand.jobalertx.com/category/upsc</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/defence</loc>
+    <loc>https://jharkhand.jobalertx.com/category/defence</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/police</loc>
+    <loc>https://jharkhand.jobalertx.com/category/police</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/teaching</loc>
+    <loc>https://jharkhand.jobalertx.com/category/teaching</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/nursing</loc>
+    <loc>https://jharkhand.jobalertx.com/category/nursing</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <!-- State categories -->
   <url>
-    <loc>https://jobalertx.com/category/odisha</loc>
+    <loc>https://jharkhand.jobalertx.com/category/odisha</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/punjab</loc>
+    <loc>https://jharkhand.jobalertx.com/category/punjab</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/bihar</loc>
+    <loc>https://jharkhand.jobalertx.com/category/bihar</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/rajasthan</loc>
+    <loc>https://jharkhand.jobalertx.com/category/rajasthan</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/hp</loc>
+    <loc>https://jharkhand.jobalertx.com/category/hp</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/cg</loc>
+    <loc>https://jharkhand.jobalertx.com/category/cg</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/jharkhand</loc>
+    <loc>https://jharkhand.jobalertx.com/category/jharkhand</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/mp</loc>
+    <loc>https://jharkhand.jobalertx.com/category/mp</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/haryana</loc>
+    <loc>https://jharkhand.jobalertx.com/category/haryana</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/karnataka</loc>
+    <loc>https://jharkhand.jobalertx.com/category/karnataka</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/ap</loc>
+    <loc>https://jharkhand.jobalertx.com/category/ap</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/category/assam</loc>
+    <loc>https://jharkhand.jobalertx.com/category/assam</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.78</priority>
@@ -208,31 +208,31 @@
 
   <!-- ===== TRUST PAGES ===== -->
   <url>
-    <loc>https://jobalertx.com/about</loc>
+    <loc>https://jharkhand.jobalertx.com/about</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/contact</loc>
+    <loc>https://jharkhand.jobalertx.com/contact</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.55</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/privacy</loc>
+    <loc>https://jharkhand.jobalertx.com/privacy</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/terms</loc>
+    <loc>https://jharkhand.jobalertx.com/terms</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
-    <loc>https://jobalertx.com/disclaimer</loc>
+    <loc>https://jharkhand.jobalertx.com/disclaimer</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
