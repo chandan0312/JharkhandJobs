@@ -13,7 +13,7 @@
 import { Job } from '../models/index.js'
 import { Op } from 'sequelize'
 
-const BASE_URL = 'https://jobalertx.com'
+const BASE_URL = process.env.FRONTEND_URL || 'https://jharkhand.jobalertx.com'
 
 /** Build an XML <url> block. */
 function urlEntry(loc, lastmod, changefreq = 'weekly', priority = '0.80') {

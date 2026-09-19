@@ -23,13 +23,13 @@ export default function ExamsPage() {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://jobalertx.com/',
+        item: 'https://jharkhand.jobalertx.com/',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'All Exams & Categories',
-        item: 'https://jobalertx.com/exams',
+        item: 'https://jharkhand.jobalertx.com/exams',
       },
     ],
   }
@@ -37,10 +37,10 @@ export default function ExamsPage() {
   return (
     <div className="animate-fade-in">
       <SEOHead
-        title="All Government Exams, Recruitment Categories & Syllabus 2026"
-        description="Explore all government exam categories including SSC CGL/CHSL, UPSC CSE, Railway RRB NTPC, Banking IBPS/SBI, Defence, Police, and Teaching on Job Alert X."
-        keywords="sarkari exam, all govt exams 2026, ssc exams, railway exams, bank exams, upsc exams, defence recruitment, police jobs, job alert x"
-        canonical="https://jobalertx.com/exams"
+        title="Jharkhand Government Exams, JPSC, JSSC & Recruitment Categories 2026"
+        description="Explore all Jharkhand & National government exam categories including JPSC, JSSC CGL, JECCE, Jharkhand Police, Teacher Recruitment, SSC, Railway, and Banking on Jharkhand JobAlert X."
+        keywords="jharkhand exams 2026, jpsc exam, jssc cgl 2026, jssc jcce, jharkhand police bharti, sarkari exam jharkhand, all govt exams 2026, jharkhand job alert x"
+        canonical="https://jharkhand.jobalertx.com/exams"
         jsonLd={[examsBreadcrumbs]}
       />
 

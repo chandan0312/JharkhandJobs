@@ -1,6 +1,9 @@
-﻿# https://www.robotstxt.org/robotstxt.html
+# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
+Allow: /google*.html
+Allow: /sitemap*.xml
+Allow: /favicon.svg
 
 # Block user account and authenticated pages
 Disallow: /admin/

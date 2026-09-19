@@ -5,9 +5,9 @@ export default function TermsPage() {
   return (
     <div className="animate-fade-in max-w-3xl mx-auto space-y-6">
       <SEOHead
-        title="Terms of Service — Job Alert X"
-        description="Terms of Service for Job Alert X. Read the terms and conditions governing your use of our free Indian government job notification portal."
-        canonical="https://jobalertx.com/terms"
+        title="Terms of Service — Jharkhand JobAlert X"
+        description="Terms of Service for Jharkhand JobAlert X. Read the terms and conditions governing your use of our free Jharkhand government job notification portal."
+        canonical="https://jharkhand.jobalertx.com/terms"
       />
 
       <nav className="flex items-center gap-1 text-[12.5px] text-ink-faint flex-wrap">

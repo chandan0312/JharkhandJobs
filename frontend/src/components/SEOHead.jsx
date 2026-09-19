@@ -12,9 +12,9 @@
 
 import { useEffect } from 'react'
 
-const SITE_NAME = 'Job Alert X'
+const SITE_NAME = 'Jharkhand JobAlert X'
 const DEFAULT_DESCRIPTION =
-  'Job Alert X — India\'s Free Government Jobs Portal. Latest sarkari naukri, SSC, UPSC, Railway, Banking jobs, admit cards, results, answer keys and syllabus updates 2026.'
+  'Jharkhand JobAlert X — #1 Portal for Jharkhand Jobs & Vacancies 2026. Latest JPSC, JSSC, Jharkhand Govt Jobs, Rojgar Mela, Admit Cards, Results & Answer Keys across Ranchi, Dhanbad, Jamshedpur & all 24 districts.'
 
 /**
  * @param {object} props

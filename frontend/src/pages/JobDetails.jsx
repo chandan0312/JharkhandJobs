@@ -174,7 +174,7 @@ export default function JobDetails() {
   // ── Structured Data ────────────────────────────────────────────────────────
   // JobPosting schema is ONLY valid for actual job recruitment posts.
   // Admit cards, results, answer keys, and syllabus use Article schema instead.
-  const pageUrl = `https://jobalertx.com/job/${job.id}`
+  const pageUrl = `https://jharkhand.jobalertx.com/job/${job.id}`
   const pageDescription = job.detailedDescription || job.shortInfo || job.tagline || job.title
   const datePostedIso = job.postedOn
     ? (safeDate(job.postedOn)?.toISOString() || new Date().toISOString())
@@ -210,6 +210,8 @@ export default function JobDetails() {
           '@type': 'Place',
           address: {
             '@type': 'PostalAddress',
+            addressLocality: 'Jharkhand',
+            addressRegion: 'Jharkhand',
             addressCountry: 'IN',
           },
         },
@@ -222,16 +224,16 @@ export default function JobDetails() {
         description: pageDescription,
         author: {
           '@type': 'Organization',
-          name: 'Job Alert X',
-          url: 'https://jobalertx.com/',
+          name: 'Jharkhand JobAlert X',
+          url: 'https://jharkhand.jobalertx.com/',
         },
         publisher: {
           '@type': 'Organization',
-          name: 'Job Alert X',
-          url: 'https://jobalertx.com/',
+          name: 'Jharkhand JobAlert X',
+          url: 'https://jharkhand.jobalertx.com/',
           logo: {
             '@type': 'ImageObject',
-            url: 'https://jobalertx.com/favicon.svg',
+            url: 'https://jharkhand.jobalertx.com/favicon.svg',
           },
         },
         datePublished: datePostedIso,
@@ -246,13 +248,13 @@ export default function JobDetails() {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://jobalertx.com/',
+        item: 'https://jharkhand.jobalertx.com/',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: category?.name || 'Govt Jobs',
-        item: `https://jobalertx.com/category/${job.category}`,
+        item: `https://jharkhand.jobalertx.com/category/${job.category}`,
       },
       {
         '@type': 'ListItem',
@@ -308,13 +310,13 @@ export default function JobDetails() {
 
   const allSchemas = [mainSchema, breadcrumbSchema, ...(faqSchema ? [faqSchema] : [])]
 
-  const keywords = `${job.title}, ${job.org}, ${job.orgShort || ''}, ${category?.name || ''} recruitment 2026, free job alert 2026, government job vacancy 2026, new vacancy 2026, govt job notification 2026, online application form, sarkari result, admit card, latest notification, sarkari naukri, latest govt jobs, job alert x`
+  const keywords = `${job.title}, ${job.org}, ${job.orgShort || ''}, Jharkhand jobs, Jharkhand vacancies 2026, Jharkhand Govt Jobs, JPSC, JSSC, Jharkhand sarkari naukri, ${category?.name || ''} recruitment 2026, free job alert 2026, government job vacancy 2026, new vacancy 2026, govt job notification 2026, online application form, sarkari result, admit card, latest notification, Jharkhand JobAlert X`
 
   return (
     <div className="animate-fade-in">
       <SEOHead
         title={`${job.title} — ${job.org}`}
-        description={`${job.title} ${job.kind === 'job' ? 'recruitment' : ''} by ${job.org}. ${job.vacancies ? `Total vacancies: ${Number(job.vacancies).toLocaleString('en-IN')}. ` : ''}Eligibility: ${job.eligibilityShort || 'Check Details'}. Download notification PDF, admit card, results and answer keys on Job Alert X.`}
+        description={`${job.title} ${job.kind === 'job' ? 'recruitment' : ''} by ${job.org}. ${job.vacancies ? `Total vacancies: ${Number(job.vacancies).toLocaleString('en-IN')}. ` : ''}Eligibility: ${job.eligibilityShort || 'Check Details'}. Download notification PDF, admit card, results and answer keys on Jharkhand JobAlert X.`}
         keywords={keywords}
         canonical={pageUrl}
         ogType={job.kind === 'job' ? 'website' : 'article'}

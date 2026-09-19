@@ -13,8 +13,8 @@ import { Job, sequelize } from '../src/models/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PUBLIC_DIR = path.resolve(__dirname, '../../client/public');
-const BASE_URL = 'https://jobalertx.com';
+const PUBLIC_DIR = path.resolve(__dirname, '../../frontend/public');
+const BASE_URL = process.env.FRONTEND_URL || 'https://jharkhand.jobalertx.com';
 
 const KINDS = [
   { kind: 'job', file: 'sitemap-jobs.xml', changefreq: 'weekly', priority: '0.90' },

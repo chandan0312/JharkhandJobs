@@ -5,9 +5,9 @@ export default function DisclaimerPage() {
   return (
     <div className="animate-fade-in max-w-3xl mx-auto space-y-6">
       <SEOHead
-        title="Disclaimer — Job Alert X"
-        description="Disclaimer for Job Alert X. Job Alert X is an independent information portal and is not affiliated with any government recruiting authority. All information is for reference only."
-        canonical="https://jobalertx.com/disclaimer"
+        title="Disclaimer — Jharkhand JobAlert X"
+        description="Disclaimer for Jharkhand JobAlert X. Jharkhand JobAlert X is an independent information portal and is not affiliated with any government recruiting authority. All information is for reference only."
+        canonical="https://jharkhand.jobalertx.com/disclaimer"
       />
 
       <nav className="flex items-center gap-1 text-[12.5px] text-ink-faint flex-wrap">

@@ -37,13 +37,13 @@ export default function SearchPage() {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://jobalertx.com/',
+        item: 'https://jharkhand.jobalertx.com/',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'Search Jobs',
-        item: 'https://jobalertx.com/search',
+        item: 'https://jharkhand.jobalertx.com/search',
       },
     ],
   }

@@ -289,13 +289,13 @@ export default function CategoryPage({ defaultSlug }) {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://jobalertx.com/',
+        item: 'https://jharkhand.jobalertx.com/',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: heading.title,
-        item: `https://jobalertx.com/${mode === 'category' ? `category/${slug}` : `latest/${kind}`}`,
+        item: `https://jharkhand.jobalertx.com/${mode === 'category' ? `category/${slug}` : `latest/${kind}`}`,
       },
     ],
   }
@@ -352,10 +352,10 @@ export default function CategoryPage({ defaultSlug }) {
           ? `${heading.title} Jobs 2026 — Free Job Alert, New Vacancy & Recruitment Notification`
           : `${heading.title} 2026 — Free Job Alert, Latest Govt Notifications`}
         description={mode === 'category'
-          ? `Free Job Alert — Latest ${heading.title} recruitment 2026, new vacancy notifications, online application form, admit card, result and answer key. Get instant govt job notification 2026 on Job Alert X.`
-          : `Latest ${heading.title} 2026 — Free job alert for all govt exam notifications, download links, eligibility details and important dates on Job Alert X.`}
+          ? `Free Job Alert — Latest ${heading.title} recruitment 2026, new vacancy notifications, online application form, admit card, result and answer key. Get instant Jharkhand govt job notification 2026 on Jharkhand JobAlert X.`
+          : `Latest ${heading.title} 2026 — Free job alert for all Jharkhand and govt exam notifications, download links, eligibility details and important dates on Jharkhand JobAlert X.`}
         keywords={categoryKeywords}
-        canonical={`https://jobalertx.com/${mode === 'category' ? `category/${slug}` : `latest/${kind}`}`}
+        canonical={`https://jharkhand.jobalertx.com/${mode === 'category' ? `category/${slug}` : `latest/${kind}`}`}
         jsonLd={[categoryBreadcrumbs]}
       />
 

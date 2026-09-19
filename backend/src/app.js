@@ -42,6 +42,14 @@ export function createApp() {
   app.use('/api', apiRoutes)
 
   // ---------------------------------------------------------------------------
+  // Google Search Console verification route
+  // ---------------------------------------------------------------------------
+  app.get('/google:code.html', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.send(`google-site-verification: google${req.params.code}.html`)
+  })
+
+  // ---------------------------------------------------------------------------
   // Dynamic XML Sitemaps (generated from live database — one per content type)
   // Static sitemap-core.xml and sitemap.xml (sitemap index) are served from
   // the client/public directory by the frontend host (Nginx/CDN).

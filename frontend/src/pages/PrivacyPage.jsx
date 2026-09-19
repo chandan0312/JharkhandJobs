@@ -5,9 +5,9 @@ export default function PrivacyPage() {
   return (
     <div className="animate-fade-in max-w-3xl mx-auto space-y-6">
       <SEOHead
-        title="Privacy Policy — Job Alert X"
-        description="Privacy Policy for Job Alert X. Learn how we collect, use, and protect your personal information when you use our government job notification portal."
-        canonical="https://jobalertx.com/privacy"
+        title="Privacy Policy — Jharkhand JobAlert X"
+        description="Privacy Policy for Jharkhand JobAlert X. Learn how we collect, use, and protect your personal information when you use our Jharkhand government job notification portal."
+        canonical="https://jharkhand.jobalertx.com/privacy"
       />
 
       <nav className="flex items-center gap-1 text-[12.5px] text-ink-faint flex-wrap">
