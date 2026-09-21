@@ -7,6 +7,7 @@ import jobRoutes from './jobRoutes.js'
 import authRoutes from './authRoutes.js'
 import feedbackRoutes from './feedbackRoutes.js'
 import uploadRoutes from './uploadRoutes.js'
+import articleRoutes from './articleRoutes.js'
 import * as reference from '../controllers/referenceController.js'
 import * as jobs from '../controllers/jobController.js'
 import * as admin from '../controllers/adminController.js'
@@ -54,6 +55,7 @@ router.get('/kinds', cacheResponse(300_000), (req, res) => {
 
 router.use('/auth', authRoutes)
 router.use('/jobs', jobRoutes)
+router.use('/articles', articleRoutes)
 router.use('/feedback', feedbackRoutes)
 router.use('/upload', uploadRoutes)
 

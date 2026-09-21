@@ -22,6 +22,7 @@ import {
 const MENU = [
   { to: '/', label: 'Discover', icon: Home, end: true, color: '#1B6F81' },
   { to: '/latest/job', label: 'Latest Jobs', icon: Briefcase, color: '#FFFB08' },
+  { to: '/articles', label: 'Articles & Guides', icon: BookOpen, color: '#38bdf8' },
   { to: '/category/jpsc', label: 'JPSC', icon: ClipboardList, color: '#AED0C9' },
   { to: '/category/jssc', label: 'JSSC', icon: Award, color: '#4ade80' },
   { to: '/category/other-jharkhand', label: 'Other Jharkhand Job', icon: MapPin, color: '#38bdf8' },

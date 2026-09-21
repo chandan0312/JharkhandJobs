@@ -5,6 +5,7 @@ import JobCategoryCards from '../components/JobCategoryCards.jsx'
 import RecentJobsTable from '../components/RecentJobsTable.jsx'
 import RightSidebar from '../components/RightSidebar.jsx'
 import SEOHead from '../components/SEOHead.jsx'
+import HomeArticlesSection from '../components/HomeArticlesSection.jsx'
 import { getTrending, getRecentlyPosted, getJobsByCategory } from '../services/api.js'
 import { Clock, Sparkles, Landmark, Scale, Briefcase, Building2, GraduationCap, MapPin } from 'lucide-react'
 
@@ -182,6 +183,9 @@ export default function Home() {
             <RecentJobsTable jobs={recentlyPosted} viewAllTo="/latest/job" viewAllText="View All Latest Jobs" />
           )}
         </section>
+
+        {/* Career Guides & Exam Preparation Articles */}
+        <HomeArticlesSection />
 
         {/* 4. JPSC Recruitment */}
         <section>

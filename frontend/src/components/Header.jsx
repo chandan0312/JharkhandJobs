@@ -9,6 +9,7 @@ import {
   Flame,
   ArrowRight,
   ChevronRight,
+  BookOpen,
 } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -160,6 +161,16 @@ export default function Header({ onMenuClick = () => {} }) {
 
         {/* === RIGHT: ACTIONS + THEME TOGGLE + USER PILL === */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+          {/* Quick Guides Link */}
+          <Link
+            to="/articles"
+            className="group flex items-center gap-1.5 rounded-full px-3 py-2 transition-all shadow-sm bg-[#09324A] text-[#AED0C9] border border-teal-500/20 hover:border-[#FFFB08]/40 hover:text-[#FFFB08]"
+            title="Career Guides & Exam Strategy"
+          >
+            <BookOpen size={16} className="transition-colors text-[#38bdf8] group-hover:text-cyan-300" />
+            <span className="hidden text-xs font-bold sm:inline">Guides</span>
+          </Link>
+
           {/* Quick Feedback Button */}
           <Link
             to="/feedback"

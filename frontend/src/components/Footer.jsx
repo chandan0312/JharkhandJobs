@@ -25,6 +25,7 @@ const CATEGORY_LINKS = [
 
 const QUICK_LINKS = [
   { label: 'Latest Jharkhand Jobs', to: '/latest/job', badge: 'Hot' },
+  { label: 'Career Guides & Articles', to: '/articles', badge: 'New' },
   { label: 'Admit Cards', to: '/latest/admit-card' },
   { label: 'Exam Results', to: '/latest/result' },
   { label: 'Answer Keys', to: '/latest/answer-key' },

@@ -28,13 +28,19 @@ const PrivacyPage    = lazy(() => import('./pages/PrivacyPage.jsx'))
 const TermsPage      = lazy(() => import('./pages/TermsPage.jsx'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage.jsx'))
 
+// Articles & Guides
+const ArticlesPage     = lazy(() => import('./pages/ArticlesPage.jsx'))
+const ArticleDetails   = lazy(() => import('./pages/ArticleDetails.jsx'))
+
 // Lazy-loaded Admin Pages (isolated from public users)
-const AdminLogin     = lazy(() => import('./pages/AdminLogin.jsx'))
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'))
-const AdminPosts     = lazy(() => import('./pages/AdminPosts.jsx'))
-const AdminPostForm  = lazy(() => import('./pages/AdminPostForm.jsx'))
-const AdminFeedback  = lazy(() => import('./pages/AdminFeedback.jsx'))
-const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics.jsx'))
+const AdminLogin       = lazy(() => import('./pages/AdminLogin.jsx'))
+const AdminDashboard   = lazy(() => import('./pages/AdminDashboard.jsx'))
+const AdminPosts       = lazy(() => import('./pages/AdminPosts.jsx'))
+const AdminPostForm    = lazy(() => import('./pages/AdminPostForm.jsx'))
+const AdminArticles    = lazy(() => import('./pages/AdminArticles.jsx'))
+const AdminArticleForm = lazy(() => import('./pages/AdminArticleForm.jsx'))
+const AdminFeedback    = lazy(() => import('./pages/AdminFeedback.jsx'))
+const AdminAnalytics   = lazy(() => import('./pages/AdminAnalytics.jsx'))
 
 /** Sleek, low-overhead fallback loader for route transitions */
 function PageLoader() {
@@ -74,6 +80,9 @@ function AppRoutes() {
           <Route path="posts"        element={<AdminPosts />} />
           <Route path="posts/new"    element={<AdminPostForm />} />
           <Route path="posts/:id"    element={<AdminPostForm />} />
+          <Route path="articles"     element={<AdminArticles />} />
+          <Route path="articles/new" element={<AdminArticleForm />} />
+          <Route path="articles/:id" element={<AdminArticleForm />} />
           <Route path="feedback"     element={<AdminFeedback />} />
           <Route path="analytics"    element={<AdminAnalytics />} />
         </Route>
@@ -84,6 +93,10 @@ function AppRoutes() {
 
           {/* Content detail pages */}
           <Route path="job/:id"           element={<JobDetails />} />
+
+          {/* Article & Career Guides */}
+          <Route path="articles"          element={<ArticlesPage />} />
+          <Route path="article/:slug"     element={<ArticleDetails />} />
 
           {/* Category & shortcut routes */}
           <Route path="rojgar-mela"       element={<CategoryPage defaultSlug="rojgar-mela" />} />

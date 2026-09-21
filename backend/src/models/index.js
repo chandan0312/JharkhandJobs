@@ -11,6 +11,7 @@ import defineNowPlaying, { NOW_PLAYING_ID } from './NowPlaying.js'
 import defineUser, { USER_ROLES } from './User.js'
 import defineFeedback, { FEEDBACK_TYPES, FEEDBACK_STATUSES } from './Feedback.js'
 import definePageView from './PageView.js'
+import defineArticle, { ARTICLE_CATEGORIES, ARTICLE_CATEGORY_LABELS, ARTICLE_STATUSES } from './Article.js'
 
 export const Job = defineJob(sequelize)
 export const Category = defineCategory(sequelize)
@@ -20,10 +21,21 @@ export const NowPlaying = defineNowPlaying(sequelize)
 export const User = defineUser(sequelize)
 export const Feedback = defineFeedback(sequelize)
 export const PageView = definePageView(sequelize)
+export const Article = defineArticle(sequelize)
 
-export { JOB_KINDS, USER_ROLES, FEEDBACK_TYPES, FEEDBACK_STATUSES, NOW_PLAYING_ID, sequelize }
+export {
+  JOB_KINDS,
+  USER_ROLES,
+  FEEDBACK_TYPES,
+  FEEDBACK_STATUSES,
+  NOW_PLAYING_ID,
+  ARTICLE_CATEGORIES,
+  ARTICLE_CATEGORY_LABELS,
+  ARTICLE_STATUSES,
+  sequelize,
+}
 
-export const models = { Job, Category, Recruiter, Course, NowPlaying, User, Feedback, PageView }
+export const models = { Job, Category, Recruiter, Course, NowPlaying, User, Feedback, PageView, Article }
 
 /**
  * Create the database if needed, verify the connection, and create/patch tables.
