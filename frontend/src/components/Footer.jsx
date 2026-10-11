@@ -10,125 +10,212 @@ import {
   Linkedin,
   MessageCircle,
   ExternalLink,
-  MapPin,
 } from 'lucide-react'
 import SarkariEmblem from './SarkariEmblem.jsx'
 
 const CATEGORY_LINKS = [
-  { label: 'JPSC', to: '/category/jpsc' },
-  { label: 'JSSC', to: '/category/jssc' },
-  { label: 'Other Jharkhand Job', to: '/category/other-jharkhand' },
-  { label: 'Rojgar Mela', to: '/category/rojgar-mela' },
-  { label: 'Private Job', to: '/category/private-job' },
-  { label: 'Central Job', to: '/category/central-job' },
+  { label: 'JPSC',              to: '/category/jpsc' },
+  { label: 'JSSC',              to: '/category/jssc' },
+  { label: 'Other Jharkhand',   to: '/category/other-jharkhand' },
+  { label: 'Rojgar Mela',       to: '/category/rojgar-mela' },
+  { label: 'Private Jobs',      to: '/category/private-job' },
+  { label: 'Central Jobs',      to: '/category/central-job' },
 ]
 
 const QUICK_LINKS = [
-  { label: 'Latest Jharkhand Jobs', to: '/latest/job', badge: 'Hot' },
-  { label: 'Career Guides & Articles', to: '/articles', badge: 'New' },
-  { label: 'Admit Cards', to: '/latest/admit-card' },
-  { label: 'Exam Results', to: '/latest/result' },
-  { label: 'Answer Keys', to: '/latest/answer-key' },
-  { label: 'Syllabus & Pattern', to: '/latest/syllabus' },
-  { label: 'Rojgar Bharti Mela', to: '/rojgar-mela' },
+  { label: 'Latest Jobs',            to: '/latest/job',        badge: 'Hot' },
+  { label: 'Career Guides',          to: '/articles',          badge: 'New' },
+  { label: 'Admit Cards',            to: '/latest/admit-card' },
+  { label: 'Exam Results',           to: '/latest/result' },
+  { label: 'Answer Keys',            to: '/latest/answer-key' },
+  { label: 'Syllabus & Pattern',     to: '/latest/syllabus' },
+  { label: 'Rojgar Bharti Mela',    to: '/rojgar-mela' },
 ]
 
 const COMPANY_LINKS = [
-  { label: 'About Us', to: '/about' },
-  { label: 'Contact Us', to: '/contact' },
-  { label: 'Feedback & Suggestions', to: '/feedback' },
-  { label: 'Privacy Policy', to: '/privacy' },
-  { label: 'Terms of Service', to: '/terms' },
-  { label: 'Disclaimer', to: '/disclaimer' },
+  { label: 'About Us',               to: '/about' },
+  { label: 'Contact Us',             to: '/contact' },
+  { label: 'Feedback',               to: '/feedback' },
+  { label: 'Privacy Policy',         to: '/privacy' },
+  { label: 'Terms of Service',       to: '/terms' },
+  { label: 'Disclaimer',             to: '/disclaimer' },
 ]
 
+const SOCIALS = [
+  { href: 'https://t.me/jobalertx',                    label: 'Telegram',  icon: <Send     size={13} /> },
+  { href: 'https://youtube.com/@jobalertx',            label: 'YouTube',   icon: <Youtube  size={14} /> },
+  { href: 'https://whatsapp.com/channel/jobalertx',    label: 'WhatsApp',  icon: <MessageCircle size={13} /> },
+  { href: 'https://twitter.com/jobalertx',             label: 'Twitter/X', icon: <Twitter  size={13} /> },
+  { href: 'https://linkedin.com/company/jobalertx',    label: 'LinkedIn',  icon: <Linkedin size={13} /> },
+]
+
+function FooterLink({ to, children, isExternal }) {
+  const cls = `
+    inline-flex items-center gap-1 text-[12px] transition-colors duration-150
+    hover:translate-x-0.5
+  `
+  if (isExternal) {
+    return (
+      <a
+        href={to}
+        target="_blank"
+        rel="noreferrer"
+        className={cls}
+        style={{ color: 'var(--text-2)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-2)' }}
+      >
+        {children}
+        <ExternalLink size={10} aria-hidden="true" className="opacity-50" />
+      </a>
+    )
+  }
+  return (
+    <Link
+      to={to}
+      className={cls}
+      style={{ color: 'var(--text-2)' }}
+      onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-2)' }}
+    >
+      {children}
+    </Link>
+  )
+}
+
+function FooterSection({ title, dotColor, children }) {
+  return (
+    <div>
+      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ color: 'var(--text)' }}>
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: dotColor || 'var(--accent)' }}
+          aria-hidden="true"
+        />
+        {title}
+      </h3>
+      {children}
+    </div>
+  )
+}
+
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
+  const year = new Date().getFullYear()
 
   return (
-    <footer className="w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 pt-2 pb-6">
-      {/* Compact Floating Card Design with Jharkhand Teal/Navy Styling */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-teal-500/20 bg-[#061e2d] shadow-xl text-slate-300">
-        {/* Subtle Ambient Glow */}
-        <div
-          className="pointer-events-none absolute -top-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-br from-teal-500/15 via-[#1B6F81]/15 to-transparent blur-3xl"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-gradient-to-tl from-[#FFFB08]/10 via-teal-500/10 to-transparent blur-3xl"
-          aria-hidden="true"
-        />
+    <footer className="w-full" aria-label="Site footer">
+      {/* ── Main footer body ────────────────────────────────────────── */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: 'var(--surface)',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        {/* Geometric line pattern (~6% opacity) per design prompt */}
+        <div className="footer-geo-pattern" aria-hidden="true" />
 
-        <div className="relative z-10 p-5 sm:p-6 lg:px-8 lg:py-6">
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
-            
-            {/* === LEFT BRAND & CONTACT INFO (5 Cols) === */}
-            <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-              <div>
-                {/* Brand Logo & Title */}
-                <Link
-                  to="/"
-                  className="group inline-flex items-center gap-2.5 transition-transform duration-200 hover:scale-[1.01]"
-                  aria-label="Jharkhand JobAlert X Homepage"
-                >
-                  <SarkariEmblem size={34} />
-                  <div className="flex flex-col">
-                    <div className="flex items-center text-[18px] font-black tracking-wider leading-none text-white">
-                      <span>JHARKHAND</span>
-                      <span className="text-[#AED0C9] ml-1 drop-shadow-[0_0_8px_rgba(174,208,201,0.6)]">
-                        JOBALERT
-                      </span>
-                      <span className="ml-1 text-[#FFFB08] drop-shadow-[0_0_8px_rgba(255,251,8,0.7)]">
-                        X
-                      </span>
-                    </div>
-                    <span className="mt-0.5 text-[9px] font-bold tracking-[0.14em] uppercase text-teal-300/80">
-                      Jharkhand Govt &amp; Private Jobs Portal
+        <div className="relative z-10 mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+
+            {/* ── Brand + Contact (5 cols) ─────────────────────────── */}
+            <div className="lg:col-span-5 flex flex-col gap-5">
+              {/* Logo */}
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2.5 transition-transform hover:scale-[1.01]"
+                aria-label="Jharkhand JobAlert X home"
+              >
+                <SarkariEmblem size={32} />
+                <div className="flex flex-col leading-none">
+                  <div className="flex items-baseline gap-1">
+                    <span
+                      className="text-[16px] font-black tracking-tight"
+                      style={{ color: 'var(--text)' }}
+                    >
+                      JobAlert
+                    </span>
+                    <span
+                      className="text-[18px] font-black"
+                      style={{ color: '#FFFB08', textShadow: '0 0 8px rgba(255,251,8,.5)' }}
+                    >
+                      X
                     </span>
                   </div>
-                </Link>
-
-                {/* Brief bio */}
-                <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-300">
-                  Jharkhand's premier job alert portal. 100% verified notifications for JPSC, JSSC, District Rojgar Mela, Admit Cards, Results, and Private Sector jobs across Jharkhand.
-                </p>
-
-                {/* Compact Contact Pills */}
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  <a
-                    href="mailto:jobalerx365@gmail.com"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/30 bg-teal-900/30 px-2.5 py-1 text-teal-100 hover:border-gold-400/50 hover:text-white transition-colors"
+                  <span
+                    className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.12em]"
+                    style={{ color: 'var(--text-muted)' }}
                   >
-                    <Mail size={12} className="text-teal-300" />
-                    <span>jobalerx365@gmail.com</span>
-                  </a>
-                  <a
-                    href="tel:8789862771"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/30 bg-teal-900/30 px-2.5 py-1 text-teal-100 hover:border-gold-400/50 hover:text-white transition-colors"
-                  >
-                    <Phone size={12} className="text-[#FFFB08]" />
-                    <span>+91 8789862771</span>
-                  </a>
+                    Jharkhand Govt &amp; Private Jobs
+                  </span>
                 </div>
+              </Link>
+
+              {/* Bio */}
+              <p className="max-w-sm text-[13px] leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                Jharkhand's premier job alert portal. 100% verified notifications for JPSC, JSSC,
+                District Rojgar Mela, Admit Cards, Results, and Private Sector jobs.
+              </p>
+
+              {/* Contact pills */}
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="mailto:jobalerx365@gmail.com"
+                  className="inline-flex items-center gap-1.5 rounded-row px-3 py-1.5 text-[12px] font-medium transition-colors"
+                  style={{
+                    background: 'var(--surface-2)',
+                    color: 'var(--text-2)',
+                    border: '1px solid var(--border)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)' }}
+                >
+                  <Mail size={12} aria-hidden="true" />
+                  jobalerx365@gmail.com
+                </a>
+                <a
+                  href="tel:8789862771"
+                  className="inline-flex items-center gap-1.5 rounded-row px-3 py-1.5 text-[12px] font-medium transition-colors"
+                  style={{
+                    background: 'var(--surface-2)',
+                    color: 'var(--text-2)',
+                    border: '1px solid var(--border)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)' }}
+                >
+                  <Phone size={12} aria-hidden="true" />
+                  +91 8789862771
+                </a>
               </div>
 
-              {/* Social Channels Row */}
-              <div className="flex items-center gap-1.5 pt-0.5">
-                {[
-                  { href: 'https://t.me/jobalertx', label: 'Telegram', icon: <Send size={13} /> },
-                  { href: 'https://youtube.com/@jobalertx', label: 'YouTube', icon: <Youtube size={14} /> },
-                  { href: 'https://whatsapp.com/channel/jobalertx', label: 'WhatsApp', icon: <MessageCircle size={13} /> },
-                  { href: 'https://twitter.com/jobalertx', label: 'Twitter / X', icon: <Twitter size={13} /> },
-                  { href: 'https://linkedin.com/company/jobalertx', label: 'LinkedIn', icon: <Linkedin size={13} /> },
-                ].map(({ href, label, icon }) => (
+              {/* Social icons */}
+              <div className="flex items-center gap-1.5">
+                {SOCIALS.map(({ href, label, icon }) => (
                   <a
                     key={label}
                     href={href}
                     target="_blank"
                     rel="noreferrer"
                     aria-label={label}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all"
+                    title={label}
+                    className="flex h-8 w-8 items-center justify-center rounded-btn transition-all duration-150"
+                    style={{
+                      background: 'var(--surface-2)',
+                      color: 'var(--text-muted)',
+                      border: '1px solid var(--border)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'var(--accent-soft)'
+                      e.currentTarget.style.color = 'var(--accent)'
+                      e.currentTarget.style.borderColor = 'var(--accent-strong)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'var(--surface-2)'
+                      e.currentTarget.style.color = 'var(--text-muted)'
+                      e.currentTarget.style.borderColor = 'var(--border)'
+                    }}
                   >
                     {icon}
                   </a>
@@ -136,120 +223,130 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* === RIGHT 3 COLUMNS OF NAVIGATION LINKS (7 Cols) === */}
-            <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-5 sm:gap-6">
-              
-              {/* Column 1: Exam Categories */}
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2.5 flex items-center gap-1.5 text-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#AED0C9]" />
-                  Categories
-                </h3>
-                <ul className="space-y-1.5">
-                  {CATEGORY_LINKS.map((item) => (
+            {/* ── Navigation columns (7 cols) ──────────────────────── */}
+            <div className="lg:col-span-7 grid grid-cols-2 gap-6 sm:grid-cols-3">
+              <FooterSection title="Categories" dotColor="var(--accent)">
+                <ul className="space-y-2">
+                  {CATEGORY_LINKS.map(item => (
                     <li key={item.label}>
-                      <Link
-                        to={item.to}
-                        className="text-xs text-slate-300 hover:text-[#FFFB08] transition-colors inline-block hover:translate-x-0.5"
-                      >
-                        {item.label}
-                      </Link>
+                      <FooterLink to={item.to}>{item.label}</FooterLink>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </FooterSection>
 
-              {/* Column 2: Quick Links */}
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2.5 flex items-center gap-1.5 text-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#FFFB08]" />
-                  Quick Links
-                </h3>
-                <ul className="space-y-1.5">
-                  {QUICK_LINKS.map((item) => (
-                    <li key={item.label}>
-                      <Link
-                        to={item.to}
-                        className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-[#FFFB08] transition-colors hover:translate-x-0.5"
-                      >
-                        <span>{item.label}</span>
-                        {item.badge && (
-                          <span className="rounded px-1 py-0.2 text-[9px] font-bold border bg-teal-500/20 text-[#AED0C9] border-teal-500/30">
-                            {item.badge}
-                          </span>
-                        )}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Column 3: Company & Help */}
-              <div className="col-span-2 sm:col-span-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2.5 flex items-center gap-1.5 text-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-teal-400" />
-                  Company &amp; Info
-                </h3>
-                <ul className="space-y-1.5">
-                  {COMPANY_LINKS.map((item) => (
-                    <li key={item.label}>
-                      {item.isExternal ? (
-                        <a
-                          href={item.to}
-                          className="inline-flex items-center gap-1 text-xs text-slate-300 hover:text-teal-200 transition-colors hover:translate-x-0.5"
+              <FooterSection title="Quick Links" dotColor="#FFFB08">
+                <ul className="space-y-2">
+                  {QUICK_LINKS.map(item => (
+                    <li key={item.label} className="flex items-center gap-1.5">
+                      <FooterLink to={item.to}>{item.label}</FooterLink>
+                      {item.badge && (
+                        <span
+                          className="rounded-badge px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                          style={{
+                            background: 'var(--accent-soft)',
+                            color: 'var(--accent)',
+                            border: '1px solid var(--accent-strong)',
+                          }}
                         >
-                          <span>{item.label}</span>
-                          <ExternalLink size={10} className="opacity-60" />
-                        </a>
-                      ) : (
-                        <Link
-                          to={item.to}
-                          className="text-xs text-slate-300 hover:text-teal-200 transition-colors inline-block hover:translate-x-0.5"
-                        >
-                          {item.label}
-                        </Link>
+                          {item.badge}
+                        </span>
                       )}
                     </li>
                   ))}
                 </ul>
-              </div>
+              </FooterSection>
 
+              <FooterSection title="Company" dotColor="var(--success)" className="col-span-2 sm:col-span-1">
+                <ul className="space-y-2">
+                  {COMPANY_LINKS.map(item => (
+                    <li key={item.label}>
+                      <FooterLink to={item.to} isExternal={item.isExternal}>
+                        {item.label}
+                      </FooterLink>
+                    </li>
+                  ))}
+                </ul>
+              </FooterSection>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* === BOTTOM ROW === */}
-          <div className="mt-5 pt-3.5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs border-t border-teal-500/20 text-slate-400">
-            {/* Copyright */}
-            <div className="text-center md:text-left">
-              <span>© {currentYear} </span>
-              <span className="font-bold text-white">Jharkhand JobAlert X</span>
-              <span>. All rights reserved.</span>
-            </div>
+      {/* ── Thin bottom bar ─────────────────────────────────────────── */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: 'var(--header-bg)',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        {/* Same faint geo pattern */}
+        <div className="footer-geo-pattern" aria-hidden="true" />
 
-            {/* Legal links */}
-            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-slate-300">
-              <Link to="/privacy" className="transition-colors hover:text-white">Privacy</Link>
-              <span className="text-teal-800">•</span>
-              <Link to="/terms" className="transition-colors hover:text-white">Terms</Link>
-              <span className="text-teal-800">•</span>
-              <Link to="/disclaimer" className="transition-colors hover:text-white">Disclaimer</Link>
-              <span className="text-teal-800">•</span>
-              <Link to="/about" className="transition-colors hover:text-white">About</Link>
-              <span className="text-teal-800">•</span>
-              <Link to="/contact" className="transition-colors hover:text-white">Contact</Link>
-            </div>
+        <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-3 px-4 py-3 text-[12px] md:flex-row sm:px-6 lg:px-8">
+          {/* Left: org logo + copyright */}
+          <div className="flex items-center gap-2">
+            <SarkariEmblem size={20} />
+            <span style={{ color: 'var(--text-muted)' }}>
+              © {year}{' '}
+              <span className="font-semibold" style={{ color: 'var(--text)' }}>
+                Jharkhand JobAlert X
+              </span>
+              . All rights reserved.
+            </span>
+          </div>
 
-            {/* Trust badges */}
-            <div className="flex items-center gap-2">
-              <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-teal-500/10 border border-teal-500/20 text-teal-200">
-                <ShieldCheck size={11} className="text-emerald-400" />
-                <span>100% Free</span>
-              </div>
-              <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-gold-400/10 border border-gold-400/20 text-[#FFFB08]">
-                <CheckCircle2 size={11} className="text-[#FFFB08]" />
-                <span>Verified</span>
-              </div>
-            </div>
+          {/* Center: legal links */}
+          <div className="flex flex-wrap items-center justify-center gap-3" style={{ color: 'var(--text-muted)' }}>
+            {[
+              { to: '/privacy',     label: 'Privacy'    },
+              { to: '/terms',       label: 'Terms'      },
+              { to: '/disclaimer',  label: 'Disclaimer' },
+              { to: '/about',       label: 'About'      },
+              { to: '/contact',     label: 'Contact'    },
+            ].map((item, idx, arr) => (
+              <span key={item.to} className="flex items-center gap-3">
+                <Link
+                  to={item.to}
+                  className="transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  {item.label}
+                </Link>
+                {idx < arr.length - 1 && (
+                  <span style={{ color: 'var(--border-strong)' }} aria-hidden="true">•</span>
+                )}
+              </span>
+            ))}
+          </div>
+
+          {/* Right: trust badges */}
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                background: 'var(--success-bg)',
+                color: 'var(--success)',
+                border: '1px solid color-mix(in srgb, var(--success) 20%, transparent)',
+              }}
+            >
+              <ShieldCheck size={11} aria-hidden="true" />
+              100% Free
+            </span>
+            <span
+              className="inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                background: 'rgba(255,251,8,0.08)',
+                color: '#c7c200',
+                border: '1px solid rgba(255,251,8,0.2)',
+              }}
+            >
+              <CheckCircle2 size={11} aria-hidden="true" />
+              Verified
+            </span>
           </div>
         </div>
       </div>

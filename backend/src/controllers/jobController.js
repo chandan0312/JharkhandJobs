@@ -244,6 +244,8 @@ const WRITABLE = [
   'ageLimit',
   'posts',
   'links',
+  'salary',
+  'location',
 ]
 
 function pickWritable(body) {

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
-  Eye,
   Users,
   Briefcase,
   CalendarDays,
@@ -358,23 +357,22 @@ export default function JobDetails() {
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat icon={Eye} label="Views" value={job.views?.toLocaleString('en-IN')} />
-              {job.applications ? (
-                <Stat icon={Users} label="Applications" value={job.applications.toLocaleString('en-IN')} />
-              ) : null}
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {job.vacancies ? (
                 <Stat icon={Briefcase} label="Total Posts" value={job.vacancies.toLocaleString('en-IN')} />
               ) : null}
               <Stat
                 icon={CalendarDays}
-                label="Posted"
+                label="Posted Date"
                 value={
                   job.postedOn || job.postedAt
                     ? <time dateTime={safeDate(job.postedOn || job.postedAt)?.toISOString() || undefined}>{job.postedOn || job.postedAt}</time>
                     : 'Recent'
                 }
               />
+              {job.applications ? (
+                <Stat icon={Users} label="Applications" value={job.applications.toLocaleString('en-IN')} />
+              ) : null}
             </div>
             {/* Last updated timestamp — important for E-E-A-T */}
             {job.updatedAt && (

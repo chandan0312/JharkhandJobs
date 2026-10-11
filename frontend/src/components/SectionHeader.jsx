@@ -1,24 +1,58 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
 /**
- * Section heading with an optional "View All" action, e.g.
- *   RECENTLY POSTED JOBS            View All →
+ * Consistent section header used across the home page.
+ * - title:     bold section label
+ * - subtitle:  optional muted subtitle
+ * - viewAllTo: optional "View all" link
+ * - viewAllText: link label (default "View all")
+ * - action:    optional JSX appended to the right
  */
-export default function SectionHeader({ title, viewAllTo, eyebrow = false, className = '' }) {
+export default function SectionHeader({
+  title,
+  subtitle,
+  viewAllTo,
+  viewAllText = 'View all',
+  action,
+}) {
   return (
-    <div className={`mb-3.5 flex items-center justify-between gap-4 border-b border-hairline/60 pb-2 ${className}`}>
-      {eyebrow ? (
-        <span className="eyebrow">{title}</span>
-      ) : (
-        <h2 className="text-base sm:text-lg font-bold tracking-tight text-ink">{title}</h2>
-      )}
-      {viewAllTo && (
-        <Link to={viewAllTo} className="link-muted shrink-0 text-xs font-semibold">
-          View All
-          <ArrowRight size={14} aria-hidden="true" />
-        </Link>
-      )}
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 min-w-0">
+        {/* Accent left border */}
+        <span
+          className="h-5 w-1 rounded-pill shrink-0"
+          style={{ background: 'var(--accent)' }}
+          aria-hidden="true"
+        />
+        <div className="min-w-0">
+          <h2
+            className="section-title truncate"
+            style={{ color: 'var(--text)' }}
+          >
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-0.5 text-[12px]" style={{ color: 'var(--text-muted)' }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+        {viewAllTo && (
+          <Link
+            to={viewAllTo}
+            className="link-accent whitespace-nowrap"
+            aria-label={`${viewAllText} — ${title}`}
+          >
+            {viewAllText}
+            <ChevronRight size={13} aria-hidden="true" />
+          </Link>
+        )}
+      </div>
     </div>
   )
 }

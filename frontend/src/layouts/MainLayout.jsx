@@ -6,26 +6,50 @@ import Footer from '../components/Footer.jsx'
 
 export default function MainLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
-  // Expand sidebar by default on desktop so text labels are persistent (Issue 13)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('sidebar_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
   const { pathname } = useLocation()
 
-  // Close the mobile drawer + smoothly reset scroll whenever the route changes
+  // Close the mobile drawer + reset scroll on route change
   useEffect(() => {
     setMenuOpen(false)
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [pathname])
 
   const handleToggleCollapse = () => {
-    setSidebarCollapsed((prev) => !prev)
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('sidebar_collapsed', String(next))
+      } catch {}
+      return next
+    })
   }
 
-  return (
-    <div className="min-h-screen bg-page text-ink antialiased selection:bg-brand-500 selection:text-white">
-      {/* Fixed Full-Width Top Header Bar */}
-      <Header onMenuClick={() => setMenuOpen((o) => !o)} />
+  const handleMenuClick = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      handleToggleCollapse()
+    } else {
+      setMenuOpen((o) => !o)
+    }
+  }
 
-      {/* Collapsible Left Navigation Menu (Below Header) */}
+  const sidebarWidth = sidebarCollapsed ? 72 : 260
+
+  return (
+    <div
+      className="min-h-screen"
+      style={{ background: 'var(--bg)', color: 'var(--text)' }}
+    >
+      {/* Fixed top header (auto height — includes ticker) */}
+      <Header onMenuClick={handleMenuClick} />
+
+      {/* Left sidebar */}
       <Sidebar
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -33,24 +57,26 @@ export default function MainLayout() {
         onToggleCollapse={handleToggleCollapse}
       />
 
-      {/* Main Content Area — dynamically adjusting padding */}
+      {/* Main content — offset for header + sidebar */}
       <div
-        className="layout-transition flex min-h-screen flex-col pt-[72px]"
-        style={{ paddingLeft: '' }}
+        className="layout-transition flex min-h-screen flex-col"
+        style={{
+          paddingTop: 'var(--header-height, 64px)',
+        }}
       >
-        {/* Dynamic left padding for desktop sidebar with hardware acceleration */}
+        {/* Responsive desktop sidebar offset */}
         <style>{`
           @media (min-width: 1024px) {
             .layout-transition {
-              padding-left: ${sidebarCollapsed ? '72px' : '260px'};
+              padding-left: ${sidebarWidth}px !important;
             }
           }
         `}</style>
-        
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-3 py-4 sm:px-5 sm:py-6 lg:px-6">
+
+        <main className="mx-auto w-full max-w-[1440px] flex-1 px-3 py-5 sm:px-5 sm:py-6 lg:px-6">
           <Outlet />
         </main>
-        
+
         <Footer />
       </div>
     </div>

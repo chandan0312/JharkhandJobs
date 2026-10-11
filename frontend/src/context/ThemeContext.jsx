@@ -1,16 +1,21 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
-const ThemeContext = createContext({ theme: 'light', isDark: false, toggleTheme: () => {} })
+const ThemeContext = createContext({ theme: 'dark', isDark: true, toggleTheme: () => {} })
+
+const STORAGE_KEY = 'jjax-theme'
 
 function getInitialTheme() {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined') return 'dark'
   try {
-    const stored = window.localStorage.getItem('sarkarifynx-theme')
+    const stored = window.localStorage.getItem(STORAGE_KEY)
     if (stored === 'light' || stored === 'dark') return stored
   } catch {
     /* ignore storage errors */
   }
-  return 'light' // mockup ships in light mode by default
+  // Read what the inline script already applied (no flash)
+  const applied = document.documentElement.getAttribute('data-theme')
+  if (applied === 'light' || applied === 'dark') return applied
+  return 'dark'
 }
 
 export function ThemeProvider({ children }) {
@@ -18,9 +23,11 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement
+    root.setAttribute('data-theme', theme)
+    // Also keep .dark for any legacy Tailwind dark: classes
     root.classList.toggle('dark', theme === 'dark')
     try {
-      window.localStorage.setItem('sarkarifynx-theme', theme)
+      window.localStorage.setItem(STORAGE_KEY, theme)
     } catch {
       /* ignore storage errors */
     }

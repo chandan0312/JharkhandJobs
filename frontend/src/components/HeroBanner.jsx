@@ -4,7 +4,6 @@ import {
   Briefcase,
   CalendarClock,
   ArrowRight,
-  Bookmark,
   ChevronLeft,
   ChevronRight,
   Landmark,
@@ -41,49 +40,51 @@ function getLastDate(job) {
     (r) =>
       r.label?.toLowerCase().includes('last date') ||
       r.label?.toLowerCase().includes('close') ||
-      r.label?.toLowerCase().includes('end date')
+      r.label?.toLowerCase().includes('end date'),
   )
   return d?.value || 'Check Details'
 }
 
-// Compact emblem badge
-function Emblem({ job }) {
+/* ── Org logo tile ──────────────────────────────────────────────── */
+function OrgTile({ job }) {
   const Icon = EMBLEM_ICONS[job.logo?.icon] || Landmark
-  const color = job.logo?.color || '#f97316'
+  const color = job.logo?.color || '#0066f5'
+
   return (
-    <div className="relative flex h-24 w-24 shrink-0 items-center justify-center">
-      {/* soft radial glow */}
-      <div
-        className="absolute inset-0 rounded-full blur-xl opacity-30"
-        style={{ background: `radial-gradient(circle at center, ${color}, transparent 70%)` }}
-      />
-      {/* subtle orbit ring */}
-      <div className="absolute inset-0 rounded-full border border-dashed border-white/15" />
-      <div className="absolute inset-2 rounded-full border border-white/10" />
-      {/* central seal */}
-      <div
-        className="relative flex h-14 w-14 items-center justify-center rounded-xl text-white shadow-xl ring-2 ring-white/15"
-        style={{ background: `linear-gradient(135deg, ${color}, rgba(0,0,0,0.65))` }}
-      >
-        <Icon size={26} strokeWidth={1.8} />
+    <div className="relative hidden shrink-0 items-center justify-center md:flex pl-4">
+      <div className="relative flex h-20 w-20 items-center justify-center">
+        {/* Glow */}
+        <div
+          className="absolute inset-0 rounded-full blur-xl opacity-25"
+          style={{ background: `radial-gradient(circle, ${color}, transparent 70%)` }}
+          aria-hidden="true"
+        />
+        {/* Orbit ring */}
+        <div className="absolute inset-0 rounded-full border border-dashed opacity-20" style={{ borderColor: color }} aria-hidden="true" />
+        {/* Central tile — 56px per spec */}
+        <div
+          className="relative flex h-14 w-14 items-center justify-center rounded-card text-white shadow-lg"
+          style={{ background: `linear-gradient(135deg, ${color}, rgba(0,0,0,0.5))` }}
+        >
+          <Icon size={24} strokeWidth={1.8} aria-hidden="true" />
+        </div>
       </div>
     </div>
   )
 }
 
 export default function HeroBanner({ slides = [] }) {
-  const [index, setIndex] = useState(0)
+  const [index,    setIndex]    = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const count = slides.length
 
-  const go = useCallback((i) => setIndex(((i % count) + count) % count), [count])
+  const go   = useCallback((i) => setIndex(((i % count) + count) % count), [count])
   const next = useCallback(() => setIndex((i) => (i + 1) % count), [count])
   const prev = useCallback(() => setIndex((i) => (i === 0 ? count - 1 : i - 1)), [count])
 
   useEffect(() => {
     if (count <= 1 || isPaused) return
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReduced) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const id = setInterval(next, 5500)
     return () => clearInterval(id)
   }, [count, isPaused, next])
@@ -97,141 +98,183 @@ export default function HeroBanner({ slides = [] }) {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Main Banner Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#080e22] via-[#0d1633] to-[#141b3a] text-white shadow-lg border border-white/10">
-        {/* Faint grid texture */}
+      {/* ── Main Banner Card ──────────────────────────────────────── */}
+      <div
+        className="relative overflow-hidden rounded-card"
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-md)',
+        }}
+      >
+        {/* Subtle grid texture */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage:
-              'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+              'linear-gradient(var(--text) 1px, transparent 1px), linear-gradient(90deg, var(--text) 1px, transparent 1px)',
             backgroundSize: '24px 24px',
           }}
+          aria-hidden="true"
         />
 
-        {/* Ambient Glow */}
-        <div className="pointer-events-none absolute -right-6 -top-6 h-40 w-40 rounded-full bg-orange-500/15 blur-2xl" />
+        {/* Accent glow top-right */}
+        <div
+          className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full blur-3xl opacity-20"
+          style={{ background: 'var(--accent)' }}
+          aria-hidden="true"
+        />
 
-        <div className="relative flex flex-col gap-3 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
-          {/* Text Content */}
+        <div className="relative flex flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between">
+          {/* ── Text content ───────────────────────────────────────── */}
           <div className="min-w-0 flex-1 animate-fade-in" key={job.id}>
-            {/* Category tag & highlights */}
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-orange-500/20 px-2 py-0.5 text-xs font-extrabold text-orange-300 border border-orange-500/30">
-                <Flame size={12} className="text-orange-400" aria-hidden="true" />
-                Trending Opening
+            {/* Tags row */}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 rounded-badge px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+                style={{
+                  background: 'rgba(249,115,22,0.1)',
+                  color: '#f97316',
+                  border: '1px solid rgba(249,115,22,0.2)',
+                }}
+              >
+                <Flame size={11} aria-hidden="true" />
+                Trending
               </span>
-              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-slate-300">
+              <span className="badge">
                 {job.category}
               </span>
               {job.tagline && (
-                <span className="text-xs font-medium text-slate-200 truncate max-w-[280px] hidden sm:inline">
+                <span
+                  className="hidden sm:inline text-[12px] font-medium truncate max-w-[240px]"
+                  style={{ color: 'var(--text-2)' }}
+                >
                   {job.tagline}
                 </span>
               )}
-              <span className="text-xs text-slate-300 ml-auto mr-7 hidden sm:inline">
+              <span
+                className="ml-auto mr-8 hidden sm:inline text-[12px] tabular-nums"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 {index + 1} / {count}
               </span>
             </div>
 
-            {/* Title & Organization */}
-            <h2 className="text-base sm:text-lg font-black leading-snug tracking-tight text-white line-clamp-2">
-              <Link to={`/job/${job.id}`} className="hover:text-orange-300 transition-colors">
+            {/* Job title */}
+            <h2
+              className="text-[16px] sm:text-[18px] font-bold leading-snug tracking-tight"
+              style={{ color: 'var(--text)' }}
+            >
+              <Link
+                to={`/job/${job.id}`}
+                className="transition-colors hover:text-[var(--accent)]"
+              >
                 {job.title}
               </Link>
             </h2>
-            <p className="mt-1 text-xs font-medium text-slate-300 truncate">{job.org}</p>
+            <p className="mt-1 text-[13px]" style={{ color: 'var(--text-2)' }}>{job.org}</p>
 
-            {/* Post (Vacancies) & Last Date Row + Action Buttons */}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
-                {/* Total Posts */}
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs font-bold text-amber-300 shadow-2xs">
-                  <Briefcase size={13} className="text-amber-400 shrink-0" />
-                  <span>{getPostCount(job)}</span>
+            {/* Bottom row — meta + actions */}
+            <div
+              className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-4"
+              style={{ borderTop: '1px solid var(--border)' }}
+            >
+              <div className="flex flex-wrap items-center gap-2.5 text-[12px]">
+                {/* Vacancies */}
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-row px-2.5 py-1 font-semibold"
+                  style={{
+                    background: 'var(--warning-bg)',
+                    color: 'var(--warning)',
+                    border: '1px solid color-mix(in srgb, var(--warning) 25%, transparent)',
+                  }}
+                >
+                  <Briefcase size={12} aria-hidden="true" />
+                  {getPostCount(job)}
                 </span>
-
-                {/* Last Date */}
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/25 bg-rose-400/10 px-2.5 py-1 text-xs text-slate-200 shadow-2xs">
-                  <CalendarClock size={13} className="text-rose-400 shrink-0" />
-                  <span className="text-slate-400 font-medium">Last Date:</span>
-                  <span className="font-bold text-rose-300">{getLastDate(job)}</span>
+                {/* Last date */}
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-row px-2.5 py-1 font-medium"
+                  style={{
+                    background: 'var(--danger-bg)',
+                    color: 'var(--danger)',
+                    border: '1px solid color-mix(in srgb, var(--danger) 25%, transparent)',
+                  }}
+                >
+                  <CalendarClock size={12} aria-hidden="true" />
+                  Last date: <strong>{getLastDate(job)}</strong>
                 </span>
               </div>
 
+              {/* Action buttons */}
               <div className="flex items-center gap-2">
                 <Link
                   to={`/job/${job.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 active:scale-95"
+                  className="btn-ghost"
+                  style={{ height: 32, fontSize: 12, padding: '0 12px' }}
                 >
-                  <Bookmark size={13} />
-                  <span>Details</span>
+                  Details
                 </Link>
                 <Link
                   to={`/job/${job.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all hover:brightness-110 active:scale-95"
+                  className="btn-accent"
+                  style={{ height: 32, fontSize: 12, padding: '0 14px' }}
                 >
-                  <span>Apply Now</span>
-                  <ArrowRight size={13} />
+                  Apply Now
+                  <ArrowRight size={12} aria-hidden="true" />
                 </Link>
               </div>
             </div>
           </div>
 
-          {/* Compact Emblem */}
-          <div className="hidden shrink-0 items-center justify-center md:flex pl-3">
-            <Emblem job={job} />
-          </div>
+          {/* ── 56px org tile (desktop) ─────────────────────────── */}
+          <OrgTile job={job} />
         </div>
 
-        {/* Carousel Arrow Buttons */}
+        {/* Carousel arrow buttons */}
         {count > 1 && (
           <>
             <button
               type="button"
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900/70 text-white border border-white/20 opacity-0 group-hover/carousel:opacity-100 backdrop-blur-md shadow-sm transition-all hover:scale-110 hover:bg-slate-900"
-              aria-label="Previous Slide"
+              className="absolute left-2 top-1/2 -translate-y-1/2 btn-icon opacity-0 group-hover/carousel:opacity-100 shadow-md"
+              aria-label="Previous slide"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={16} aria-hidden="true" />
             </button>
             <button
               type="button"
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900/70 text-white border border-white/20 opacity-0 group-hover/carousel:opacity-100 backdrop-blur-md shadow-sm transition-all hover:scale-110 hover:bg-slate-900"
-              aria-label="Next Slide"
+              className="absolute right-2 top-1/2 -translate-y-1/2 btn-icon opacity-0 group-hover/carousel:opacity-100 shadow-md"
+              aria-label="Next slide"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={16} aria-hidden="true" />
             </button>
           </>
         )}
       </div>
 
-      {/* Sleek, Minimal Carousel Indicator Dots Below Banner */}
+      {/* ── Indicator dots ─────────────────────────────────────────── */}
       {count > 1 && (
-        <div className="mt-2 flex items-center justify-center gap-1.5 py-0.5">
-          {slides.map((s, i) => {
-            const isActive = i === index
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => go(i)}
-                aria-label={`Slide ${i + 1}: ${s.title}`}
-                aria-current={isActive}
-                title={s.title}
-                className="group/dot relative flex items-center justify-center p-0.5 transition-all"
-              >
-                <span
-                  className={`block h-2 rounded-full transition-all duration-300 ${
-                    isActive
-                      ? 'w-7 bg-gradient-to-r from-orange-500 to-amber-400 shadow-md shadow-orange-500/50 ring-2 ring-orange-400/50'
-                      : 'w-2 bg-slate-400 dark:bg-slate-500 hover:bg-slate-300 hover:scale-125'
-                  }`}
-                />
-              </button>
-            )
-          })}
+        <div className="mt-2 flex items-center justify-center gap-1.5 py-1">
+          {slides.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => go(i)}
+              aria-label={`Slide ${i + 1}: ${s.title}`}
+              aria-current={i === index ? 'true' : undefined}
+              className="group/dot flex items-center justify-center p-0.5 transition-all"
+            >
+              <span
+                className="block h-1.5 rounded-pill transition-all duration-300"
+                style={{
+                  width: i === index ? 28 : 8,
+                  background: i === index ? 'var(--accent)' : 'var(--border-strong)',
+                }}
+              />
+            </button>
+          ))}
         </div>
       )}
     </div>

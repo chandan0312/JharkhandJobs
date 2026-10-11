@@ -48,6 +48,47 @@ function cleanDateString(str) {
 }
 
 /**
+ * Shorten job titles so they stay compact and fit on a single row without wrapping.
+ */
+function formatShortTitle(title) {
+  if (!title) return ''
+  return title
+    .replace(/\s*–\s*\d+\s*Posts?.*$/i, '')
+    .replace(/\s*-\s*\d+\s*Posts?.*$/i, '')
+    .replace(/\s*Recruitment\s*202\d/i, '')
+    .replace(/\s*Online\s*Form\s*202\d/i, '')
+    .replace(/\s*Vacancy\s*202\d/i, '')
+    .trim()
+}
+
+/**
+ * Format date in concise short format (e.g. "31 Oct", "29 Sep", "15 Oct").
+ */
+function formatShortDate(val, parsedDate) {
+  if (parsedDate && !isNaN(parsedDate.getTime())) {
+    return parsedDate.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+    })
+  }
+  if (!val) return 'Details'
+  let s = cleanDateString(val)
+  s = s
+    .replace(/January/i, 'Jan')
+    .replace(/February/i, 'Feb')
+    .replace(/March/i, 'Mar')
+    .replace(/April/i, 'Apr')
+    .replace(/August/i, 'Aug')
+    .replace(/September/i, 'Sep')
+    .replace(/October/i, 'Oct')
+    .replace(/November/i, 'Nov')
+    .replace(/December/i, 'Dec')
+    .replace(/[,]?\s*202\d\b/, '')
+    .trim()
+  return s || 'Details'
+}
+
+/**
  * Extract raw deadline string and parsed Date from a job object.
  */
 function getDeadlineInfo(job) {
@@ -102,9 +143,9 @@ function AttentionSkeleton() {
   return (
     <div className="divide-y divide-hairline animate-pulse" aria-hidden="true">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+        <div key={i} className="flex items-center justify-between gap-3 px-3 py-2">
           <div className="h-3.5 bg-subtle/80 rounded w-3/5" />
-          <div className="h-5 bg-rose-500/10 rounded w-16 shrink-0" />
+          <div className="h-4.5 bg-rose-500/10 rounded w-14 shrink-0" />
         </div>
       ))}
     </div>
@@ -137,7 +178,8 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
           processed.push({
             id: job.id,
             title: job.title,
-            displayLastDate: rawDateStr,
+            shortTitle: formatShortTitle(job.title),
+            displayLastDate: formatShortDate(rawDateStr, parsedDate),
             parsedDate,
             diffDays,
           })
@@ -164,7 +206,7 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
       })
       .catch(() => active && setClosingJobs([]))
 
-  return () => {
+    return () => {
       active = false
     }
   }, [])
@@ -175,16 +217,16 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
       aria-labelledby="attention-card-heading"
     >
       {/* ── Card Header ── */}
-      <div className="flex items-center justify-between border-b border-hairline px-3.5 sm:px-4 py-2.5 bg-gradient-to-r from-rose-500/10 via-amber-500/5 to-transparent text-ink">
+      <div className="flex items-center justify-between border-b border-hairline px-3 sm:px-3.5 py-2 bg-gradient-to-r from-rose-500/10 via-amber-500/5 to-transparent text-ink">
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25 shadow-2xs">
-            <AlertTriangle size={13} className="animate-pulse" aria-hidden="true" />
+          <span className="flex h-5.5 w-5.5 items-center justify-center rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25 shadow-2xs">
+            <AlertTriangle size={12} className="animate-pulse" aria-hidden="true" />
           </span>
           <div className="flex items-center gap-1.5">
-            <h2 id="attention-card-heading" className="text-xs sm:text-sm font-bold tracking-tight text-ink">
+            <h2 id="attention-card-heading" className="text-xs font-bold tracking-tight text-ink">
               Attention
             </h2>
-            <span className="inline-flex items-center rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-rose-700 dark:text-rose-300 border border-rose-500/25">
+            <span className="inline-flex items-center rounded-full bg-rose-500/15 px-1.5 py-0.2 text-[9.5px] font-extrabold tracking-wider text-rose-700 dark:text-rose-300 border border-rose-500/25">
               Ending Soon
             </span>
           </div>
@@ -200,7 +242,7 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
         <AttentionSkeleton />
       ) : closingJobs.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-1.5 py-6 text-center px-4">
-          <AlertTriangle size={22} className="text-ink-faint" />
+          <AlertTriangle size={20} className="text-ink-faint" />
           <p className="text-xs font-semibold text-ink">No Urgent Deadlines</p>
           <p className="text-[11px] text-ink-muted">All active application windows are currently on schedule.</p>
         </div>
@@ -208,9 +250,9 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
         <>
           <table className="w-full table-fixed border-collapse text-left">
             <thead>
-              <tr className="border-b border-hairline bg-subtle/60 text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-                <th className="py-2 pl-3.5 pr-2 w-[65%] sm:w-[68%]">Job Title</th>
-                <th className="py-2 pr-3.5 pl-1 w-[35%] sm:w-[32%] text-right">Last Date</th>
+              <tr className="border-b border-hairline bg-subtle/60 text-[10.5px] font-bold uppercase tracking-wider text-ink-muted">
+                <th className="py-1.5 pl-3 pr-2 w-[72%]">Post / Vacancy</th>
+                <th className="py-1.5 pr-3 pl-1 w-[28%] text-right">Last Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
@@ -219,20 +261,20 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
                   key={job.id}
                   className="group transition-colors hover:bg-rose-50/50 dark:hover:bg-rose-950/20"
                 >
-                  {/* Job Title Link */}
-                  <td className="py-2 pl-3.5 pr-2 align-middle">
+                  {/* Short Job Title Link */}
+                  <td className="py-2 pl-3 pr-2 align-middle">
                     <Link
                       to={`/job/${job.id}`}
-                      className="block text-xs font-semibold leading-snug text-ink transition-colors group-hover:text-rose-600 dark:group-hover:text-rose-400 line-clamp-2"
+                      className="block text-[12px] font-semibold text-ink transition-colors group-hover:text-rose-600 dark:group-hover:text-rose-400 truncate"
                       title={job.title}
                     >
-                      {job.title}
+                      {job.shortTitle || job.title}
                     </Link>
                   </td>
 
-                  {/* Last Date Badge */}
-                  <td className="py-2 pr-3.5 pl-1 text-right align-middle whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-rose-500/10 px-2 py-0.5 text-[11px] font-bold text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+                  {/* Short Last Date Badge */}
+                  <td className="py-2 pr-3 pl-1 text-right align-middle whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 rounded-badge bg-rose-500/10 px-1.5 py-0.5 text-[10.5px] font-bold text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
                       <Clock size={10} className="shrink-0 opacity-70" aria-hidden="true" />
                       {job.displayLastDate}
                     </span>
@@ -246,10 +288,10 @@ export default function AttentionCard({ viewAllTo = '/category/all' }) {
           <div className="border-t border-hairline bg-subtle/30 px-3 py-1.5 text-center">
             <Link
               to={viewAllTo}
-              className="inline-flex min-h-[28px] items-center justify-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition-colors"
+              className="inline-flex min-h-[26px] items-center justify-center gap-1 text-[11.5px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition-colors"
             >
               View All Deadlines
-              <ArrowRight size={12} aria-hidden="true" />
+              <ArrowRight size={11} aria-hidden="true" />
             </Link>
           </div>
         </>

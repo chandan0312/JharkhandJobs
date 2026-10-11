@@ -46,11 +46,32 @@ const AdminAnalytics   = lazy(() => import('./pages/AdminAnalytics.jsx'))
 function PageLoader() {
   return (
     <div className="flex min-h-[50vh] w-full flex-col items-center justify-center gap-3 animate-fade-in">
-      <div className="relative flex h-10 w-10 items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-2 border-brand-500/20" />
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+      <div className="relative h-10 w-10">
+        {/* Conic-gradient spinner ring per design prompt */}
+        <div
+          className="h-10 w-10 animate-spin rounded-full"
+          style={{
+            background: 'conic-gradient(from 0deg, #071d49, #0066f5, #a78bfa, #f87171, #0066f5, #071d49)',
+            padding: '2px',
+          }}
+        >
+          <div
+            className="h-full w-full rounded-full"
+            style={{ background: 'var(--bg)' }}
+          />
+        </div>
+        {/* Pulsing centre dot */}
+        <span
+          className="absolute inset-0 m-auto h-2 w-2 rounded-full animate-pulse-dot"
+          style={{ background: 'var(--accent)' }}
+        />
       </div>
-      <span className="text-[12px] font-semibold text-ink-muted">Loading Jharkhand JobAlert X…</span>
+      <span
+        className="text-[12px] font-semibold"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        Loading Jharkhand JobAlert X…
+      </span>
     </div>
   )
 }

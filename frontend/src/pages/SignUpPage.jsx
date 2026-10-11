@@ -344,9 +344,9 @@ export default function SignUpPage() {
             {/* Terms */}
             <p className="text-[11.5px] leading-relaxed text-ink-faint dark:text-slate-600">
               By creating an account, you agree to our{' '}
-              <Link to="/exams" className="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">Terms of Service</Link>{' '}
+              <Link to="/terms" className="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">Terms of Service</Link>{' '}
               and{' '}
-              <Link to="/exams" className="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">Privacy Policy</Link>.
+              <Link to="/privacy" className="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">Privacy Policy</Link>.
             </p>
 
             {/* Submit */}

@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  Clock, Sparkles, Landmark, Scale, Briefcase, Building2,
+  GraduationCap, MapPin, Flame, BellRing, TrendingUp,
+  ArrowRight, CheckCircle2,
+} from 'lucide-react'
 import SectionHeader from '../components/SectionHeader.jsx'
 import HeroBanner from '../components/HeroBanner.jsx'
 import JobCategoryCards from '../components/JobCategoryCards.jsx'
@@ -7,74 +13,161 @@ import RightSidebar from '../components/RightSidebar.jsx'
 import SEOHead from '../components/SEOHead.jsx'
 import HomeArticlesSection from '../components/HomeArticlesSection.jsx'
 import { getTrending, getRecentlyPosted, getJobsByCategory } from '../services/api.js'
-import { Clock, Sparkles, Landmark, Scale, Briefcase, Building2, GraduationCap, MapPin } from 'lucide-react'
 
-function ComingSoonBlock({ icon: Icon, label }) {
+/* ── Skeleton loader ──────────────────────────────────────────────── */
+function TableSkeleton() {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-hairline bg-subtle/40 py-10 text-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-500 dark:text-brand-300">
-        <Icon size={20} />
-      </span>
-      <p className="text-[13.5px] font-semibold text-ink">Coming Soon</p>
-      <p className="text-[12px] text-ink-muted">
-        No active {label} yet — new notifications are added daily.
-      </p>
+    <div
+      className="overflow-hidden rounded-card"
+      style={{ border: '1px solid var(--border)' }}
+    >
+      {[...Array(4)].map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-4 px-5 py-4"
+          style={{ borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}
+        >
+          <div className="skeleton h-9 w-9 rounded-btn shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="skeleton h-3 w-3/5 rounded" />
+            <div className="skeleton h-2.5 w-2/5 rounded" />
+          </div>
+          <div className="skeleton h-7 w-20 rounded-pill" />
+        </div>
+      ))}
     </div>
   )
 }
 
+/* ── Empty state ──────────────────────────────────────────────────── */
+function EmptyBlock({ icon: Icon, label }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state__icon">
+        <Icon size={22} aria-hidden="true" />
+      </div>
+      <p className="empty-state__title">No {label} yet</p>
+      <p className="empty-state__body">New notifications are added daily — check back soon.</p>
+    </div>
+  )
+}
+
+/* ── Portal Identity Banner ───────────────────────────────────────── */
+/* Compact single-row banner — keeps the Jharkhand portal branding    */
+function PortalBanner() {
+  return (
+    <div
+      className="relative overflow-hidden rounded-card px-5 py-3"
+      style={{
+        background: 'linear-gradient(135deg, var(--brand-dark) 0%, #1B6F81 100%)',
+      }}
+    >
+      {/* Subtle grid texture */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
+        {/* Left: Live dot + Portal title */}
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Live pulse dot */}
+          <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+            <span
+              className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+              style={{ background: '#FFFB08' }}
+            />
+            <span
+              className="relative inline-flex h-2.5 w-2.5 rounded-full"
+              style={{ background: '#FFFB08' }}
+            />
+          </span>
+
+          <div className="min-w-0">
+            <span
+              className="block text-[10px] font-bold uppercase tracking-widest"
+              style={{ color: 'rgba(174,208,201,0.9)' }}
+            >
+              Jharkhand's Official Job Portal
+            </span>
+            <h1
+              className="text-[15px] sm:text-[17px] font-black leading-tight truncate"
+              style={{ color: '#FFFB08', letterSpacing: '-0.01em' }}
+            >
+              Jharkhand JobAlert X — JPSC · JSSC · Rojgar Mela · 2026
+            </h1>
+          </div>
+        </div>
+
+        {/* Right: trust badge */}
+        <span
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-[11px] font-bold"
+          style={{
+            background: 'rgba(255,251,8,0.12)',
+            color: '#FFFB08',
+            border: '1px solid rgba(255,251,8,0.25)',
+          }}
+        >
+          <CheckCircle2 size={12} aria-hidden="true" />
+          2026 Verified
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* ── Trending section header with flame icon ──────────────────────── */
+function TrendingHeader() {
+  return (
+    <div className="flex items-center gap-2">
+      {/* Accent bar */}
+      <span
+        className="h-5 w-1 rounded-pill shrink-0"
+        style={{ background: '#f97316' }}
+        aria-hidden="true"
+      />
+      <Flame
+        size={16}
+        style={{ color: '#f97316' }}
+        className="animate-pulse shrink-0"
+        aria-hidden="true"
+      />
+      <h2 className="section-title" style={{ color: 'var(--text)' }}>
+        Trending This Week
+      </h2>
+    </div>
+  )
+}
+
+/* ── Home Page ────────────────────────────────────────────────────── */
 export default function Home() {
-  const [trending, setTrending] = useState(null)
-  const [recentlyPosted, setRecentlyPosted] = useState(null)
-  const [jpscJobs, setJpscJobs] = useState(null)
-  const [jsscJobs, setJsscJobs] = useState(null)
-  const [otherJharkhandJobs, setOtherJharkhandJobs] = useState(null)
-  const [rojgarMelaJobs, setRojgarMelaJobs] = useState(null)
-  const [privateJobs, setPrivateJobs] = useState(null)
-  const [centralJobs, setCentralJobs] = useState(null)
+  const [trending,            setTrending]            = useState(null)
+  const [recentlyPosted,      setRecentlyPosted]      = useState(null)
+  const [jpscJobs,            setJpscJobs]            = useState(null)
+  const [jsscJobs,            setJsscJobs]            = useState(null)
+  const [otherJharkhandJobs,  setOtherJharkhandJobs]  = useState(null)
+  const [rojgarMelaJobs,      setRojgarMelaJobs]      = useState(null)
+  const [privateJobs,         setPrivateJobs]         = useState(null)
+  const [centralJobs,         setCentralJobs]         = useState(null)
 
   useEffect(() => {
     let active = true
+    const safe = (setter) => (data) => { if (active) setter(Array.isArray(data) ? data : []) }
+    const fail = (setter) => () => { if (active) setter([]) }
 
-    // 1. Trending / Featured
-    getTrending()
-      .then((data) => active && setTrending(data || []))
-      .catch(() => active && setTrending([]))
-
-    // 2. 6 Latest Posted Jobs
-    getRecentlyPosted(6)
-      .then((data) => active && setRecentlyPosted(data || []))
-      .catch(() => active && setRecentlyPosted([]))
-
-    // 3. JPSC Jobs
-    getJobsByCategory('jpsc', 4, 'all')
-      .then((data) => active && setJpscJobs(data || []))
-      .catch(() => active && setJpscJobs([]))
-
-    // 4. JSSC Jobs
-    getJobsByCategory('jssc', 4, 'all')
-      .then((data) => active && setJsscJobs(data || []))
-      .catch(() => active && setJsscJobs([]))
-
-    // 5. Other Jharkhand Job
-    getJobsByCategory('other-jharkhand', 4, 'all')
-      .then((data) => active && setOtherJharkhandJobs(data || []))
-      .catch(() => active && setOtherJharkhandJobs([]))
-
-    // 6. Rojgar Mela
-    getJobsByCategory('rojgar-mela', 4, 'all')
-      .then((data) => active && setRojgarMelaJobs(data || []))
-      .catch(() => active && setRojgarMelaJobs([]))
-
-    // 7. Private Job
-    getJobsByCategory('private-job', 4, 'all')
-      .then((data) => active && setPrivateJobs(data || []))
-      .catch(() => active && setPrivateJobs([]))
-
-    // 8. Central Job
-    getJobsByCategory('central-job', 4, 'all')
-      .then((data) => active && setCentralJobs(data || []))
-      .catch(() => active && setCentralJobs([]))
+    getTrending()                                .then(safe(setTrending))            .catch(fail(setTrending))
+    getRecentlyPosted(6)                         .then(safe(setRecentlyPosted))      .catch(fail(setRecentlyPosted))
+    getJobsByCategory('jpsc', 4, 'all')          .then(safe(setJpscJobs))            .catch(fail(setJpscJobs))
+    getJobsByCategory('jssc', 4, 'all')          .then(safe(setJsscJobs))            .catch(fail(setJsscJobs))
+    getJobsByCategory('other-jharkhand', 4, 'all').then(safe(setOtherJharkhandJobs)) .catch(fail(setOtherJharkhandJobs))
+    getJobsByCategory('rojgar-mela', 4, 'all')   .then(safe(setRojgarMelaJobs))      .catch(fail(setRojgarMelaJobs))
+    getJobsByCategory('private-job', 4, 'all')   .then(safe(setPrivateJobs))         .catch(fail(setPrivateJobs))
+    getJobsByCategory('central-job', 4, 'all')   .then(safe(setCentralJobs))         .catch(fail(setCentralJobs))
 
     return () => { active = false }
   }, [])
@@ -84,7 +177,7 @@ export default function Home() {
       '@type': 'WebSite',
       name: 'Jharkhand JobAlert X',
       url: 'https://jharkhand.jobalertx.com/',
-      description: 'Jharkhand JobAlert X — Free Job Alert 2026 for Jharkhand. Latest JPSC, JSSC, Jharkhand Govt Jobs, Admit Card & Result.',
+      description: 'Free Job Alert 2026 for Jharkhand. Latest JPSC, JSSC, Govt Jobs, Admit Card & Result.',
       potentialAction: {
         '@type': 'SearchAction',
         target: 'https://jharkhand.jobalertx.com/search?q={search_term_string}',
@@ -99,181 +192,175 @@ export default function Home() {
     },
   ]
 
+  /* Helper: reusable job section */
+  function JobSection({ title, subtitle, viewAllTo, viewAllText, jobs, emptyIcon, emptyLabel }) {
+    return (
+      <section aria-labelledby={`sec-${title.replace(/\s+/g, '-').toLowerCase()}`}>
+        <SectionHeader
+          title={title}
+          subtitle={subtitle}
+          viewAllTo={viewAllTo}
+          viewAllText={viewAllText}
+        />
+        {jobs === null
+          ? <TableSkeleton />
+          : jobs.length === 0
+          ? <EmptyBlock icon={emptyIcon} label={emptyLabel} />
+          : <RecentJobsTable jobs={jobs} viewAllTo={viewAllTo} viewAllText={viewAllText} />
+        }
+      </section>
+    )
+  }
+
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_336px]">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
       <SEOHead
         title="Jharkhand JobAlert X — Latest JPSC, JSSC, Rojgar Mela & Sarkari Jobs Jharkhand 2026"
-        description="Jharkhand JobAlert X — Free Job Alert 2026 for Jharkhand. Get latest JPSC, JSSC, Rojgar Mela, Sarkari Naukri, Private Jobs, Admit Cards, Results, Answer Keys across Ranchi, Dhanbad, Jamshedpur & all 24 districts."
-        keywords="Jharkhand JobAlert X, JPSC, JSSC, Jharkhand Govt Jobs 2026, Rojgar Mela Jharkhand, JSSC CGL 2026, JECCE Excise Constable, Jharkhand Police, Jharkhand Teacher Vacancy, Tata Steel Jamshedpur, Jharkhand Private Jobs, free job alert jharkhand"
+        description="Jharkhand JobAlert X — Free Job Alert 2026 for Jharkhand. Get latest JPSC, JSSC, Rojgar Mela, Sarkari Naukri, Private Jobs, Admit Cards, Results across Ranchi, Dhanbad, Jamshedpur & all 24 districts."
+        keywords="Jharkhand JobAlert X, JPSC, JSSC, Jharkhand Govt Jobs 2026, Rojgar Mela Jharkhand, JSSC CGL 2026, Jharkhand Police, Jharkhand Teacher Vacancy"
         canonical="https://jharkhand.jobalertx.com/"
         jsonLd={homeSchemas}
       />
 
-      {/* Main column */}
-      <main className="min-w-0 space-y-6">
-        {/* Creative Professional Jharkhand Headline Banner */}
-        <section className="group relative overflow-hidden rounded-2xl border border-hairline bg-gradient-to-r from-teal-50/70 via-surface to-brand-50/50 dark:from-navy-900/80 dark:via-surface dark:to-navy-800/80 p-3.5 sm:p-4 shadow-xs backdrop-blur-md transition-all duration-300 hover:border-brand-500/40 hover:shadow-md animate-fade-in">
-          {/* Ambient light glow */}
-          <div className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full bg-brand-500/15 blur-xl transition-opacity group-hover:opacity-100" />
-          <div className="pointer-events-none absolute -right-6 -bottom-6 h-28 w-28 rounded-full bg-gold-400/20 blur-xl transition-opacity group-hover:opacity-100" />
+      {/* ── Main feed ───────────────────────────────────────────────── */}
+      <main className="min-w-0 space-y-7">
 
-          <div className="relative flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-600 dark:text-teal-300">
-                  Jharkhand's Official Job Portal
-                </span>
-                <span className="text-[11px] text-ink-faint hidden sm:inline flex items-center gap-1">
-                  • <MapPin size={11} className="inline" /> Ranchi, Dhanbad, Jamshedpur &amp; All 24 Districts
-                </span>
-              </div>
+        {/* 1. Compact Portal Banner */}
+        <PortalBanner />
 
-              <h1 className="text-sm sm:text-base md:text-lg font-black leading-snug tracking-tight text-ink">
-                <span className="bg-gradient-to-r from-brand-600 via-teal-700 to-navy-800 dark:from-teal-300 dark:via-gold-300 dark:to-teal-100 bg-clip-text text-transparent font-black">
-                  Jharkhand JobAlert X — JPSC, JSSC, Rojgar Mela &amp; Private Jobs 2026
-                </span>
-                <span className="mx-2 hidden text-hairline md:inline font-light" aria-hidden="true">|</span>
-                <span className="block text-xs sm:text-sm font-bold text-ink-muted mt-0.5 md:mt-0 md:inline tracking-normal">
-                  झारखंड सरकारी नौकरी, रोजगार मेला एवं भर्ती
-                </span>
-              </h1>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5 self-start sm:self-center">
-              <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-bold bg-brand-500/10 text-brand-700 dark:bg-brand-500/20 dark:text-teal-200 border border-brand-500/20 shadow-2xs">
-                2026 Verified
-              </span>
-            </div>
+        {/* 2. Trending This Week */}
+        <section aria-label="Trending jobs this week">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <TrendingHeader />
+            <Link
+              to="/latest/job"
+              className="link-accent text-[12px] whitespace-nowrap flex items-center gap-1"
+            >
+              View all
+              <ArrowRight size={13} aria-hidden="true" />
+            </Link>
           </div>
+
+          {(() => {
+            const slides = (trending && trending.length > 0)
+              ? trending
+              : (recentlyPosted && recentlyPosted.length > 0)
+              ? recentlyPosted
+              : trending
+
+            if (slides === null) {
+              return (
+                <div
+                  className="h-[180px] rounded-card flex items-center justify-center"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent"
+                      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+                    />
+                    <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Loading…</span>
+                  </div>
+                </div>
+              )
+            }
+
+            if (slides.length === 0) {
+              return <EmptyBlock icon={Sparkles} label="trending posts" />
+            }
+
+            return <HeroBanner slides={slides} />
+          })()}
         </section>
 
-        {/* 1. Trending / Hero Carousel */}
-        <section>
-          <SectionHeader title="Trending in Jharkhand" />
-          {trending === null ? (
-            <div className="flex h-48 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : trending.length === 0 ? (
-            <ComingSoonBlock icon={Sparkles} label="trending posts" />
-          ) : (
-            <HeroBanner slides={trending} />
-          )}
-        </section>
-
-        {/* 2. Job Categories in Professional Cards */}
-        <section>
+        {/* 3. Browse by Category */}
+        <section aria-label="Browse jobs by category">
           <JobCategoryCards />
         </section>
 
-        {/* 3. Recently Posted Jobs (Latest verified updates) */}
-        <section>
-          <SectionHeader title="Recently Posted Jobs" viewAllTo="/latest/job" />
-          {recentlyPosted === null ? (
-            <div className="flex h-32 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : recentlyPosted.length === 0 ? (
-            <ComingSoonBlock icon={Clock} label="recent jobs" />
-          ) : (
-            <RecentJobsTable jobs={recentlyPosted} viewAllTo="/latest/job" viewAllText="View All Latest Jobs" />
-          )}
-        </section>
+        {/* 4. Recently Posted */}
+        <JobSection
+          title="Recently Posted Jobs"
+          subtitle="Latest notifications across all categories"
+          viewAllTo="/latest/job"
+          viewAllText="View all latest"
+          jobs={recentlyPosted}
+          emptyIcon={Clock}
+          emptyLabel="recent jobs"
+        />
 
-        {/* Career Guides & Exam Preparation Articles */}
+        {/* 5. Career Guides & Articles */}
         <HomeArticlesSection />
 
-        {/* 4. JPSC Recruitment */}
-        <section>
-          <SectionHeader title="JPSC Recruitment 2026" viewAllTo="/category/jpsc" />
-          {jpscJobs === null ? (
-            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : jpscJobs.length === 0 ? (
-            <ComingSoonBlock icon={Landmark} label="JPSC notifications" />
-          ) : (
-            <RecentJobsTable jobs={jpscJobs} viewAllTo="/category/jpsc" viewAllText="View All JPSC Jobs" />
-          )}
-        </section>
+        {/* 6. JPSC */}
+        <JobSection
+          title="JPSC Recruitment 2026"
+          subtitle="Civil Services, CDPO, Engineering & Allied Posts"
+          viewAllTo="/category/jpsc"
+          viewAllText="All JPSC Jobs"
+          jobs={jpscJobs}
+          emptyIcon={Landmark}
+          emptyLabel="JPSC notifications"
+        />
 
-        {/* 5. JSSC Recruitment */}
-        <section>
-          <SectionHeader title="JSSC Recruitment 2026" viewAllTo="/category/jssc" />
-          {jsscJobs === null ? (
-            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : jsscJobs.length === 0 ? (
-            <ComingSoonBlock icon={Scale} label="JSSC notifications" />
-          ) : (
-            <RecentJobsTable jobs={jsscJobs} viewAllTo="/category/jssc" viewAllText="View All JSSC Jobs" />
-          )}
-        </section>
+        {/* 7. JSSC */}
+        <JobSection
+          title="JSSC Recruitment 2026"
+          subtitle="CGL, Excise Constable & Teacher Exams"
+          viewAllTo="/category/jssc"
+          viewAllText="All JSSC Jobs"
+          jobs={jsscJobs}
+          emptyIcon={Scale}
+          emptyLabel="JSSC notifications"
+        />
 
-        {/* 6. Other Jharkhand Job */}
-        <section>
-          <SectionHeader title="Other Jharkhand Job 2026" viewAllTo="/category/other-jharkhand" />
-          {otherJharkhandJobs === null ? (
-            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : otherJharkhandJobs.length === 0 ? (
-            <ComingSoonBlock icon={MapPin} label="other Jharkhand state notifications" />
-          ) : (
-            <RecentJobsTable jobs={otherJharkhandJobs} viewAllTo="/category/other-jharkhand" viewAllText="View All Other Jharkhand Jobs" />
-          )}
-        </section>
+        {/* 8. Other Jharkhand */}
+        <JobSection
+          title="Other Jharkhand Jobs 2026"
+          subtitle="High Court, Police, Health & Government Depts"
+          viewAllTo="/category/other-jharkhand"
+          viewAllText="View all"
+          jobs={otherJharkhandJobs}
+          emptyIcon={MapPin}
+          emptyLabel="other Jharkhand notifications"
+        />
 
-        {/* 7. Jharkhand Rojgar Mela */}
-        <section>
-          <SectionHeader title="Jharkhand Rojgar Mela 2026" viewAllTo="/category/rojgar-mela" />
-          {rojgarMelaJobs === null ? (
-            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : rojgarMelaJobs.length === 0 ? (
-            <ComingSoonBlock icon={Briefcase} label="Rojgar Mela camps" />
-          ) : (
-            <RecentJobsTable jobs={rojgarMelaJobs} viewAllTo="/category/rojgar-mela" viewAllText="View All Rojgar Mela Camps" />
-          )}
-        </section>
+        {/* 9. Rojgar Mela */}
+        <JobSection
+          title="Jharkhand Rojgar Mela 2026"
+          subtitle="District-wise camps, spot hiring & placement drives"
+          viewAllTo="/category/rojgar-mela"
+          viewAllText="All Rojgar Mela"
+          jobs={rojgarMelaJobs}
+          emptyIcon={Briefcase}
+          emptyLabel="Rojgar Mela camps"
+        />
 
-        {/* 8. Jharkhand Private Jobs */}
-        <section>
-          <SectionHeader title="Jharkhand Private Jobs 2026" viewAllTo="/category/private-job" />
-          {privateJobs === null ? (
-            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : privateJobs.length === 0 ? (
-            <ComingSoonBlock icon={Building2} label="private job openings" />
-          ) : (
-            <RecentJobsTable jobs={privateJobs} viewAllTo="/category/private-job" viewAllText="View All Private Jobs" />
-          )}
-        </section>
+        {/* 10. Private Jobs */}
+        <JobSection
+          title="Jharkhand Private Jobs 2026"
+          subtitle="Tata Steel, Jindal, Adani & Corporate Openings"
+          viewAllTo="/category/private-job"
+          viewAllText="All Private Jobs"
+          jobs={privateJobs}
+          emptyIcon={Building2}
+          emptyLabel="private job openings"
+        />
 
-        {/* 9. Central Job */}
-        <section>
-          <SectionHeader title="Central Govt Jobs 2026" viewAllTo="/category/central-job" />
-          {centralJobs === null ? (
-            <div className="flex h-28 items-center justify-center text-[14px] text-ink-muted">
-              Loading…
-            </div>
-          ) : centralJobs.length === 0 ? (
-            <ComingSoonBlock icon={GraduationCap} label="central job notifications" />
-          ) : (
-            <RecentJobsTable jobs={centralJobs} viewAllTo="/category/central-job" viewAllText="View All Central Jobs" />
-          )}
-        </section>
+        {/* 11. Central Jobs */}
+        <JobSection
+          title="Central Govt Jobs 2026"
+          subtitle="SSC, Railway, Banking, UPSC & Defence"
+          viewAllTo="/category/central-job"
+          viewAllText="All Central Jobs"
+          jobs={centralJobs}
+          emptyIcon={GraduationCap}
+          emptyLabel="central job notifications"
+        />
       </main>
 
-      {/* Right rail */}
-      <aside className="min-w-0">
+      {/* ── Right Sidebar ─────────────────────────────────────────────── */}
+      <aside className="min-w-0" aria-label="Quick search and notifications">
         <RightSidebar />
       </aside>
     </div>

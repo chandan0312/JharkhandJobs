@@ -169,80 +169,89 @@ export default function RecentJobsTable({
   return (
     <div className="rjt-wrapper">
       {/* ── Mobile Responsive Card View (< 640px) ── */}
-      <div className="block sm:hidden divide-y divide-hairline">
+      <div className="block sm:hidden" style={{ borderTop: '1px solid var(--border)' }}>
         {jobs.length === 0 ? (
-          <div className="py-8 text-center text-xs text-ink-muted">
+          <div className="py-8 text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
             No active notifications available in this section.
           </div>
         ) : (
           jobs.map((job) => (
-            <div key={`m-${job.id}`} className="p-3.5 space-y-2.5 transition-colors hover:bg-subtle/40">
+            <div
+              key={`m-${job.id}`}
+              className="p-3.5 space-y-2.5 transition-colors"
+              style={{ borderBottom: '1px solid var(--border)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-soft)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '' }}
+            >
               <div className="flex items-start justify-between gap-2.5">
                 <div className="flex items-center gap-2">
-                  <BrandIcon icon={job.logo?.icon || 'landmark'} color={job.logo?.color || '#5558e6'} size={28} square />
-                  <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide bg-brand-50 text-brand-700 dark:bg-brand-600/20 dark:text-brand-300 border border-brand-500/20">
+                  <BrandIcon icon={job.logo?.icon || 'landmark'} color={job.logo?.color || 'var(--accent)'} size={28} square />
+                  <span
+                    className="badge badge-accent text-[10px]"
+                  >
                     {getShortOrg(job)}
                   </span>
                 </div>
                 {job.vacancies && activeKind === 'job' ? (
-                  <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-bold text-amber-700 bg-amber-50 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-500/30">
+                  <span className="badge badge-warning">
                     {Number(job.vacancies).toLocaleString('en-IN')} Posts
                   </span>
                 ) : null}
               </div>
 
-              <Link to={`/job/${job.id}`} className="block text-sm font-bold leading-snug text-ink hover:text-brand-600 transition-colors line-clamp-2">
+              <Link
+                to={`/job/${job.id}`}
+                className="block text-[13px] font-semibold leading-snug line-clamp-2 transition-colors"
+                style={{ color: 'var(--text)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text)' }}
+              >
                 {getShortTitle(job)}
               </Link>
 
               {/* Key Details on Mobile */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>
                 {activeKind === 'job' && (
                   <>
                     <span className="inline-flex items-center gap-1">
-                      <span className="text-ink-faint">Last Date:</span>
-                      <strong className="text-rose-600 dark:text-rose-400">{getEndDate(job)}</strong>
+                      Last Date: <strong style={{ color: 'var(--danger)' }}>{getEndDate(job)}</strong>
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      <span className="text-ink-faint">Eligibility:</span>
-                      <span className="truncate max-w-[140px]">{bestEligibility(job)}</span>
+                      Eligibility: <span className="truncate max-w-[140px]" style={{ color: 'var(--text-2)' }}>{bestEligibility(job)}</span>
                     </span>
                   </>
                 )}
                 {activeKind === 'admit-card' && (
                   <span className="inline-flex items-center gap-1">
-                    <span className="text-ink-faint">Exam Date:</span>
-                    <strong className="text-rose-600 dark:text-rose-400">{getExamDate(job)}</strong>
+                    Exam Date: <strong style={{ color: 'var(--danger)' }}>{getExamDate(job)}</strong>
                   </span>
                 )}
                 {activeKind === 'result' && (
                   <span className="inline-flex items-center gap-1">
-                    <span className="text-ink-faint">Status:</span>
-                    <strong className="text-emerald-600 dark:text-emerald-400">{job.tagline || 'Declared'}</strong>
+                    Status: <strong style={{ color: 'var(--success)' }}>{job.tagline || 'Declared'}</strong>
                   </span>
                 )}
                 {activeKind === 'answer-key' && (
                   <span className="inline-flex items-center gap-1">
-                    <span className="text-ink-faint">Status:</span>
-                    <strong className="text-cyan-600 dark:text-cyan-400">{job.tagline?.split('—')[0]?.trim() || 'Available'}</strong>
+                    Status: <strong style={{ color: 'var(--info)' }}>{job.tagline?.split('—')[0]?.trim() || 'Available'}</strong>
                   </span>
                 )}
                 {activeKind === 'syllabus' && (
                   <span className="inline-flex items-center gap-1">
-                    <span className="text-ink-faint">Pattern:</span>
-                    <strong className="text-purple-600 dark:text-purple-400">Exam Scheme & Syllabus</strong>
+                    Pattern: <strong style={{ color: 'var(--accent)' }}>Exam Scheme & Syllabus</strong>
                   </span>
                 )}
               </div>
 
-              {/* Tap Target Action Button (>= 44px height for touch) */}
+              {/* Tap Target Action Button (>= 44px touch target) */}
               <div className="pt-1">
                 <Link
                   to={`/job/${job.id}`}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 shadow-sm shadow-orange-500/20 active:scale-[0.98] transition-all"
+                  className="btn-accent flex w-full items-center justify-center gap-1.5 active:scale-[0.98]"
+                  style={{ height: 44, borderRadius: 10, fontSize: 13 }}
                 >
                   <span>{actionLabel}</span>
-                  <ArrowUpRight size={14} />
+                  <ArrowUpRight size={14} aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -345,7 +354,7 @@ export default function RecentJobsTable({
           <tbody>
             {jobs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-xs text-ink-muted">
+                <td colSpan={6} className="py-8 text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
                   No active notifications available in this section.
                 </td>
               </tr>
@@ -390,12 +399,10 @@ export default function RecentJobsTable({
                   {activeKind === 'admit-card' && (
                     <>
                       <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
-                      <td className="rjt-td rjt-date rjt-date-end font-semibold text-rose-600 dark:text-rose-400">
+                      <td className="rjt-td rjt-date rjt-date-end font-semibold" style={{ color: 'var(--danger)' }}>
                         {getExamDate(job)}
                       </td>
-                      <td className="rjt-td rjt-eligibility">
-                        {bestEligibility(job)}
-                      </td>
+                      <td className="rjt-td rjt-eligibility">{bestEligibility(job)}</td>
                     </>
                   )}
 
@@ -403,13 +410,11 @@ export default function RecentJobsTable({
                     <>
                       <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
                       <td className="rjt-td">
-                        <span className="inline-flex items-center rounded-md bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="badge badge-success">
                           {job.tagline || 'Declared'}
                         </span>
                       </td>
-                      <td className="rjt-td rjt-eligibility text-xs text-ink-muted">
-                        {job.shortInfo?.slice(0, 45)}…
-                      </td>
+                      <td className="rjt-td rjt-eligibility">{job.shortInfo?.slice(0, 45)}…</td>
                     </>
                   )}
 
@@ -417,13 +422,11 @@ export default function RecentJobsTable({
                     <>
                       <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
                       <td className="rjt-td">
-                        <span className="inline-flex items-center rounded-md bg-cyan-500/15 px-2 py-0.5 text-[11px] font-bold text-cyan-600 dark:text-cyan-400">
+                        <span className="badge" style={{ background: 'var(--info-bg)', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 25%, transparent)' }}>
                           {job.tagline?.split('—')[0]?.trim() || 'Available'}
                         </span>
                       </td>
-                      <td className="rjt-td rjt-eligibility text-xs text-ink-muted">
-                        Provisional / Final Objection Window
-                      </td>
+                      <td className="rjt-td rjt-eligibility">Provisional / Final Objection Window</td>
                     </>
                   )}
 
@@ -431,13 +434,11 @@ export default function RecentJobsTable({
                     <>
                       <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
                       <td className="rjt-td">
-                        <span className="inline-flex items-center rounded-md bg-purple-500/15 px-2 py-0.5 text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                        <span className="badge badge-accent">
                           CBT & Written Scheme
                         </span>
                       </td>
-                      <td className="rjt-td rjt-eligibility text-xs text-ink-muted">
-                        Topic-wise Pattern & Marking
-                      </td>
+                      <td className="rjt-td rjt-eligibility">Topic-wise Pattern & Marking</td>
                     </>
                   )}
 
