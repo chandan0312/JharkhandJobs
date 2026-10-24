@@ -467,22 +467,25 @@
     border: 1px solid var(--border);
     background: var(--surface);
     box-shadow: var(--shadow-sm);
+    width: 100%;
   }
-  .rjt-table   { @apply w-full min-w-[720px] border-collapse; }
+  .rjt-table   { @apply w-full border-collapse table-auto; }
   .rjt-head-row {
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
   }
   .rjt-th {
-    @apply px-4 py-3 text-left whitespace-nowrap;
+    @apply px-2.5 sm:px-3 py-2.5 text-left whitespace-nowrap;
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text-muted);
   }
-  .rjt-th-job    { @apply pl-5 pr-3; }
+  .rjt-th-job    { @apply pl-3.5 sm:pl-4 pr-2; }
   .rjt-th-center { @apply text-center; }
+  .rjt-th-date   { @apply whitespace-nowrap; width: 80px; }
+  .rjt-th-posts  { @apply text-center; width: 68px; }
   .rjt-row {
     border-bottom: 1px solid var(--border);
     transition: background 0.15s ease;
@@ -490,32 +493,32 @@
   .rjt-row:last-child   { border-bottom: none; }
   .rjt-row:hover        { background: var(--accent-soft); }
   .rjt-td {
-    @apply px-4 py-3 align-middle text-[13px];
+    @apply px-2.5 sm:px-3 py-2.5 align-middle text-[13px];
     color: var(--text-2);
   }
-  .rjt-td-job    { @apply pl-5 pr-3; }
+  .rjt-td-job    { @apply pl-3.5 sm:pl-4 pr-2; }
   .rjt-td-center { @apply text-center; }
-  .rjt-job-cell  { @apply flex items-center gap-3; }
-  .rjt-job-info  { @apply flex min-w-0 max-w-[300px] sm:max-w-[380px] flex-col gap-0.5; }
+  .rjt-job-cell  { @apply flex items-center gap-2.5 min-w-0; }
+  .rjt-job-info  { @apply flex min-w-0 flex-1 flex-col gap-0.5; }
   .rjt-job-title {
     @apply text-[13px] font-semibold leading-snug line-clamp-1 transition-colors;
     color: var(--text);
   }
   .rjt-job-title:hover { color: var(--accent); }
-  .rjt-job-org   { @apply text-[12px] font-medium truncate; color: var(--text-muted); }
+  .rjt-job-org   { @apply text-[11.5px] font-medium truncate; color: var(--text-muted); }
   .rjt-badge     { @apply badge; }
   .rjt-date      { @apply text-[12px] whitespace-nowrap tabular-nums; color: var(--text-muted); }
-  .rjt-date-end  { color: var(--text-2); font-weight: 500; }
+  .rjt-date-end  { color: var(--danger); font-weight: 600; }
   .rjt-vacancies {
-    @apply inline-block rounded-row px-2.5 py-0.5 text-[12px] font-semibold tabular-nums;
+    @apply inline-block rounded-row px-2 py-0.5 text-[11.5px] font-semibold tabular-nums;
     background: var(--surface-2);
     color: var(--text);
     border: 1px solid var(--border);
   }
   .rjt-apply-btn {
-    @apply btn-accent text-[12px] whitespace-nowrap;
-    height: 32px;
-    padding: 0 12px;
+    @apply btn-accent text-[11.5px] whitespace-nowrap;
+    height: 30px;
+    padding: 0 10px;
   }
   .rjt-footer {
     @apply flex items-center justify-center py-3 border-t;

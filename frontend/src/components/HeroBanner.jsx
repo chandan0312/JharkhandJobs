@@ -15,6 +15,7 @@ import {
   Anchor,
   Flame,
 } from 'lucide-react'
+import { formatReducedDate } from '../utils/dateHelper.js'
 
 const EMBLEM_ICONS = {
   landmark: Landmark,
@@ -202,7 +203,7 @@ export default function HeroBanner({ slides = [] }) {
                   }}
                 >
                   <CalendarClock size={12} aria-hidden="true" />
-                  Last date: <strong>{getLastDate(job)}</strong>
+                  Last date: <strong>{formatReducedDate(getLastDate(job))}</strong>
                 </span>
               </div>
 

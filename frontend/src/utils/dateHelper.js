@@ -42,8 +42,59 @@ export function parseDateRobust(val) {
 export function cleanDateString(str) {
   if (!str) return ''
   return String(str)
-    .replace(/^(last\s*date|closing\s*date|end\s*date|apply\s*end)[\s:]*/i, '')
+    .replace(/^(last\s*date(\s*(for|to)\s*apply(\s*online)?)?|closing\s*date|end\s*date|apply\s*end|application\s*begin|start\s*date|apply\s*start|online\s*apply|posted\s*date)[\s:]*/i, '')
     .trim()
+}
+
+/**
+ * Reduce a date string to a concise, readable format: e.g. "15 Oct", "31 Oct", "28 Jul"
+ * Strips redundant labels, timestamps, and returns clean compact text.
+ */
+export function formatReducedDate(val, fallback = '—') {
+  if (!val) return fallback
+  let s = cleanDateString(String(val)).trim()
+  if (!s || s === '—' || s === '-' || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') {
+    return fallback
+  }
+
+  // Remove time portions e.g. "11:59 PM", "23:59:59", "upto 5 PM"
+  s = s.replace(/\s*(at|upto|till)?\s*\d{1,2}:\d{2}(:\d{2})?\s*(am|pm)?/gi, '')
+  s = s.replace(/\s*(upto|till)\s*\d{1,2}\s*(am|pm)/gi, '')
+  s = s.replace(/\s*\(.*?\)/g, '').trim()
+
+  // Try parsing to Date
+  const parsed = parseDateRobust(s)
+  if (parsed && !isNaN(parsed.getTime())) {
+    const day = parsed.getDate()
+    const month = parsed.toLocaleDateString('en-IN', { month: 'short' })
+    const year = parsed.getFullYear()
+    const currentYear = new Date().getFullYear()
+    if (year !== currentYear) {
+      return `${day} ${month} '${String(year).slice(-2)}`
+    }
+    return `${day} ${month}`
+  }
+
+  // Fallback regex cleanup for strings that couldn't be parsed directly
+  s = s
+    .replace(/January/i, 'Jan')
+    .replace(/February/i, 'Feb')
+    .replace(/March/i, 'Mar')
+    .replace(/April/i, 'Apr')
+    .replace(/August/i, 'Aug')
+    .replace(/September/i, 'Sep')
+    .replace(/October/i, 'Oct')
+    .replace(/November/i, 'Nov')
+    .replace(/December/i, 'Dec')
+    .replace(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/, '$1/$2')
+    .replace(/,?\s*202\d\b/, '')
+    .trim()
+
+  if (s.toLowerCase().includes('notified soon') || s.toLowerCase().includes('available soon')) {
+    return 'Soon'
+  }
+
+  return s.length > 14 ? s.slice(0, 12) + '…' : s || fallback
 }
 
 export function getJobLastDate(job) {

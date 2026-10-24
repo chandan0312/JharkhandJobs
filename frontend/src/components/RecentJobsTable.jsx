@@ -11,7 +11,7 @@ import {
   Layers,
 } from 'lucide-react'
 import BrandIcon from './BrandIcon.jsx'
-import { isJobExpired } from '../utils/dateHelper.js'
+import { isJobExpired, formatReducedDate } from '../utils/dateHelper.js'
 
 /**
  * Derive the "Start Date" from a job's importantDates array —
@@ -218,35 +218,38 @@ export default function RecentJobsTable({
               </div>
 
               {/* Key Details on Mobile */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
                 {activeKind === 'job' && (
                   <>
                     <span className="inline-flex items-center gap-1">
-                      Last Date: <strong style={{ color: 'var(--danger)' }}>{getEndDate(job)}</strong>
+                      Start: <strong style={{ color: 'var(--text)' }}>{formatReducedDate(getStartDate(job))}</strong>
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      Eligibility: <span className="truncate max-w-[140px]" style={{ color: 'var(--text-2)' }}>{bestEligibility(job)}</span>
+                      Last Date: <strong style={{ color: 'var(--danger)' }}>{formatReducedDate(getEndDate(job))}</strong>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      Eligibility: <span className="truncate max-w-[120px]" style={{ color: 'var(--text-2)' }}>{bestEligibility(job)}</span>
                     </span>
                   </>
                 )}
                 {activeKind === 'admit-card' && (
                   <span className="inline-flex items-center gap-1">
-                    Exam Date: <strong style={{ color: 'var(--danger)' }}>{getExamDate(job)}</strong>
+                    Exam Date: <strong style={{ color: 'var(--danger)' }}>{formatReducedDate(getExamDate(job))}</strong>
                   </span>
                 )}
                 {activeKind === 'result' && (
                   <span className="inline-flex items-center gap-1">
-                    Status: <strong style={{ color: 'var(--success)' }}>{job.tagline || 'Declared'}</strong>
+                    Declared: <strong style={{ color: 'var(--success)' }}>{formatReducedDate(job.postedOn)}</strong>
                   </span>
                 )}
                 {activeKind === 'answer-key' && (
                   <span className="inline-flex items-center gap-1">
-                    Status: <strong style={{ color: 'var(--info)' }}>{job.tagline?.split('—')[0]?.trim() || 'Available'}</strong>
+                    Released: <strong style={{ color: 'var(--info)' }}>{formatReducedDate(job.postedOn)}</strong>
                   </span>
                 )}
                 {activeKind === 'syllabus' && (
                   <span className="inline-flex items-center gap-1">
-                    Pattern: <strong style={{ color: 'var(--accent)' }}>Exam Scheme & Syllabus</strong>
+                    Updated: <strong style={{ color: 'var(--accent)' }}>{formatReducedDate(job.postedOn)}</strong>
                   </span>
                 )}
               </div>
@@ -268,7 +271,7 @@ export default function RecentJobsTable({
       </div>
 
       {/* ── Desktop & Tablet Table (>= 640px) ── */}
-      <div className="hidden sm:block overflow-x-auto">
+      <div className="hidden sm:block w-full overflow-hidden">
         <table className="rjt-table">
           <thead>
             <tr className="rjt-head-row">
@@ -285,78 +288,78 @@ export default function RecentJobsTable({
 
               {activeKind === 'job' && (
                 <>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> Start Date</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Start</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> End Date</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Last Date</span>
                   </th>
-                  <th className="rjt-th">
+                  <th className="rjt-th rjt-th-posts">
                     <span className="rjt-th-inner">Posts</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><GraduationCap size={13} /> Eligibility</span>
+                  <th className="rjt-th hidden lg:table-cell">
+                    <span className="rjt-th-inner"><GraduationCap size={12} /> Eligibility</span>
                   </th>
                 </>
               )}
 
               {activeKind === 'admit-card' && (
                 <>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> Release Date</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Released</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> Exam Date / City</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Exam Date</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><GraduationCap size={13} /> Eligibility / Post</span>
+                  <th className="rjt-th hidden lg:table-cell">
+                    <span className="rjt-th-inner"><GraduationCap size={12} /> Eligibility / Post</span>
                   </th>
                 </>
               )}
 
               {activeKind === 'result' && (
                 <>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> Result Date</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Declared</span>
                   </th>
                   <th className="rjt-th">
-                    <span className="rjt-th-inner"><Award size={13} /> Status / Merit</span>
+                    <span className="rjt-th-inner"><Award size={12} /> Status</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><Briefcase size={13} /> Overview</span>
+                  <th className="rjt-th hidden lg:table-cell">
+                    <span className="rjt-th-inner"><Briefcase size={12} /> Overview</span>
                   </th>
                 </>
               )}
 
               {activeKind === 'answer-key' && (
                 <>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> Key Date</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Released</span>
                   </th>
                   <th className="rjt-th">
-                    <span className="rjt-th-inner"><KeyRound size={13} /> Status</span>
+                    <span className="rjt-th-inner"><KeyRound size={12} /> Status</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><Briefcase size={13} /> Exam Details</span>
+                  <th className="rjt-th hidden lg:table-cell">
+                    <span className="rjt-th-inner"><Briefcase size={12} /> Exam Details</span>
                   </th>
                 </>
               )}
 
               {activeKind === 'syllabus' && (
                 <>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><CalendarDays size={13} /> Updated On</span>
+                  <th className="rjt-th rjt-th-date">
+                    <span className="rjt-th-inner"><CalendarDays size={12} /> Updated</span>
                   </th>
                   <th className="rjt-th">
-                    <span className="rjt-th-inner"><Layers size={13} /> Exam Scheme</span>
+                    <span className="rjt-th-inner"><Layers size={12} /> Exam Scheme</span>
                   </th>
-                  <th className="rjt-th">
-                    <span className="rjt-th-inner"><GraduationCap size={13} /> Preparation Scope</span>
+                  <th className="rjt-th hidden lg:table-cell">
+                    <span className="rjt-th-inner"><GraduationCap size={12} /> Scope</span>
                   </th>
                 </>
               )}
 
-              <th className="rjt-th rjt-th-center">Action</th>
+              <th className="rjt-th rjt-th-center" style={{ width: 85 }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -394,9 +397,9 @@ export default function RecentJobsTable({
                   {/* KIND-SPECIFIC COLUMNS */}
                   {activeKind === 'job' && (
                     <>
-                      <td className="rjt-td rjt-date">{getStartDate(job)}</td>
-                      <td className="rjt-td rjt-date rjt-date-end">{getEndDate(job)}</td>
-                      <td className="rjt-td">
+                      <td className="rjt-td rjt-date">{formatReducedDate(getStartDate(job))}</td>
+                      <td className="rjt-td rjt-date rjt-date-end">{formatReducedDate(getEndDate(job))}</td>
+                      <td className="rjt-td rjt-td-center">
                         {job.vacancies ? (
                           <span className="rjt-vacancies">
                             {Number(job.vacancies).toLocaleString('en-IN')}
@@ -405,7 +408,7 @@ export default function RecentJobsTable({
                           <span className="rjt-vacancies-na">—</span>
                         )}
                       </td>
-                      <td className="rjt-td rjt-eligibility">
+                      <td className="rjt-td rjt-eligibility hidden lg:table-cell">
                         {bestEligibility(job)}
                       </td>
                     </>
@@ -413,47 +416,47 @@ export default function RecentJobsTable({
 
                   {activeKind === 'admit-card' && (
                     <>
-                      <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
-                      <td className="rjt-td rjt-date rjt-date-end font-semibold" style={{ color: 'var(--danger)' }}>
-                        {getExamDate(job)}
+                      <td className="rjt-td rjt-date">{formatReducedDate(job.postedOn)}</td>
+                      <td className="rjt-td rjt-date rjt-date-end font-semibold">
+                        {formatReducedDate(getExamDate(job))}
                       </td>
-                      <td className="rjt-td rjt-eligibility">{bestEligibility(job)}</td>
+                      <td className="rjt-td rjt-eligibility hidden lg:table-cell">{bestEligibility(job)}</td>
                     </>
                   )}
 
                   {activeKind === 'result' && (
                     <>
-                      <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
+                      <td className="rjt-td rjt-date">{formatReducedDate(job.postedOn)}</td>
                       <td className="rjt-td">
                         <span className="badge badge-success">
                           {job.tagline || 'Declared'}
                         </span>
                       </td>
-                      <td className="rjt-td rjt-eligibility">{job.shortInfo?.slice(0, 45)}…</td>
+                      <td className="rjt-td rjt-eligibility hidden lg:table-cell">{job.shortInfo?.slice(0, 36)}…</td>
                     </>
                   )}
 
                   {activeKind === 'answer-key' && (
                     <>
-                      <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
+                      <td className="rjt-td rjt-date">{formatReducedDate(job.postedOn)}</td>
                       <td className="rjt-td">
                         <span className="badge" style={{ background: 'var(--info-bg)', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 25%, transparent)' }}>
                           {job.tagline?.split('—')[0]?.trim() || 'Available'}
                         </span>
                       </td>
-                      <td className="rjt-td rjt-eligibility">Provisional / Final Objection Window</td>
+                      <td className="rjt-td rjt-eligibility hidden lg:table-cell">Provisional Objection</td>
                     </>
                   )}
 
                   {activeKind === 'syllabus' && (
                     <>
-                      <td className="rjt-td rjt-date">{job.postedOn || 'Active'}</td>
+                      <td className="rjt-td rjt-date">{formatReducedDate(job.postedOn)}</td>
                       <td className="rjt-td">
                         <span className="badge badge-accent">
-                          CBT & Written Scheme
+                          CBT & Written
                         </span>
                       </td>
-                      <td className="rjt-td rjt-eligibility">Topic-wise Pattern & Marking</td>
+                      <td className="rjt-td rjt-eligibility hidden lg:table-cell">Marking Pattern</td>
                     </>
                   )}
 
