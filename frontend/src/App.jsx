@@ -124,6 +124,7 @@ function AppRoutes() {
           <Route path="private-jobs"      element={<CategoryPage defaultSlug="private-job" />} />
           <Route path="other-jharkhand"   element={<CategoryPage defaultSlug="other-jharkhand" />} />
           <Route path="central-jobs"      element={<CategoryPage defaultSlug="central-job" />} />
+          <Route path="archive"           element={<CategoryPage defaultSlug="archive" />} />
           <Route path="category/:slug"    element={<CategoryPage />} />
           <Route path="latest/:kind"      element={<CategoryPage />} />
           <Route path="exams"             element={<ExamsPage />} />

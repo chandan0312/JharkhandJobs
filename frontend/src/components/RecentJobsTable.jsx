@@ -11,6 +11,7 @@ import {
   Layers,
 } from 'lucide-react'
 import BrandIcon from './BrandIcon.jsx'
+import { isJobExpired } from '../utils/dateHelper.js'
 
 /**
  * Derive the "Start Date" from a job's importantDates array —
@@ -199,15 +200,22 @@ export default function RecentJobsTable({
                 ) : null}
               </div>
 
-              <Link
-                to={`/job/${job.id}`}
-                className="block text-[13px] font-semibold leading-snug line-clamp-2 transition-colors"
-                style={{ color: 'var(--text)' }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text)' }}
-              >
-                {getShortTitle(job)}
-              </Link>
+              <div className="flex items-center gap-1.5">
+                <Link
+                  to={`/job/${job.id}`}
+                  className="block text-[13px] font-semibold leading-snug line-clamp-2 transition-colors flex-1"
+                  style={{ color: 'var(--text)' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text)' }}
+                >
+                  {getShortTitle(job)}
+                </Link>
+                {isJobExpired(job) && (
+                  <span className="shrink-0 inline-flex items-center rounded bg-slate-500/15 border border-slate-500/30 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase text-slate-600 dark:text-slate-400">
+                    Archive
+                  </span>
+                )}
+              </div>
 
               {/* Key Details on Mobile */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>
@@ -366,9 +374,16 @@ export default function RecentJobsTable({
                     <div className="rjt-job-cell">
                       <BrandIcon icon={job.logo?.icon || 'landmark'} color={job.logo?.color || '#5558e6'} size={34} square />
                       <div className="rjt-job-info">
-                        <Link to={`/job/${job.id}`} className="rjt-job-title" title={job.title}>
-                          {getShortTitle(job)}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link to={`/job/${job.id}`} className="rjt-job-title" title={job.title}>
+                            {getShortTitle(job)}
+                          </Link>
+                          {isJobExpired(job) && (
+                            <span className="inline-flex items-center rounded bg-slate-500/15 border border-slate-500/30 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase text-slate-600 dark:text-slate-400">
+                              Archive
+                            </span>
+                          )}
+                        </div>
                         <span className="rjt-job-org" title={job.org}>
                           {getShortOrg(job)}
                         </span>

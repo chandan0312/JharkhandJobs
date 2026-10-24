@@ -44,6 +44,22 @@ export const listCategories = asyncHandler(async (req, res) => {
     }
   })
 
+  // Ensure archive category is included
+  const hasArchive = enriched.some((c) => c.slug === 'archive')
+  if (!hasArchive) {
+    enriched.push({
+      slug: 'archive',
+      name: 'Archive',
+      fullName: 'Past & Expired Job Notifications',
+      icon: 'archive',
+      color: '#64748b',
+      tint: '#f1f5f9',
+      postsCount: 0,
+      totalVacancies: 0,
+      jobs: 0,
+    })
+  }
+
   // Sort by highest active posts / vacancies in database
   enriched.sort((a, b) => b.postsCount - a.postsCount || b.totalVacancies - a.totalVacancies)
 
@@ -53,6 +69,19 @@ export const listCategories = asyncHandler(async (req, res) => {
 /** GET /api/categories/:slug */
 export const categoryBySlug = asyncHandler(async (req, res) => {
   const slug = String(req.params.slug).toLowerCase()
+  if (slug === 'archive' || slug === 'archived') {
+    return res.json({
+      slug: 'archive',
+      name: 'Archive',
+      fullName: 'Past & Expired Job Notifications',
+      icon: 'archive',
+      color: '#64748b',
+      tint: '#f1f5f9',
+      postsCount: 0,
+      totalVacancies: 0,
+      jobs: 0,
+    })
+  }
   const category = await Category.findByPk(slug)
   if (!category) throw notFoundError(`No category found with slug "${req.params.slug}"`)
 

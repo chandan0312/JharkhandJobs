@@ -15,6 +15,7 @@ import { serialize } from '../utils/serialize.js'
 import { slugify, uniqueSlug } from '../utils/slugify.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { badRequest, notFoundError } from '../middleware/error.js'
+import { isJobExpired } from '../utils/dateHelper.js'
 
 const DEFAULT_RECENT_LIMIT = 5
 const MAX_LIMIT = 1000
@@ -97,6 +98,8 @@ export const list = asyncHandler(async (req, res) => {
         { category: { [Op.in]: ['central-job', 'central', 'other', 'others', 'Other', 'Bank', 'Railway', 'Defence', 'SSC', 'banking', 'railway', 'defence', 'ssc', 'upsc'] } },
         { category: { [Op.notIn]: ['jpsc', 'JPSC', 'jssc', 'JSSC', 'rojgar-mela', 'Rojgar Mela', 'private-job', 'private', 'Private', 'private-jobs', 'other-jharkhand'] } }
       ]
+    } else if (['archive', 'archived'].includes(catLower)) {
+      // Archive category: match all expired jobs across categories
     } else {
       where.category = { [Op.like]: `%${catLower}%` }
     }
@@ -120,14 +123,30 @@ export const list = asyncHandler(async (req, res) => {
   const trimmed = String(q ?? '').trim()
   if (trimmed) Object.assign(where, searchClause(trimmed))
 
+  const isArchive = category && ['archive', 'archived'].includes(String(category).toLowerCase())
+
   const rows = await Job.findAll({
     where,
     order: NEWEST_FIRST,
-    limit: parseLimit(limit, undefined),
-    offset: offset ? Number.parseInt(offset, 10) || 0 : undefined,
+    limit: isArchive ? undefined : parseLimit(limit, undefined),
+    offset: isArchive ? undefined : (offset ? Number.parseInt(offset, 10) || 0 : undefined),
   })
 
-  res.json(serialize(rows))
+  let serialized = serialize(rows)
+
+  if (isArchive) {
+    serialized = serialized.filter(isJobExpired)
+    if (offset) {
+      const off = Number.parseInt(offset, 10) || 0
+      serialized = serialized.slice(off)
+    }
+    if (limit) {
+      const lim = parseLimit(limit, undefined)
+      if (lim) serialized = serialized.slice(0, lim)
+    }
+  }
+
+  res.json(serialized)
 })
 
 /** GET /api/jobs/trending — featured posts for the home-page hero carousel. */
@@ -359,6 +378,16 @@ export const remove = asyncHandler(async (req, res) => {
   res.status(204).end()
 })
 
+/** POST /api/jobs/bulk-delete  (admin multi-delete) */
+export const bulkRemove = asyncHandler(async (req, res) => {
+  const { ids } = req.body || {}
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw badRequest('`ids` must be a non-empty array of post IDs')
+  }
+  const deletedCount = await Job.destroy({ where: { id: { [Op.in]: ids } } })
+  res.json({ success: true, count: deletedCount })
+})
+
 /** GET /api/jobs/stats — counts for the admin dashboard tiles. */
 export const stats = asyncHandler(async (req, res) => {
   const grouped = await Job.findAll({
@@ -378,4 +407,4 @@ export const stats = asyncHandler(async (req, res) => {
   res.json({ total, byKind })
 })
 
-export default { list, trending, ticker, recent, search, byId, registerView, create, update, remove, stats }
+export default { list, trending, ticker, recent, search, byId, registerView, create, update, remove, bulkRemove, stats }

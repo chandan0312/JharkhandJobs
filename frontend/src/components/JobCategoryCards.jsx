@@ -13,6 +13,7 @@ import {
   Building2,
   MapPin,
   ArrowRight,
+  Archive,
 } from 'lucide-react'
 import { getCategories } from '../services/api.js'
 
@@ -59,6 +60,12 @@ const CATEGORY_THEMES = {
     color: '#c11574',   /* pink */
     label: 'Central Jobs',
     sub: 'SSC, Railway, Banking & UPSC',
+  },
+  archive: {
+    icon: Archive,
+    color: '#64748b',   /* slate */
+    label: 'Archive',
+    sub: 'Past & Expired Notifications',
   },
   others: {
     icon: GraduationCap,
@@ -127,7 +134,7 @@ export default function JobCategoryCards() {
   const displayList = categories.length > 0
     ? categories
     : Object.entries(CATEGORY_THEMES)
-        .filter(([slug]) => !['_default', 'private', 'others', 'other'].includes(slug))
+        .filter(([slug]) => !['_default', 'private', 'others', 'other', 'archived'].includes(slug))
         .map(([slug, theme]) => ({
           slug,
           name: theme.label,

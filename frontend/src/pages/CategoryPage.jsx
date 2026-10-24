@@ -3,12 +3,13 @@ import { useParams, useLocation } from 'react-router-dom'
 import {
   Layers, Search, Landmark, Scale, MapPin, Users,
   Building2, GraduationCap, Briefcase, Ticket,
-  Award, KeyRound, BookOpen, CheckCircle2,
+  Award, KeyRound, BookOpen, CheckCircle2, Archive,
 } from 'lucide-react'
 import BrandIcon from '../components/BrandIcon.jsx'
 import RecentJobsTable from '../components/RecentJobsTable.jsx'
 import SEOHead from '../components/SEOHead.jsx'
 import { getJobsByCategory, getJobsByKind, getKindLabel, getCategories } from '../services/api.js'
+import { isJobExpired } from '../utils/dateHelper.js'
 
 // Static kind labels used for facet chips (matches server /api/kinds)
 const KIND_LABELS = {
@@ -111,6 +112,14 @@ const CHIP_THEMES = {
     text: 'text-white',
     inactive: 'bg-indigo-500/10 border-indigo-400/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20',
   },
+  archive: {
+    icon: Archive,
+    bg: 'bg-gradient-to-r from-slate-600 to-slate-500',
+    ring: 'ring-slate-400/60',
+    glow: '0 4px 20px rgba(100,116,139,0.50)',
+    text: 'text-white',
+    inactive: 'bg-slate-500/10 border-slate-400/30 text-slate-700 dark:text-slate-300 hover:bg-slate-500/20',
+  },
 }
 
 const CHIP_DEFAULT = {
@@ -185,17 +194,19 @@ export default function CategoryPage({ defaultSlug }) {
     else if (location.pathname.includes('private-jobs') || location.pathname.includes('private-job')) slug = 'private-job'
     else if (location.pathname.includes('other-jharkhand')) slug = 'other-jharkhand'
     else if (location.pathname.includes('central-job') || location.pathname.includes('central-jobs')) slug = 'central-job'
+    else if (location.pathname.includes('archive') || location.pathname.includes('archived')) slug = 'archive'
   }
   // Normalize slug aliases
   if (slug === 'private' || slug === 'private-jobs') slug = 'private-job'
   if (slug === 'others' || slug === 'other' || slug === 'central') slug = 'central-job'
   if (slug === 'jharkhand' || slug === 'other-jharkhand-job' || slug === 'other-jharkhand-jobs') slug = 'other-jharkhand'
+  if (slug === 'archived') slug = 'archive'
 
   const kind = params.kind
   const mode = slug ? 'category' : 'kind'
 
   const [jobs, setJobs] = useState(null)
-  const [filter, setFilter] = useState(mode === 'category' ? 'job' : 'all')
+  const [filter, setFilter] = useState(mode === 'category' ? (slug === 'archive' ? 'all' : 'job') : 'all')
   const [search, setSearch] = useState('')
   const [categories, setCategories] = useState([])
 
@@ -211,11 +222,20 @@ export default function CategoryPage({ defaultSlug }) {
   useEffect(() => {
     let active = true
     setJobs(null)
-    setFilter(mode === 'category' ? 'job' : 'all')
+    setFilter(mode === 'category' ? (slug === 'archive' ? 'all' : 'job') : 'all')
     setSearch('')
     const load = mode === 'category' ? getJobsByCategory(slug, undefined, 'all') : getJobsByKind(kind)
     load
-      .then((data) => active && setJobs(data || []))
+      .then((data) => {
+        if (!active) return
+        const list = Array.isArray(data) ? data : []
+        if (slug === 'archive') {
+          // Display jobs where last date is over
+          setJobs(list.filter(isJobExpired))
+        } else {
+          setJobs(list)
+        }
+      })
       .catch(() => active && setJobs([]))
     return () => {
       active = false
@@ -242,7 +262,7 @@ export default function CategoryPage({ defaultSlug }) {
         })
         .filter((f) => f.count > 0)
     }
-    const ORDER = ['jpsc', 'jssc', 'other-jharkhand', 'rojgar-mela', 'private-job', 'central-job']
+    const ORDER = ['jpsc', 'jssc', 'other-jharkhand', 'rojgar-mela', 'private-job', 'central-job', 'archive']
     const present = [...new Set(jobs.map((j) => j.category).filter(Boolean))]
     const allCategories = [...new Set([...ORDER, ...present])]
     return allCategories

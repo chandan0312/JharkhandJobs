@@ -227,6 +227,9 @@ export const updateJob = (token, id, payload) =>
 export const deleteJob = (token, id) =>
   http('DELETE', `/api/jobs/${encodeURIComponent(id)}`, { token })
 
+export const deleteMultipleJobs = (token, ids) =>
+  http('POST', '/api/jobs/bulk-delete', { token, body: { ids } })
+
 // --- Admin Reads ---
 export const fetchJobs = (params) =>
   http('GET', '/api/jobs', { params, bypassCache: true })

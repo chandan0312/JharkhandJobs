@@ -21,7 +21,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
-import { fetchJobs, deleteJob, updateJob, getCategories } from '../services/api.js'
+import { fetchJobs, deleteJob, deleteMultipleJobs, updateJob, getCategories } from '../services/api.js'
 import SEOHead from '../components/SEOHead.jsx'
 
 // Static kind labels (mirrors server /api/kinds)
@@ -55,6 +55,8 @@ export default function AdminPosts() {
   const [deletingId, setDeletingId] = useState(null)
   const [updatingId, setUpdatingId] = useState(null)
   const [limit, setLimit] = useState(15)
+  const [selectedIds, setSelectedIds] = useState([])
+  const [deletingMultiple, setDeletingMultiple] = useState(false)
 
   const loadPosts = async () => {
     setLoading(true)
@@ -91,6 +93,46 @@ export default function AdminPosts() {
       alert('Delete failed: ' + (err.message || 'Error'))
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  // Multi-select handlers
+  const handleSelectAllVisible = () => {
+    const pageIds = paginated.map((p) => p.id)
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)))
+    } else {
+      setSelectedIds((prev) => [...new Set([...prev, ...pageIds])])
+    }
+  }
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return
+    const count = selectedIds.length
+    if (!window.confirm(`Are you sure you want to permanently delete ${count} selected post${count > 1 ? 's' : ''}?`)) {
+      return
+    }
+
+    setDeletingMultiple(true)
+    try {
+      if (token) {
+        await deleteMultipleJobs(token, selectedIds)
+      }
+      setPosts((prev) => prev.filter((p) => !selectedIds.includes(p.id)))
+      setSelectedIds([])
+      setToast(`Successfully deleted ${count} post${count > 1 ? 's' : ''}.`)
+      setTimeout(() => setToast(''), 3000)
+    } catch (err) {
+      alert('Failed to delete selected posts: ' + (err.message || 'Server error'))
+    } finally {
+      setDeletingMultiple(false)
     }
   }
 
@@ -347,13 +389,58 @@ export default function AdminPosts() {
         </div>
       </div>
 
+      {/* Multi-Selection Bulk Action Banner */}
+      {selectedIds.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-3.5 text-xs animate-fade-in shadow-md">
+          <div className="flex items-center gap-2.5 text-ink">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 font-extrabold text-white text-[11px] shadow-xs">
+              {selectedIds.length}
+            </span>
+            <span className="font-bold text-sm">
+              {selectedIds.length} post{selectedIds.length > 1 ? 's' : ''} selected
+            </span>
+            <span className="text-ink-muted text-xs">
+              (across current view)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="rounded-xl border border-hairline bg-surface px-3 py-2 font-semibold text-ink-muted hover:text-ink hover:bg-subtle transition-colors shadow-2xs"
+            >
+              Clear Selection
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteSelected}
+              disabled={deletingMultiple}
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2 font-bold text-white shadow-md shadow-red-600/30 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-all"
+            >
+              <Trash2 size={15} className={deletingMultiple ? 'animate-spin' : ''} />
+              <span>{deletingMultiple ? 'Deleting…' : `Delete Selected (${selectedIds.length})`}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table Card */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[940px] text-left text-xs">
             <thead>
               <tr className="border-b border-hairline bg-subtle/50 text-[11.5px] font-bold uppercase tracking-wider text-ink-muted">
-                <th className="py-3.5 pl-5 pr-3">Notification / Department</th>
+                <th className="w-12 py-3.5 pl-4 pr-1 text-center">
+                  <input
+                    type="checkbox"
+                    checked={paginated.length > 0 && paginated.every((p) => selectedIds.includes(p.id))}
+                    onChange={handleSelectAllVisible}
+                    aria-label="Select all posts on this page"
+                    className="h-4 w-4 rounded border-hairline text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
+                  />
+                </th>
+                <th className="py-3.5 pl-3 pr-3">Notification / Department</th>
                 <th className="px-3 py-3.5">Category</th>
                 <th className="px-3 py-3.5">Type</th>
                 <th className="px-3 py-3.5 text-center">Trending Carousel</th>
@@ -366,17 +453,36 @@ export default function AdminPosts() {
             <tbody className="divide-y divide-hairline">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-ink-muted">
+                  <td colSpan="9" className="py-12 text-center text-ink-muted">
                     No posts matched your filters.
                   </td>
                 </tr>
               ) : (
                 paginated.map((post) => {
                   const Icon = KIND_ICON[post.kind] || FileText
+                  const isSelected = selectedIds.includes(post.id)
                   return (
-                    <tr key={post.id} className="group transition-colors hover:bg-subtle/50">
+                    <tr
+                      key={post.id}
+                      className={`group transition-colors ${
+                        isSelected
+                          ? 'bg-red-500/5 dark:bg-red-500/10'
+                          : 'hover:bg-subtle/50'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="w-12 py-4 pl-4 pr-1 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(post.id)}
+                          aria-label={`Select ${post.title}`}
+                          className="h-4 w-4 rounded border-hairline text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
+                        />
+                      </td>
+
                       {/* Title & Org */}
-                      <td className="py-4 pl-5 pr-3 max-w-[300px]">
+                      <td className="py-4 pl-3 pr-3 max-w-[300px]">
                         <div className="flex items-center gap-3">
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-subtle text-ink-soft group-hover:bg-brand-50 group-hover:text-brand-600 dark:group-hover:bg-brand-600/20 dark:group-hover:text-brand-300 transition-colors">
                             <Icon size={16} />

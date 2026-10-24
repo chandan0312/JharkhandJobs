@@ -23,6 +23,7 @@ import {
   Pencil,
   Trash2,
   MessageSquare,
+  BookOpen,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { fetchDashboard, deleteJob } from '../services/api.js'
@@ -188,10 +189,18 @@ export default function AdminDashboard() {
 
             <Link
               to="/admin/posts/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 via-teal-600 to-navy-900 px-5 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:brightness-110 hover:scale-[1.02] active:scale-95 border border-teal-400/30"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 via-teal-600 to-navy-900 px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-brand-500/25 transition-all hover:brightness-110 hover:scale-[1.02] active:scale-95 border border-teal-400/30"
             >
               <Plus size={16} strokeWidth={2.5} />
               Create Post
+            </Link>
+
+            <Link
+              to="/admin/articles/new"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-purple-600/25 transition-all hover:brightness-110 hover:scale-[1.02] active:scale-95 border border-purple-400/30"
+            >
+              <BookOpen size={16} strokeWidth={2.5} />
+              Write Article
             </Link>
           </div>
         </div>

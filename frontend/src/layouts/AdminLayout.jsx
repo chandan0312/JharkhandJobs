@@ -18,6 +18,7 @@ import {
   MoonStar,
   BarChart2,
   BookOpen,
+  PenSquare,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import Header from '../components/Header.jsx'
@@ -29,6 +30,7 @@ const ADMIN_NAV = [
   { to: '/admin/posts', label: 'Manage Posts', icon: FileText, color: '#f59e0b' },
   { to: '/admin/posts/new', label: 'Create Post', icon: PlusCircle, color: '#10b981' },
   { to: '/admin/articles', label: 'Manage Articles', icon: BookOpen, color: '#8b5cf6' },
+  { to: '/admin/articles/new', label: 'Write Article', icon: PenSquare, color: '#ec4899' },
   { to: '/admin/feedback', label: 'Feedback & Suggestions', icon: MessageSquare, color: '#f43f5e' },
 ]
 

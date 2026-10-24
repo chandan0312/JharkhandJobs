@@ -12,7 +12,9 @@ import RecentJobsTable from '../components/RecentJobsTable.jsx'
 import RightSidebar from '../components/RightSidebar.jsx'
 import SEOHead from '../components/SEOHead.jsx'
 import HomeArticlesSection from '../components/HomeArticlesSection.jsx'
+import AttentionCard from '../components/AttentionCard.jsx'
 import { getTrending, getRecentlyPosted, getJobsByCategory } from '../services/api.js'
+import { isJobExpired } from '../utils/dateHelper.js'
 
 /* ── Skeleton loader ──────────────────────────────────────────────── */
 function TableSkeleton() {
@@ -157,7 +159,12 @@ export default function Home() {
 
   useEffect(() => {
     let active = true
-    const safe = (setter) => (data) => { if (active) setter(Array.isArray(data) ? data : []) }
+    const safe = (setter) => (data) => {
+      if (active) {
+        const list = Array.isArray(data) ? data.filter((j) => !isJobExpired(j)) : []
+        setter(list)
+      }
+    }
     const fail = (setter) => () => { if (active) setter([]) }
 
     getTrending()                                .then(safe(setTrending))            .catch(fail(setTrending))
@@ -192,8 +199,9 @@ export default function Home() {
     },
   ]
 
-  /* Helper: reusable job section */
-  function JobSection({ title, subtitle, viewAllTo, viewAllText, jobs, emptyIcon, emptyLabel }) {
+  /* Helper: reusable job section — only display if job is available, hide completely otherwise */
+  function JobSection({ title, subtitle, viewAllTo, viewAllText, jobs }) {
+    if (!jobs || jobs.length === 0) return null
     return (
       <section aria-labelledby={`sec-${title.replace(/\s+/g, '-').toLowerCase()}`}>
         <SectionHeader
@@ -202,12 +210,7 @@ export default function Home() {
           viewAllTo={viewAllTo}
           viewAllText={viewAllText}
         />
-        {jobs === null
-          ? <TableSkeleton />
-          : jobs.length === 0
-          ? <EmptyBlock icon={emptyIcon} label={emptyLabel} />
-          : <RecentJobsTable jobs={jobs} viewAllTo={viewAllTo} viewAllText={viewAllText} />
-        }
+        <RecentJobsTable jobs={jobs} viewAllTo={viewAllTo} viewAllText={viewAllText} />
       </section>
     )
   }
@@ -266,7 +269,7 @@ export default function Home() {
             }
 
             if (slides.length === 0) {
-              return <EmptyBlock icon={Sparkles} label="trending posts" />
+              return null
             }
 
             return <HeroBanner slides={slides} />
@@ -278,6 +281,11 @@ export default function Home() {
           <JobCategoryCards />
         </section>
 
+        {/* 3b. Mobile Attention Banner — appears just below hero and browse category */}
+        <div className="xl:hidden">
+          <AttentionCard />
+        </div>
+
         {/* 4. Recently Posted */}
         <JobSection
           title="Recently Posted Jobs"
@@ -285,78 +293,64 @@ export default function Home() {
           viewAllTo="/latest/job"
           viewAllText="View all latest"
           jobs={recentlyPosted}
-          emptyIcon={Clock}
-          emptyLabel="recent jobs"
         />
 
-        {/* 5. Career Guides & Articles */}
-        <HomeArticlesSection />
-
-        {/* 6. JPSC */}
+        {/* 5. JPSC */}
         <JobSection
           title="JPSC Recruitment 2026"
           subtitle="Civil Services, CDPO, Engineering & Allied Posts"
           viewAllTo="/category/jpsc"
           viewAllText="All JPSC Jobs"
           jobs={jpscJobs}
-          emptyIcon={Landmark}
-          emptyLabel="JPSC notifications"
         />
 
-        {/* 7. JSSC */}
+        {/* 6. JSSC */}
         <JobSection
           title="JSSC Recruitment 2026"
           subtitle="CGL, Excise Constable & Teacher Exams"
           viewAllTo="/category/jssc"
           viewAllText="All JSSC Jobs"
           jobs={jsscJobs}
-          emptyIcon={Scale}
-          emptyLabel="JSSC notifications"
         />
 
-        {/* 8. Other Jharkhand */}
+        {/* 7. Other Jharkhand */}
         <JobSection
           title="Other Jharkhand Jobs 2026"
           subtitle="High Court, Police, Health & Government Depts"
           viewAllTo="/category/other-jharkhand"
           viewAllText="View all"
           jobs={otherJharkhandJobs}
-          emptyIcon={MapPin}
-          emptyLabel="other Jharkhand notifications"
         />
 
-        {/* 9. Rojgar Mela */}
+        {/* 8. Rojgar Mela */}
         <JobSection
           title="Jharkhand Rojgar Mela 2026"
           subtitle="District-wise camps, spot hiring & placement drives"
           viewAllTo="/category/rojgar-mela"
           viewAllText="All Rojgar Mela"
           jobs={rojgarMelaJobs}
-          emptyIcon={Briefcase}
-          emptyLabel="Rojgar Mela camps"
         />
 
-        {/* 10. Private Jobs */}
+        {/* 9. Private Jobs */}
         <JobSection
           title="Jharkhand Private Jobs 2026"
           subtitle="Tata Steel, Jindal, Adani & Corporate Openings"
           viewAllTo="/category/private-job"
           viewAllText="All Private Jobs"
           jobs={privateJobs}
-          emptyIcon={Building2}
-          emptyLabel="private job openings"
         />
 
-        {/* 11. Central Jobs */}
+        {/* 10. Central Jobs */}
         <JobSection
           title="Central Govt Jobs 2026"
           subtitle="SSC, Railway, Banking, UPSC & Defence"
           viewAllTo="/category/central-job"
           viewAllText="All Central Jobs"
           jobs={centralJobs}
-          emptyIcon={GraduationCap}
-          emptyLabel="central job notifications"
         />
+
+        {/* 11. Career Guides & Articles — Placed at the bottom */}
+        <HomeArticlesSection />
       </main>
 
       {/* ── Right Sidebar ─────────────────────────────────────────────── */}

@@ -27,6 +27,7 @@ router.get('/:id', cacheResponse(30_000), jobs.byId)
 router.post('/:id/view', jobs.registerView)
 
 // --- Admin (JWT required) with automatic cache invalidation ---
+router.post('/bulk-delete', authRequired, bustCache, jobs.bulkRemove)
 router.post('/', authRequired, bustCache, jobs.create)
 router.put('/:id', authRequired, bustCache, jobs.update)
 router.patch('/:id', authRequired, bustCache, jobs.update)

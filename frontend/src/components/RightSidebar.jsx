@@ -70,7 +70,9 @@ export default function RightSidebar() {
   return (
     <div className="space-y-4 xl:sticky xl:top-[76px] xl:max-h-[calc(100vh-88px)] xl:overflow-y-auto xl:overflow-x-hidden pr-1 pb-6 scrollbar-thin">
       <QuickSearch />
-      <AttentionCard />
+      <div className="hidden xl:block">
+        <AttentionCard />
+      </div>
       <ResultsCard />
       <AdmitCardsCard />
       <AnswerKeysCard />
