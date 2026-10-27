@@ -1,24 +1,38 @@
 # https://www.robotstxt.org/robotstxt.html
+# Jharkhand JobAlert X — robots.txt
+# Last updated: 2026-10-27
+
 User-agent: *
+
+# ── Public content: allow everything ─────────────────────────────────────────
 Allow: /
 Allow: /google*.html
 Allow: /sitemap*.xml
+Allow: /ads.txt
 Allow: /favicon.svg
 
-# Block user account and authenticated pages
-Disallow: /admin/
+# ── Admin and API: block all crawlers ────────────────────────────────────────
 Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /api
+
+# ── Auth pages: no indexing value ────────────────────────────────────────────
+Disallow: /login
+Disallow: /signup
+Disallow: /logout
+
+# ── Personal / user-account routes ───────────────────────────────────────────
 Disallow: /profile
 Disallow: /settings
 Disallow: /bookmarked
 Disallow: /saved
 Disallow: /recent
-Disallow: /login
-Disallow: /signup
 
-# Block search/filter pages (dynamic, thin content)
+# ── Utility / thin-content pages ─────────────────────────────────────────────
 Disallow: /search
 Disallow: /search?
+Disallow: /feedback
 
-# Sitemap index
+# ── Sitemap index ─────────────────────────────────────────────────────────────
 Sitemap: https://jharkhand.jobalertx.com/sitemap.xml

@@ -6,6 +6,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { Lock, Mail, ArrowRight, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import SarkariEmblem from '../components/SarkariEmblem.jsx'
+import SEOHead from '../components/SEOHead.jsx'
 import {
   GOOGLE_CLIENT_ID,
   loadGoogleIdentity,
@@ -123,6 +124,7 @@ export default function LoginPage() {
       className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12"
       style={{ background: 'var(--bg)' }}
     >
+      <SEOHead title="Login" noIndex={true} />
       {/* Faint geometric grid */}
       <div className="footer-geo-pattern" style={{ opacity: 0.04 }} aria-hidden="true" />
 

@@ -8,7 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Job, sequelize } from '../src/models/index.js';
+import { Job, Article, sequelize } from '../src/models/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,14 +52,14 @@ async function run() {
     try {
       const posts = await Job.findAll({
         where: { kind: item.kind },
-        attributes: ['id', 'updatedAt', 'createdAt'],
-        order: [['updatedAt', 'DESC']],
+        attributes: ['id', 'updated_at', 'created_at'],
+        order: [['updated_at', 'DESC']],
       });
 
       const entries = posts.map((p) =>
         urlEntry(
           `${BASE_URL}/job/${encodeURIComponent(p.id)}`,
-          p.updatedAt || p.createdAt,
+          p.updated_at || p.created_at,
           item.changefreq,
           item.priority
         )
@@ -74,13 +74,42 @@ async function run() {
     }
   }
 
-  // Update lastmod in sitemap.xml
+  // Generate sitemap-articles.xml
+  try {
+    const articles = await Article.findAll({
+      where: { status: 'published' },
+      attributes: ['slug', 'updated_at', 'created_at'],
+      order: [['updated_at', 'DESC']],
+    });
+
+    const articleEntries = articles.map((a) =>
+      urlEntry(
+        `${BASE_URL}/article/${encodeURIComponent(a.slug)}`,
+        a.updated_at || a.created_at,
+        'weekly',
+        '0.85'
+      )
+    );
+
+    const articlesXml = buildSitemap(articleEntries);
+    const articlesDest = path.join(PUBLIC_DIR, 'sitemap-articles.xml');
+    fs.writeFileSync(articlesDest, articlesXml + '\n', 'utf-8');
+    console.log(`[sitemaps] Wrote sitemap-articles.xml with ${articles.length} entries (${articlesXml.length} bytes)`);
+  } catch (err) {
+    console.error('[sitemaps] Error generating sitemap-articles.xml:', err.message);
+  }
+
+  // Update lastmod in sitemap.xml and ensure sitemap-articles.xml is indexed
   const sitemapIndexPath = path.join(PUBLIC_DIR, 'sitemap.xml');
   if (fs.existsSync(sitemapIndexPath)) {
     let indexXml = fs.readFileSync(sitemapIndexPath, 'utf-8');
     indexXml = indexXml.replace(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g, `<lastmod>${today}</lastmod>`);
+    if (!indexXml.includes('sitemap-articles.xml')) {
+      const articleSitemapNode = `  <sitemap>\n    <loc>${BASE_URL}/sitemap-articles.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>\n</sitemapindex>`;
+      indexXml = indexXml.replace('</sitemapindex>', articleSitemapNode);
+    }
     fs.writeFileSync(sitemapIndexPath, indexXml, 'utf-8');
-    console.log(`[sitemaps] Updated dates in ${sitemapIndexPath}`);
+    console.log(`[sitemaps] Updated dates and index in ${sitemapIndexPath}`);
   }
 
   await sequelize.close();

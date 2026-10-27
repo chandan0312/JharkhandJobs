@@ -137,6 +137,11 @@ export default function ProfilePage() {
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center animate-fade-in px-4">
+        <SEOHead
+          title="My Profile | Jharkhand JobAlert X"
+          description="User profile and account settings."
+          noIndex={true}
+        />
         <SarkariEmblem size={64} />
         <div>
           <h1 className="text-2xl font-black text-ink mb-2">You're not logged in</h1>

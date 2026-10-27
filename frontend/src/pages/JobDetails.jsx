@@ -23,6 +23,7 @@ import CategoryBox from '../components/CategoryBox.jsx'
 import TableView from '../components/TableView.jsx'
 import SEOHead from '../components/SEOHead.jsx'
 import RichContentRenderer from '../components/RichContentRenderer.jsx'
+import EditorialVerificationBadge from '../components/EditorialVerificationBadge.jsx'
 import { getJobById, getJobsByCategory, getKindLabel, getCategories, getJobs } from '../services/api.js'
 
 /** Safely parse a date string; returns null if invalid. */
@@ -30,6 +31,17 @@ function safeDate(val) {
   if (!val) return null
   const d = new Date(val)
   return isNaN(d.getTime()) ? null : d
+}
+
+/** Safely extract hostname without throwing on malformed or relative URLs */
+function getHostnameSafely(url) {
+  if (!url || typeof url !== 'string') return undefined
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`)
+    return parsed.hostname.replace(/^www\./, '')
+  } catch {
+    return url.replace(/^https?:\/\//, '').split('/')[0]
+  }
 }
 
 /** Format ISO date string to human-readable DD Mon YYYY */
@@ -509,6 +521,14 @@ export default function JobDetails() {
               <p className="text-[14px] leading-relaxed text-ink-soft">{job.eligibility}</p>
             </section>
           )}
+
+          {/* Editorial Verification Badge — E-E-A-T trust signal */}
+          <EditorialVerificationBadge
+            reviewedAt={job.updatedAt || job.postedOn}
+            officialSource={getHostnameSafely(job.officialWebsiteUrl)}
+            officialSourceUrl={job.officialWebsiteUrl || undefined}
+            kind={job.kind}
+          />
 
           {/* FAQ Section — auto-generated for job posts */}
           {faqItems.length > 0 && (

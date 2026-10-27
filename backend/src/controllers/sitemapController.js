@@ -10,7 +10,7 @@
 // This file covers the long tail of individual post pages.
 // ---------------------------------------------------------------------------
 
-import { Job } from '../models/index.js'
+import { Job, Article } from '../models/index.js'
 import { Op } from 'sequelize'
 
 const BASE_URL = process.env.FRONTEND_URL || 'https://jharkhand.jobalertx.com'
@@ -93,3 +93,34 @@ export async function answerKeysSitemap(req, res) {
 export async function syllabusSitemap(req, res) {
   await generateKindSitemap(res, 'syllabus', 'monthly', '0.80')
 }
+
+/** GET /sitemap-articles.xml */
+export async function articlesSitemap(req, res) {
+  try {
+    const articles = await Article.findAll({
+      where: { status: 'published' },
+      attributes: ['slug', 'updated_at', 'created_at'],
+      order: [['updated_at', 'DESC']],
+    })
+
+    const entries = articles.map((a) =>
+      urlEntry(
+        `${BASE_URL}/article/${encodeURIComponent(a.slug)}`,
+        a.updated_at || a.created_at,
+        'weekly',
+        '0.85'
+      )
+    )
+
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'X-Sitemap-Count': String(entries.length),
+    })
+    res.send(buildSitemap(entries))
+  } catch (err) {
+    console.error('[sitemap] error generating articles sitemap:', err.message)
+    res.status(500).set('Content-Type', 'text/plain').send('Sitemap generation error')
+  }
+}
+
