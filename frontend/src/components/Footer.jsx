@@ -20,6 +20,7 @@ const CATEGORY_LINKS = [
   { label: 'Rojgar Mela',       to: '/category/rojgar-mela' },
   { label: 'Private Jobs',      to: '/category/private-job' },
   { label: 'Central Jobs',      to: '/category/central-job' },
+  { label: 'Archived Jobs',     to: '/archive' },
 ]
 
 const QUICK_LINKS = [

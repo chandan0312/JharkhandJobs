@@ -8,7 +8,7 @@ import {
 import BrandIcon from '../components/BrandIcon.jsx'
 import RecentJobsTable from '../components/RecentJobsTable.jsx'
 import SEOHead from '../components/SEOHead.jsx'
-import { getJobsByCategory, getJobsByKind, getKindLabel, getCategories } from '../services/api.js'
+import { getJobs, getJobsByCategory, getJobsByKind, getKindLabel, getCategories } from '../services/api.js'
 import { isJobExpired } from '../utils/dateHelper.js'
 
 // Static kind labels used for facet chips (matches server /api/kinds)
@@ -224,11 +224,17 @@ export default function CategoryPage({ defaultSlug }) {
     setJobs(null)
     setFilter(mode === 'category' ? (slug === 'archive' ? 'all' : 'job') : 'all')
     setSearch('')
-    const load = mode === 'category' ? getJobsByCategory(slug, undefined, 'all') : getJobsByKind(kind)
+    // For archive: fetch all jobs and filter for expired ones
+    // For other categories: fetch jobs by category
+    const load = mode === 'category'
+      ? (slug === 'archive'
+          ? getJobs({})
+          : getJobsByCategory(slug, undefined, 'all'))
+      : getJobsByKind(kind)
     load
       .then((data) => {
         if (!active) return
-        const list = Array.isArray(data) ? data : []
+        const list = Array.isArray(data?.jobs) ? data.jobs : (Array.isArray(data) ? data : [])
         if (slug === 'archive') {
           // Display jobs where last date is over
           setJobs(list.filter(isJobExpired))
@@ -244,10 +250,17 @@ export default function CategoryPage({ defaultSlug }) {
 
   const category = categories.find((c) => c.slug === slug)
 
-  // Header content
+  // Header content - special handling for archive
   const heading =
     mode === 'category'
-      ? { title: category?.name || slug?.toUpperCase(), subtitle: category?.fullName || 'Latest notifications in this category', icon: category?.icon, color: category?.color || '#5558e6' }
+      ? slug === 'archive'
+        ? {
+            title: 'Archived Jobs',
+            subtitle: 'Expired job notifications - past their last application date',
+            icon: Archive,
+            color: '#64748b',
+          }
+        : { title: category?.name || slug?.toUpperCase(), subtitle: category?.fullName || 'Latest notifications in this category', icon: category?.icon, color: category?.color || '#5558e6' }
       : { title: KIND_LABELS[kind] || 'Latest Posts', subtitle: 'Freshly published notifications across all departments', icon: null, color: '#5558e6' }
 
   // Sub-filter facet: in category mode we filter by kind; in kind mode by category.
