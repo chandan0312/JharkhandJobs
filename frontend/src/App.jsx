@@ -31,6 +31,7 @@ const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage.jsx'))
 // Articles & Guides
 const ArticlesPage     = lazy(() => import('./pages/ArticlesPage.jsx'))
 const ArticleDetails   = lazy(() => import('./pages/ArticleDetails.jsx'))
+const JharkhandJobsDirectory = lazy(() => import('./pages/JharkhandJobsDirectory.jsx'))
 
 // Lazy-loaded Admin Pages (isolated from public users)
 const AdminLogin       = lazy(() => import('./pages/AdminLogin.jsx'))
@@ -138,6 +139,9 @@ function AppRoutes() {
           <Route path="privacy"           element={<PrivacyPage />} />
           <Route path="terms"             element={<TermsPage />} />
           <Route path="disclaimer"        element={<DisclaimerPage />} />
+
+          {/* Jharkhand Jobs Directory */}
+          <Route path="jobs-directory"  element={<JharkhandJobsDirectory />} />
 
           {/* Feedback — noindex (form page, not a search landing page) */}
           <Route path="feedback"          element={<FeedbackPage />} />

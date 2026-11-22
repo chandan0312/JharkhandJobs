@@ -40,7 +40,7 @@ const aboutSchema = {
     "Jharkhand JobAlert X is Jharkhand's independent, free government and private recruitment portal covering JPSC, JSSC, Jharkhand Rojgar Mela, Teacher Vacancies, Police Recruitment, and Jharkhand High Court jobs.",
   contactPoint: {
     '@type': 'ContactPoint',
-    email: 'jobalerx365@gmail.com',
+    email: 'support@jobalertx.com',
     telephone: '+91-8789862771',
     contactType: 'customer support',
     areaServed: 'IN-JH',

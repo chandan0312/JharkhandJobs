@@ -11,8 +11,9 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect } from 'react'
+import { SITE_CONFIG } from '../config/siteConfig.js'
 
-const SITE_NAME = 'Jharkhand JobAlert X'
+const SITE_NAME = SITE_CONFIG.name
 const DEFAULT_DESCRIPTION =
   'Jharkhand JobAlert X — #1 Portal for Jharkhand Jobs & Vacancies 2026. Latest JPSC, JSSC, Jharkhand Govt Jobs, Rojgar Mela, Admit Cards, Results & Answer Keys across Ranchi, Dhanbad, Jamshedpur & all 24 districts.'
 

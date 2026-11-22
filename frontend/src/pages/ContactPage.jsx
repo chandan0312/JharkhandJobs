@@ -51,10 +51,10 @@ export default function ContactPage() {
           Found an error? Have a suggestion? Want to report a notification? We respond within 24 hours.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <a href="mailto:jobalerx365@gmail.com"
+          <a href="mailto:support@jobalertx.com"
             className="inline-flex items-center gap-2 rounded-xl border border-hairline bg-surface px-4 py-2 text-[13px] font-medium text-ink-soft hover:text-ink transition-colors">
             <Mail size={15} className="text-brand-600" />
-            jobalerx365@gmail.com
+            support@jobalertx.com
           </a>
           <a href="tel:+918789862771"
             className="inline-flex items-center gap-2 rounded-xl border border-hairline bg-surface px-4 py-2 text-[13px] font-medium text-ink-soft hover:text-ink transition-colors">
@@ -74,7 +74,7 @@ export default function ContactPage() {
         )}
         {status === 'error' && (
           <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-[13.5px] font-medium text-red-700 dark:text-red-300">
-            <AlertCircle size={16} /> Something went wrong. Please email us directly at jobalerx365@gmail.com.
+            <AlertCircle size={16} /> Something went wrong. Please email us directly at support@jobalertx.com.
           </div>
         )}
 

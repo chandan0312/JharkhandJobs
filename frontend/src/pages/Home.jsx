@@ -15,6 +15,7 @@ import HomeArticlesSection from '../components/HomeArticlesSection.jsx'
 import AttentionCard from '../components/AttentionCard.jsx'
 import { getTrending, getRecentlyPosted, getJobsByCategory } from '../services/api.js'
 import { isJobExpired } from '../utils/dateHelper.js'
+import { SITE_CONFIG } from '../config/siteConfig.js'
 
 /* ── Skeleton loader ──────────────────────────────────────────────── */
 function TableSkeleton() {
@@ -230,6 +231,16 @@ export default function Home() {
 
         {/* 1. Compact Portal Banner */}
         <PortalBanner />
+
+        {/* AdSense Ready Notice */}
+        {!SITE_CONFIG.adsense.isApproved && (
+          <div
+            className="rounded-card border border-teal-500/30 bg-teal-500/5 px-4 py-3 text-center text-[13px] font-medium text-teal-700 dark:text-teal-400 animate-fade-in"
+            aria-label="AdSense pre-approval notice"
+          >
+            <span className="font-semibold">Site under AdSense Review:</span> No advertisements currently displayed. Contact: <a href="mailto:support@jobalertx.com" className="underline text-teal-600 hover:text-teal-700">support@jobalertx.com</a>
+          </div>
+        )}
 
         {/* 2. Trending This Week */}
         <section aria-label="Trending jobs this week">

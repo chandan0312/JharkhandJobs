@@ -161,7 +161,7 @@ export default function Footer() {
               {/* Contact pills */}
               <div className="flex flex-wrap gap-2">
                 <a
-                  href="mailto:jobalerx365@gmail.com"
+                  href="mailto:support@jobalertx.com"
                   className="inline-flex items-center gap-1.5 rounded-row px-3 py-1.5 text-[12px] font-medium transition-colors"
                   style={{
                     background: 'var(--surface-2)',
@@ -172,7 +172,7 @@ export default function Footer() {
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)' }}
                 >
                   <Mail size={12} aria-hidden="true" />
-                  jobalerx365@gmail.com
+                  support@jobalertx.com
                 </a>
                 <a
                   href="tel:8789862771"
