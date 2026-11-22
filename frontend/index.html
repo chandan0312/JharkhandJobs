@@ -39,6 +39,9 @@
     <meta name="google-site-verification" content="google9a45015efe9defd8" />
     <meta name="google-site-verification" content="9a45015efe9defd8" />
 
+    <!-- Content-Signal: tells agents how this content may be used -->
+    <meta name="content-signal" content="search=yes, ai-train=no">
+
     <!-- Google AdSense -->
     <script
       async
@@ -71,31 +74,59 @@
     <meta name="geo.placename" content="Jharkhand" />
     <meta name="geo.position" content="23.6102;85.2799" />
 
-    <!-- Structured Data -->
+    <!-- Structured Data: WebSite and Organization with contact info and social profiles -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Jharkhand JobAlert X",
-      "alternateName": "Jharkhand Sarkari Naukri Portal",
-      "url": "https://jharkhand.jobalertx.com/",
-      "description": "Jharkhand's #1 Free Job Alert Portal for JPSC, JSSC, Sarkari Naukri, Rojgar Mela and Private Jobs 2026",
-      "inLanguage": "en-IN",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://jharkhand.jobalertx.com/search?q={search_term_string}"
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "name": "Jharkhand JobAlert X",
+          "alternateName": "Jharkhand Sarkari Naukri Portal",
+          "url": "https://jharkhand.jobalertx.com/",
+          "description": "Jharkhand's #1 Free Job Alert Portal for JPSC, JSSC, Sarkari Naukri, Rojgar Mela and Private Jobs 2026",
+          "inLanguage": "en-IN",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://jharkhand.jobalertx.com/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          },
+          "areaServed": {
+            "@type": "State",
+            "name": "Jharkhand",
+            "addressCountry": "IN"
+          }
         },
-        "query-input": "required name=search_term_string"
-      },
-      "areaServed": {
-        "@type": "State",
-        "name": "Jharkhand",
-        "addressCountry": "IN"
-      }
+        {
+          "@type": "Organization",
+          "name": "Jharkhand JobAlert X",
+          "url": "https://jharkhand.jobalertx.com/",
+          "logo": "https://jharkhand.jobalertx.com/favicon.svg",
+          "description": "Jharkhand's #1 free job portal for JPSC, JSSC, Rojgar Mela, Police, Teacher Vacancies, and Sarkari Naukri 2026.",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "support@jobalertx.com",
+            "telephone": "+91-8789862771",
+            "contactType": "Customer Service",
+            "availableLanguage": ["English", "Hindi"],
+            "areaServed": "IN-JH"
+          },
+          "sameAs": [
+            "https://t.me/jobalertx",
+            "https://youtube.com/@jobalertx",
+            "https://twitter.com/jobalertx",
+            "https://linkedin.com/company/jobalertx"
+          ]
+        }
+      ]
     }
     </script>
+
+    <!-- Links to essential pages -->
+    <link rel="prefetch" href="/about" as="document">
+    <link rel="prefetch" href="/contact" as="document">
+    <link rel="prefetch" href="/privacy" as="document">
+    <link rel="prefetch" href="/terms" as="document">
 
     <!-- Fonts: Inter + JetBrains Mono -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
@@ -108,6 +139,10 @@
     />
   </head>
   <body>
+    <!-- Hidden h1 for SEO - visible heading is rendered by React App -->
+    <h1 id="page-title" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;">
+      Jharkhand JobAlert X — Latest JPSC, JSSC, Rojgar Mela & Sarkari Jobs Jharkhand 2026
+    </h1>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

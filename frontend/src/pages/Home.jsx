@@ -55,6 +55,15 @@ function EmptyBlock({ icon: Icon, label }) {
   )
 }
 
+/* ── Page Title (for semantic heading hierarchy) ─────────────────────── */
+function PageTitle() {
+  return (
+    <h1 className="sr-only">
+      Jharkhand JobAlert X — Latest JPSC, JSSC, Rojgar Mela & Sarkari Jobs Jharkhand 2026
+    </h1>
+  )
+}
+
 /* ── Portal Identity Banner ───────────────────────────────────────── */
 /* Compact single-row banner — keeps the Jharkhand portal branding    */
 function PortalBanner() {
@@ -98,12 +107,12 @@ function PortalBanner() {
             >
               Jharkhand's Official Job Portal
             </span>
-            <h1
+            <h2
               className="text-[15px] sm:text-[17px] font-black leading-tight truncate"
               style={{ color: '#FFFB08', letterSpacing: '-0.01em' }}
             >
               Jharkhand JobAlert X — JPSC · JSSC · Rojgar Mela · 2026
-            </h1>
+            </h2>
           </div>
         </div>
 
@@ -182,6 +191,7 @@ export default function Home() {
 
   const homeSchemas = [
     {
+      '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: 'Jharkhand JobAlert X',
       url: 'https://jharkhand.jobalertx.com/',
@@ -193,10 +203,52 @@ export default function Home() {
       },
     },
     {
+      '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'Jharkhand JobAlert X',
       url: 'https://jharkhand.jobalertx.com/',
       logo: 'https://jharkhand.jobalertx.com/favicon.svg',
+      description: "Jharkhand's #1 free job portal for JPSC, JSSC, Rojgar Mela, Police, Teacher Vacancies, and Sarkari Naukri 2026.",
+      contactPoint: {
+        '@type': 'ContactPoint',
+        email: 'support@jobalertx.com',
+        telephone: '+91-8789862771',
+        contactType: 'Customer Service',
+        availableLanguage: ['English', 'Hindi'],
+        areaServed: 'IN-JH',
+      },
+      sameAs: [
+        'https://t.me/jobalertx',
+        'https://youtube.com/@jobalertx',
+        'https://twitter.com/jobalertx',
+        'https://linkedin.com/company/jobalertx',
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebContent',
+      name: 'Jharkhand Job Categories',
+      description: 'Job listings organized by recruitment type: JPSC, JSSC, Rojgar Mela, Police, and private sector jobs.',
+      hasPart: [
+        {
+          '@type': 'ItemList',
+          name: 'JPSC Recruitment 2026',
+          description: 'Jharkhand PSC Civil Services, CDPO, and Engineering Services exams.',
+          url: 'https://jharkhand.jobalertx.com/category/jpsc',
+        },
+        {
+          '@type': 'ItemList',
+          name: 'JSSC Recruitment 2026',
+          description: 'Jharkhand SSC CGL, Excise Constable, and Teacher vacancies.',
+          url: 'https://jharkhand.jobalertx.com/category/jssc',
+        },
+        {
+          '@type': 'ItemList',
+          name: 'Rojgar Mela 2026',
+          description: 'District-wise job fairs and placement drives.',
+          url: 'https://jharkhand.jobalertx.com/rojgar-mela',
+        },
+      ],
     },
   ]
 
@@ -218,6 +270,9 @@ export default function Home() {
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+      {/* Semantic heading for the homepage */}
+      <PageTitle />
+
       <SEOHead
         title="Jharkhand JobAlert X — Latest JPSC, JSSC, Rojgar Mela & Sarkari Jobs Jharkhand 2026"
         description="Jharkhand JobAlert X — Free Job Alert 2026 for Jharkhand. Get latest JPSC, JSSC, Rojgar Mela, Sarkari Naukri, Private Jobs, Admit Cards, Results across Ranchi, Dhanbad, Jamshedpur & all 24 districts."
@@ -228,6 +283,21 @@ export default function Home() {
 
       {/* ── Main feed ───────────────────────────────────────────────── */}
       <main className="min-w-0 space-y-7">
+
+        {/* Quick links to important pages */}
+        <div className="flex flex-wrap gap-2 text-[13px] text-ink-muted">
+          <Link to="/about" className="hover:text-brand-600">About</Link>
+          <span>·</span>
+          <Link to="/contact" className="hover:text-brand-600">Contact</Link>
+          <span>·</span>
+          <Link to="/privacy" className="hover:text-brand-600">Privacy</Link>
+          <span>·</span>
+          <Link to="/terms" className="hover:text-brand-600">Terms</Link>
+          <span>·</span>
+          <a href="mailto:support@jobalertx.com" className="hover:text-brand-600">Email</a>
+          <span>·</span>
+          <a href="tel:+918789862771" className="hover:text-brand-600">Phone</a>
+        </div>
 
         {/* 1. Compact Portal Banner */}
         <PortalBanner />

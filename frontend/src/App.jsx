@@ -43,6 +43,9 @@ const AdminArticleForm = lazy(() => import('./pages/AdminArticleForm.jsx'))
 const AdminFeedback    = lazy(() => import('./pages/AdminFeedback.jsx'))
 const AdminAnalytics   = lazy(() => import('./pages/AdminAnalytics.jsx'))
 
+// 404 page - loaded at top level for better error handling
+import NotFoundPage from './pages/NotFoundPage.jsx'
+
 /** Sleek, low-overhead fallback loader for route transitions */
 function PageLoader() {
   return (
@@ -158,7 +161,7 @@ function AppRoutes() {
           <Route path="logout"            element={<Placeholder />} />
 
           {/* 404 Catch-all */}
-          <Route path="*"                 element={<Placeholder />} />
+          <Route path="*"                 element={<NotFoundPage />} />
         </Route>
       </Routes>
     </Suspense>

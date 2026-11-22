@@ -1,0 +1,49 @@
+# Jharkhand JobAlert X
+
+> Jharkhand's #1 free job portal for JPSC, JSSC, Rojgar Mela, Police, Teacher Vacancies, and Sarkari Naukri 2026. Verified job alerts across all 24 districts.
+
+## Site
+
+[Homepage](https://jharkhand.jobalertx.com/)
+
+[About Us](/about)
+
+[Contact](/contact)
+
+[Privacy Policy](/privacy)
+
+[Terms of Service](/terms)
+
+[Disclaimer](/disclaimer)
+
+## Jobs
+
+[List of all jobs](/jobs-directory)
+
+[JPSC Jobs](/category/jpsc)
+
+[JSSC Jobs](/category/jssc)
+
+[Private Jobs](/category/private-job)
+
+[Rojgar Mela](/rojgar-mela)
+
+[Central Jobs](/category/central-job)
+
+## Articles & Guides
+
+[Articles](/articles)
+
+[Career Guides](/articles)
+
+## Contact
+
+Email: [support@jobalertx.com](mailto:support@jobalertx.com)
+
+Phone: [+91 8789862771](tel:+918789862771)
+
+Telegram: <https://t.me/jobalertx>
+
+YouTube: <https://youtube.com/@jobalertx>
+
+Twitter/X: <https://twitter.com/jobalertx>

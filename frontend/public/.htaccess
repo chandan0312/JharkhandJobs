@@ -11,9 +11,17 @@
   RewriteRule ^ index.html [L]
 </IfModule>
 
+# Serve error documents with proper status codes
+<IfModule mod_alias.c>
+  # For a SPA, the 404 page is served via the SPA itself
+  # but we can also serve a static 404.html directly
+  ErrorDocument 404 /404.html
+</IfModule>
+
 # Ensure correct XML MIME type and caching headers for search engines
 <IfModule mod_mime.c>
   AddType application/xml .xml
+  AddType text/markdown .md
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -25,4 +33,24 @@
     Header set Content-Type "text/html; charset=utf-8"
     Header set Cache-Control "public, max-age=86400"
   </FilesMatch>
+
+  # Link headers for agent-friendly resources
+  <FilesMatch "^index\.html$">
+    Header set Link '<https://jharkhand.jobalertx.com/llms.txt>; rel="alternate"; type="text/markdown", <https://jharkhand.jobalertx.com/.well-known/mcp/server-card.json>; rel="mcp-server"; type="application/json"'
+  </FilesMatch>
+
+  # Static resource headers
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpg|jpeg|svg|gif|ico)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
 </IfModule>
+
+# Serve llms.txt with proper content type
+<FilesMatch "^llms\.txt$">
+  ForceType text/plain
+  Header set Content-Type "text/plain; charset=utf-8"
+  Header set Link '<https://jharkhand.jobalertx.com/llms.txt>; rel="alternate"; type="text/markdown"'
+</FilesMatch>
