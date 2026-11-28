@@ -99,6 +99,21 @@ async function start() {
       })
       console.log('[db] added links column to jobs table')
     }
+
+    const articleDesc = await qi.describeTable('articles').catch(() => null)
+    if (articleDesc) {
+      const articleCols = [
+        ['sourceUrl', { type: sequelize.Sequelize.DataTypes.STRING(1000), allowNull: true }],
+        ['sourceType', { type: sequelize.Sequelize.DataTypes.STRING(100), allowNull: true, defaultValue: 'original' }],
+        ['verifiedAt', { type: sequelize.Sequelize.DataTypes.DATE, allowNull: true }],
+      ]
+      for (const [colName, colDef] of articleCols) {
+        if (!articleDesc[colName]) {
+          await qi.addColumn('articles', colName, colDef)
+          console.log(`[db] added ${colName} column to articles table`)
+        }
+      }
+    }
   } catch (err) {
     console.warn('[db] column check notice:', err.message)
   }
