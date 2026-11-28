@@ -11,9 +11,10 @@
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('jjax-theme')
+          var t = localStorage.getItem('jjax-theme') || 'dark'
           if (t === 'light' || t === 'dark') {
             document.documentElement.setAttribute('data-theme', t)
+            document.documentElement.classList.toggle('dark', t === 'dark')
           }
         } catch (e) {}
       })()

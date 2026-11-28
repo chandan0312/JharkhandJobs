@@ -206,6 +206,9 @@ export const create = asyncHandler(async (req, res) => {
     views: 0,
     metaTitle: body.metaTitle || body.title.trim(),
     metaDescription: body.metaDescription || body.excerpt || '',
+    sourceUrl: body.sourceUrl || null,
+    sourceType: body.sourceType || 'original',
+    verifiedAt: body.verifiedAt || null,
   })
 
   res.status(201).json(article)
@@ -249,6 +252,9 @@ export const update = asyncHandler(async (req, res) => {
     'featured',
     'metaTitle',
     'metaDescription',
+    'sourceUrl',
+    'sourceType',
+    'verifiedAt',
   ]
 
   fields.forEach((field) => {

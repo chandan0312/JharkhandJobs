@@ -15,6 +15,7 @@
     --bg:           #eef4fc;
     --surface:      #ffffff;
     --surface-2:    #f3f7fd;
+    --surface-3:    #e6eef8;
     --header-bg:    #ffffff;
     --hero-bg:      linear-gradient(180deg, #e3eefc, #eef4fc);
 
@@ -73,15 +74,28 @@
     --brand-dark:     #09324A;
     --brand-gold:     #FFFB08;
     --brand-teal:     #AED0C9;
+    --brand-flame:    #f97316;
+
+    /* Legacy token aliases */
+    --bg-page:         var(--bg);
+    --bg-surface:      var(--surface);
+    --bg-elevated:     var(--surface);
+    --bg-subtle:       var(--surface-2);
+    --border-hairline: var(--border);
+    --text-strong:     var(--text);
+    --text-soft:       var(--text-2);
+    --text-faint:      var(--text-muted);
   }
 
-  [data-theme="dark"] {
+  [data-theme="dark"],
+  .dark {
     color-scheme: dark;
 
     /* Surfaces */
     --bg:           #0b1020;
     --surface:      #121a2e;
     --surface-2:    #182232;
+    --surface-3:    #1f2c42;
     --header-bg:    #0d1426;
 
     /* Borders */
@@ -781,6 +795,23 @@
 }
 
 .animate-fade-in { animation: fade-in 0.25s ease-out both; }
+
+/* ── Zero-CLS Skeleton Shimmer ──────────────────────────────────────────── */
+@keyframes skeleton-wave {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.animate-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-wave 1.4s ease-in-out infinite;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════════════

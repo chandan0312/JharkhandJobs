@@ -70,24 +70,44 @@ function sanitizeAndFormatHtml(rawHtml) {
     })
 
     // 4. Format and enhance <img> elements
-    doc.querySelectorAll('img').forEach((img) => {
+    doc.querySelectorAll('img').forEach((img, index) => {
       let src = img.getAttribute('src') || ''
       if (src.startsWith('/uploads/')) {
         src = `${API_BASE}${src}`
         img.setAttribute('src', src)
       }
+      if (src.startsWith('http') || src.startsWith('/uploads/')) {
+        img.setAttribute('srcset', `${src} 1x, ${src} 2x`)
+      }
+      if (!img.getAttribute('width')) img.setAttribute('width', '800')
+      if (!img.getAttribute('height')) img.setAttribute('height', '450')
+      if (index === 0) {
+        img.setAttribute('fetchpriority', 'high')
+      } else {
+        img.setAttribute('decoding', 'async')
+      }
       img.classList.add('max-w-full', 'h-auto', 'rounded-xl', 'border', 'border-hairline', 'shadow-sm', 'my-3', 'mx-auto', 'block')
-      img.setAttribute('loading', 'lazy')
+      img.setAttribute('loading', index === 0 ? 'eager' : 'lazy')
       if (!img.getAttribute('alt')) {
         img.setAttribute('alt', 'Notification detail image')
       }
     })
 
-    // 5. Enhance links (safe external links)
+    // 5. Enhance links (only external links get target="_blank", preserve button styling & #anchor TOC links)
     doc.querySelectorAll('a').forEach((a) => {
-      a.classList.add('text-brand-600', 'dark:text-brand-400', 'font-semibold', 'underline', 'underline-offset-2', 'hover:opacity-80', 'transition-opacity')
-      a.setAttribute('target', '_blank')
-      a.setAttribute('rel', 'noopener noreferrer')
+      const href = (a.getAttribute('href') || '').trim()
+      const isInternalAnchor = href.startsWith('#') || href.startsWith('/')
+      const hasInlineBg = (a.getAttribute('style') || '').includes('background')
+      if (!hasInlineBg) {
+        a.classList.add('text-brand-600', 'dark:text-brand-400', 'font-semibold', 'underline', 'underline-offset-2', 'hover:opacity-80', 'transition-opacity')
+      }
+      if (!isInternalAnchor) {
+        a.setAttribute('target', '_blank')
+        a.setAttribute('rel', 'noopener noreferrer')
+      } else {
+        a.removeAttribute('target')
+        a.removeAttribute('rel')
+      }
     })
 
     // 6. Enhance headings

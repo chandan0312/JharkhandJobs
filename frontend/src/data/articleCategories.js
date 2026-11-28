@@ -31,5 +31,11 @@ export const CATEGORY_BADGES = {
   result: { label: 'Result & Cut-off', bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' },
   documentation: { label: 'Documentation', bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
   'job-guide': { label: 'Job Guide', bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
+  'exam-tips': { label: 'Exam Tips', bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+  'career-guidance': { label: 'Career Guidance', bg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20' },
+  'study-material': { label: 'Study Material', bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' },
+  'current-affairs': { label: 'Current Affairs', bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
+  'interview-tips': { label: 'Interview Tips', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+  'success-stories': { label: 'Success Stories', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
   general: { label: 'Career Guide', bg: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20' },
 }

@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Clock, Sparkles, Landmark, Scale, Briefcase, Building2,
-  GraduationCap, MapPin, Flame, BellRing, TrendingUp,
-  ArrowRight, CheckCircle2,
-} from 'lucide-react'
+import { Flame, ArrowRight, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '../components/SectionHeader.jsx'
 import HeroBanner from '../components/HeroBanner.jsx'
 import JobCategoryCards from '../components/JobCategoryCards.jsx'
@@ -13,123 +9,59 @@ import RightSidebar from '../components/RightSidebar.jsx'
 import SEOHead from '../components/SEOHead.jsx'
 import HomeArticlesSection from '../components/HomeArticlesSection.jsx'
 import AttentionCard from '../components/AttentionCard.jsx'
+import { Skeleton } from '../components/Skeleton.jsx'
 import { getTrending, getRecentlyPosted, getJobsByCategory } from '../services/api.js'
 import { isJobExpired } from '../utils/dateHelper.js'
 import { SITE_CONFIG } from '../config/siteConfig.js'
 
-/* ── Skeleton loader ──────────────────────────────────────────────── */
-function TableSkeleton() {
-  return (
-    <div
-      className="overflow-hidden rounded-card"
-      style={{ border: '1px solid var(--border)' }}
-    >
-      {[...Array(4)].map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-4 px-5 py-4"
-          style={{ borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}
-        >
-          <div className="skeleton h-9 w-9 rounded-btn shrink-0" />
-          <div className="flex-1 space-y-2">
-            <div className="skeleton h-3 w-3/5 rounded" />
-            <div className="skeleton h-2.5 w-2/5 rounded" />
-          </div>
-          <div className="skeleton h-7 w-20 rounded-pill" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/* ── Empty state ──────────────────────────────────────────────────── */
-function EmptyBlock({ icon: Icon, label }) {
-  return (
-    <div className="empty-state">
-      <div className="empty-state__icon">
-        <Icon size={22} aria-hidden="true" />
-      </div>
-      <p className="empty-state__title">No {label} yet</p>
-      <p className="empty-state__body">New notifications are added daily — check back soon.</p>
-    </div>
-  )
-}
-
-/* ── Page Title (for semantic heading hierarchy) ─────────────────────── */
-function PageTitle() {
-  return (
-    <h1 className="sr-only">
-      Jharkhand JobAlert X — Latest JPSC, JSSC, Rojgar Mela & Sarkari Jobs Jharkhand 2026
-    </h1>
-  )
-}
-
-/* ── Portal Identity Banner ───────────────────────────────────────── */
-/* Compact single-row banner — keeps the Jharkhand portal branding    */
+/* ── Portal Identity Banner (Light & Dark mode adaptive) ─────────────── */
 function PortalBanner() {
   return (
-    <div
-      className="relative overflow-hidden rounded-card px-5 py-3"
-      style={{
-        background: 'linear-gradient(135deg, var(--brand-dark) 0%, #1B6F81 100%)',
-      }}
+    <section
+      aria-label="Jharkhand JobAlert X portal overview"
+      className="group relative overflow-hidden rounded-2xl border border-hairline bg-surface px-4 py-3.5 sm:px-5 sm:py-4 shadow-sm transition-colors"
     >
-      {/* Subtle grid texture */}
+      {/* Subtle accent glow */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.06]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }}
+        className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full opacity-20 blur-2xl transition-opacity group-hover:opacity-35"
+        style={{ background: 'radial-gradient(circle, var(--brand-flame), transparent 70%)' }}
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Live dot + Portal title */}
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Live pulse dot */}
-          <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
-            <span
-              className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
-              style={{ background: '#FFFB08' }}
-            />
-            <span
-              className="relative inline-flex h-2.5 w-2.5 rounded-full"
-              style={{ background: '#FFFB08' }}
-            />
-          </span>
-
-          <div className="min-w-0">
-            <span
-              className="block text-[10px] font-bold uppercase tracking-widest"
-              style={{ color: 'rgba(174,208,201,0.9)' }}
-            >
-              Jharkhand's Official Job Portal
+      <div className="relative flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <h2
-              className="text-[15px] sm:text-[17px] font-black leading-tight truncate"
-              style={{ color: '#FFFB08', letterSpacing: '-0.01em' }}
-            >
-              Jharkhand JobAlert X — JPSC · JSSC · Rojgar Mela · 2026
-            </h2>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+              Daily Verified Updates
+            </span>
+            <span className="text-[11px] text-ink-faint hidden sm:inline">
+              • Jharkhand&apos;s Official Job Portal
+            </span>
           </div>
+
+          <h1 className="text-sm sm:text-base md:text-lg font-extrabold leading-snug tracking-tight text-ink">
+            <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-teal-700 dark:from-orange-400 dark:via-amber-300 dark:to-teal-300 bg-clip-text text-transparent font-black">
+              Jharkhand JobAlert X 2026 — JPSC, JSSC, Rojgar Mela &amp; Sarkari Jobs
+            </span>
+            <span className="mx-2 hidden text-hairline md:inline font-light" aria-hidden="true">|</span>
+            <span className="block text-xs sm:text-sm font-bold text-ink-muted mt-0.5 md:mt-0 md:inline tracking-normal">
+              झारखंड सरकारी नौकरी, भर्ती, एडमिट कार्ड एवं रिजल्ट 2026
+            </span>
+          </h1>
         </div>
 
-        {/* Right: trust badge */}
-        <span
-          className="shrink-0 inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-[11px] font-bold"
-          style={{
-            background: 'rgba(255,251,8,0.12)',
-            color: '#FFFB08',
-            border: '1px solid rgba(255,251,8,0.25)',
-          }}
-        >
-          <CheckCircle2 size={12} aria-hidden="true" />
-          2026 Verified
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5 self-start sm:self-center">
+          <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold bg-brand-50 text-brand-700 dark:bg-brand-600/20 dark:text-brand-300 border border-brand-500/20 shadow-sm">
+            <CheckCircle2 size={12} aria-hidden="true" />
+            2026 Verified
+          </span>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -137,7 +69,6 @@ function PortalBanner() {
 function TrendingHeader() {
   return (
     <div className="flex items-center gap-2">
-      {/* Accent bar */}
       <span
         className="h-5 w-1 rounded-pill shrink-0"
         style={{ background: '#f97316' }}
@@ -177,14 +108,14 @@ export default function Home() {
     }
     const fail = (setter) => () => { if (active) setter([]) }
 
-    getTrending()                                .then(safe(setTrending))            .catch(fail(setTrending))
-    getRecentlyPosted(6)                         .then(safe(setRecentlyPosted))      .catch(fail(setRecentlyPosted))
-    getJobsByCategory('jpsc', 4, 'all')          .then(safe(setJpscJobs))            .catch(fail(setJpscJobs))
-    getJobsByCategory('jssc', 4, 'all')          .then(safe(setJsscJobs))            .catch(fail(setJsscJobs))
+    getTrending()                                 .then(safe(setTrending))           .catch(fail(setTrending))
+    getRecentlyPosted(6)                          .then(safe(setRecentlyPosted))     .catch(fail(setRecentlyPosted))
+    getJobsByCategory('jpsc', 4, 'all')           .then(safe(setJpscJobs))           .catch(fail(setJpscJobs))
+    getJobsByCategory('jssc', 4, 'all')           .then(safe(setJsscJobs))           .catch(fail(setJsscJobs))
     getJobsByCategory('other-jharkhand', 4, 'all').then(safe(setOtherJharkhandJobs)) .catch(fail(setOtherJharkhandJobs))
-    getJobsByCategory('rojgar-mela', 4, 'all')   .then(safe(setRojgarMelaJobs))      .catch(fail(setRojgarMelaJobs))
-    getJobsByCategory('private-job', 4, 'all')   .then(safe(setPrivateJobs))         .catch(fail(setPrivateJobs))
-    getJobsByCategory('central-job', 4, 'all')   .then(safe(setCentralJobs))         .catch(fail(setCentralJobs))
+    getJobsByCategory('rojgar-mela', 4, 'all')    .then(safe(setRojgarMelaJobs))     .catch(fail(setRojgarMelaJobs))
+    getJobsByCategory('private-job', 4, 'all')    .then(safe(setPrivateJobs))        .catch(fail(setPrivateJobs))
+    getJobsByCategory('central-job', 4, 'all')    .then(safe(setCentralJobs))        .catch(fail(setCentralJobs))
 
     return () => { active = false }
   }, [])
@@ -252,9 +183,16 @@ export default function Home() {
     },
   ]
 
-  /* Helper: reusable job section — only display if job is available, hide completely otherwise */
   function JobSection({ title, subtitle, viewAllTo, viewAllText, jobs }) {
-    if (!jobs || jobs.length === 0) return null
+    if (jobs === null) {
+      return (
+        <section>
+          <SectionHeader title={title} subtitle={subtitle} viewAllTo={viewAllTo} viewAllText={viewAllText} />
+          <Skeleton.Table rows={4} cols={3} />
+        </section>
+      )
+    }
+    if (jobs.length === 0) return null
     return (
       <section aria-labelledby={`sec-${title.replace(/\s+/g, '-').toLowerCase()}`}>
         <SectionHeader
@@ -270,9 +208,6 @@ export default function Home() {
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-      {/* Semantic heading for the homepage */}
-      <PageTitle />
-
       <SEOHead
         title="Jharkhand JobAlert X — Latest JPSC, JSSC, Rojgar Mela & Sarkari Jobs Jharkhand 2026"
         description="Jharkhand JobAlert X — Free Job Alert 2026 for Jharkhand. Get latest JPSC, JSSC, Rojgar Mela, Sarkari Naukri, Private Jobs, Admit Cards, Results across Ranchi, Dhanbad, Jamshedpur & all 24 districts."
@@ -283,23 +218,22 @@ export default function Home() {
 
       {/* ── Main feed ───────────────────────────────────────────────── */}
       <main className="min-w-0 space-y-7">
-
         {/* Quick links to important pages */}
         <div className="flex flex-wrap gap-2 text-[13px] text-ink-muted">
-          <Link to="/about" className="hover:text-brand-600">About</Link>
+          <Link to="/about" className="hover:text-brand-600 dark:hover:text-brand-400">About</Link>
           <span>·</span>
-          <Link to="/contact" className="hover:text-brand-600">Contact</Link>
+          <Link to="/contact" className="hover:text-brand-600 dark:hover:text-brand-400">Contact</Link>
           <span>·</span>
-          <Link to="/privacy" className="hover:text-brand-600">Privacy</Link>
+          <Link to="/privacy" className="hover:text-brand-600 dark:hover:text-brand-400">Privacy</Link>
           <span>·</span>
-          <Link to="/terms" className="hover:text-brand-600">Terms</Link>
+          <Link to="/terms" className="hover:text-brand-600 dark:hover:text-brand-400">Terms</Link>
           <span>·</span>
-          <a href="mailto:support@jobalertx.com" className="hover:text-brand-600">Email</a>
+          <a href="mailto:support@jobalertx.com" className="hover:text-brand-600 dark:hover:text-brand-400">Email</a>
           <span>·</span>
-          <a href="tel:+918789862771" className="hover:text-brand-600">Phone</a>
+          <a href="tel:+918789862771" className="hover:text-brand-600 dark:hover:text-brand-400">Phone</a>
         </div>
 
-        {/* 1. Compact Portal Banner */}
+        {/* 1. Compact Portal Identity Banner */}
         <PortalBanner />
 
         {/* AdSense Ready Notice */}
@@ -308,7 +242,7 @@ export default function Home() {
             className="rounded-card border border-teal-500/30 bg-teal-500/5 px-4 py-3 text-center text-[13px] font-medium text-teal-700 dark:text-teal-400 animate-fade-in"
             aria-label="AdSense pre-approval notice"
           >
-            <span className="font-semibold">Site under AdSense Review:</span> No advertisements currently displayed. Contact: <a href="mailto:support@jobalertx.com" className="underline text-teal-600 hover:text-teal-700">support@jobalertx.com</a>
+            <span className="font-semibold">Site under AdSense Review:</span> No advertisements currently displayed. Contact: <a href="mailto:support@jobalertx.com" className="underline text-teal-600 dark:text-teal-300 hover:opacity-80">support@jobalertx.com</a>
           </div>
         )}
 
@@ -333,20 +267,7 @@ export default function Home() {
               : trending
 
             if (slides === null) {
-              return (
-                <div
-                  className="h-[180px] rounded-card flex items-center justify-center"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <div
-                      className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent"
-                      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
-                    />
-                    <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Loading…</span>
-                  </div>
-                </div>
-              )
+              return <Skeleton.Hero />
             }
 
             if (slides.length === 0) {
@@ -370,7 +291,7 @@ export default function Home() {
         {/* 4. Recently Posted */}
         <JobSection
           title="Recently Posted Jobs"
-          subtitle="Latest notifications across all categories"
+          subtitle="Latest notifications across all Jharkhand categories"
           viewAllTo="/latest/job"
           viewAllText="View all latest"
           jobs={recentlyPosted}

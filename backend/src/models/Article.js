@@ -13,6 +13,12 @@ export const ARTICLE_CATEGORIES = [
   'syllabus',
   'result',
   'documentation',
+  'exam-tips',
+  'career-guidance',
+  'study-material',
+  'current-affairs',
+  'interview-tips',
+  'success-stories',
   'general',
 ]
 
@@ -24,6 +30,12 @@ export const ARTICLE_CATEGORY_LABELS = {
   syllabus: 'Syllabus & Pattern Breakdown',
   result: 'Results & Cut-off Analysis',
   documentation: 'Document Verification & Checklist',
+  'exam-tips': 'Exam Tips',
+  'career-guidance': 'Career Guidance',
+  'study-material': 'Study Material',
+  'current-affairs': 'Current Affairs',
+  'interview-tips': 'Interview Tips',
+  'success-stories': 'Success Stories',
   general: 'Career Tips & News',
 }
 
@@ -95,6 +107,19 @@ export default function defineArticle(sequelize) {
       },
       metaDescription: {
         type: DataTypes.TEXT,
+      },
+      sourceUrl: {
+        type: DataTypes.STRING(1000),
+        allowNull: true,
+      },
+      sourceType: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        defaultValue: 'original',
+      },
+      verifiedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {
