@@ -205,28 +205,35 @@ export default function ArticlesPage() {
         </div>
       </div>
 
-      {/* Category Pills Navigation */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {ARTICLE_CATEGORIES.map((cat) => {
-          const Icon = cat.icon
-          const isActive = activeCategory === cat.id
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => handleCategorySelect(cat.id)}
-              className={`inline-flex items-center gap-2 shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
-                  : 'border border-hairline bg-surface text-ink-soft hover:bg-subtle hover:text-ink'
-              }`}
-            >
-              <Icon size={14} className={isActive ? 'text-white' : cat.color} />
-              {cat.label}
-            </button>
-          )
-        })}
-      </div>
+        {/* Category Pills Navigation with Counts */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {ARTICLE_CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            const isActive = activeCategory === cat.id
+            const count = cat.id === 'all'
+              ? articles.length
+              : articles.filter(a => a.category === cat.id).length
+
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => handleCategorySelect(cat.id)}
+                className={`inline-flex items-center gap-2 shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                    : 'border border-hairline bg-surface text-ink-soft hover:bg-subtle hover:text-ink'
+                }`}
+              >
+                <Icon size={14} className={isActive ? 'text-white' : cat.color} />
+                {cat.label}
+                <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] ${isActive ? 'bg-white/20' : 'bg-subtle'}`}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
 
       {/* Loading state */}
       {loading ? (
@@ -342,75 +349,46 @@ export default function ArticlesPage() {
                         loading="lazy"
                         decoding="async"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-
-                      <div className="absolute top-3 left-3">
-                        <span className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[10.5px] font-extrabold backdrop-blur-md ${badge.bg}`}>
-                          {badge.label}
-                        </span>
-                      </div>
-
-                      <div className="absolute top-3 right-3">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-black/60 backdrop-blur-md px-2 py-0.5 text-[10.5px] font-semibold text-slate-200">
-                          <Clock size={12} />
-                          {article.readTime}
-                        </span>
-                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                     </Link>
 
-                    <div className="p-5 space-y-2.5">
+                    <div className="p-5 space-y-3">
+                      {/* Metadata row */}
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10.5px] font-bold ${badge.bg}`}>
+                          {badge.label}
+                        </span>
+                        <span className="flex items-center gap-1 text-[11px] text-ink-muted">
+                          <Clock size={11} className="text-orange-500" /> {article.readTime}
+                        </span>
+                      </div>
+
+                      {/* Title */}
                       <Link to={`/article/${article.slug}`}>
-                        <h3 className="text-sm sm:text-[15px] font-bold text-ink group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug">
+                        <h3 className="text-base font-bold text-ink group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug">
                           {article.title}
                         </h3>
                       </Link>
 
-                      <p className="text-xs text-ink-muted line-clamp-3 leading-relaxed">
+                      {/* Excerpt */}
+                      <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
                         {article.excerpt}
                       </p>
-
-                      {Array.isArray(article.tags) && article.tags.length > 0 && (
-                        <div className="pt-1 flex flex-wrap gap-1.5">
-                          {article.tags.slice(0, 3).map((tag, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center text-[10px] font-medium text-ink-muted bg-subtle rounded-md px-2 py-0.5"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   {/* Footer of card */}
-                  <div className="p-5 pt-3 border-t border-hairline flex items-center justify-between text-[11.5px]">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-5 w-5 shrink-0 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-[10px]">
+                  <div className="px-5 pb-5 pt-0 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-[10px]">
                         {article.author?.charAt(0) || 'J'}
                       </div>
-                      <div className="truncate">
-                        <p className="text-[11.5px] font-semibold text-ink truncate">{article.author}</p>
-                        {created && (
-                          <p className="text-[10px] text-ink-faint">
-                            {new Date(created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
+                      <span className="text-[11px] font-medium text-ink-muted">{article.author}</span>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="flex items-center gap-1 text-ink-faint text-[11px]">
-                        <Eye size={12} />
-                        {Number(article.views || 0).toLocaleString('en-IN')}
-                      </span>
-                      <Link
-                        to={`/article/${article.slug}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 group-hover:translate-x-0.5 transition-transform"
-                      >
-                        Read <ArrowRight size={13} />
-                      </Link>
+                    <div className="flex items-center gap-1 text-ink-faint text-[11px]">
+                      <Eye size={12} />
+                      {Number(article.views || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                 </article>
